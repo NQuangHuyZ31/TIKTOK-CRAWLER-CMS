@@ -2,6 +2,7 @@
 
 namespace Modules\Crawler\Repositories\Interfaces;
 
-class CrawlResultRepositoryInterface {
-	
+interface CrawlResultRepositoryInterface {
+
+	public function getCrawlResultsByJobId(int $jobId);
 }

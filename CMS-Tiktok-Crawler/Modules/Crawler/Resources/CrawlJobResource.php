@@ -19,7 +19,7 @@ class CrawlJobResource extends JsonResource
 			'started_at' => $this->started_at,
 			'finished_at' => $this->finished_at,
 			'status' => $this->status,
-			'total_account' => $this->total_account,
+			'total_account' => $this->total_accounts,
 			'success_count' => $this->success_count,
 			'failed_count' => $this->failed_count,
 			'error_message' => $this->error_message,
