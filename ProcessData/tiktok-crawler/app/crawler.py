@@ -1,266 +1,247 @@
+from pathlib import Path
+from urllib.parse import urlparse
+
+import httpx
 from playwright.async_api import async_playwright
 
+from config import BACKEND_CALLBACK_URL, normalize_callback_url
 from extractor import extract_profile
-
-from services.crawl_job_service import CrawlJobService
-from services.tiktok_account_service import TiktokAccountService
-from services.crawl_result_service import CrawlResultService
-
-from utils.browser_utils import (
-    open_url,
-    go_back,
-    scroll_page,
-)
-
+from models import TikTokAccount
+from utils.browser_utils import open_url, scroll_page
 from utils.tiktok_utils import (
-    extract_username_from_video,
     build_profile_url,
+    extract_username_from_video,
+    normalize_username,
 )
 
 
 class TikTokCrawler:
-
     TIKTOK_HOME_URL = "https://www.tiktok.com/"
 
-	# Initialize the TikTokCrawler with services for managing crawl jobs, accounts, and results
-    def __init__(self):
-        self.job_service = CrawlJobService()
-        self.account_service = TiktokAccountService()
-        self.result_service = CrawlResultService()
+    def __init__(
+        self,
+        callback_url: str = BACKEND_CALLBACK_URL,
+        callback_token: str | None = None,
+    ):
+        self.callback_url = normalize_callback_url(callback_url)
+        self.callback_token = callback_token
 
-	# funtion to run crawler with a specified maximun count of accounts to crawl
-    async def run(self, max_count: int):
+    async def run(
+        self,
+        job_id: int,
+        usernames: list[str] | None = None,
+        urls: list[str] | None = None,
+        target_count: int | None = None,
+    ) -> None:
+        """Crawl accounts and publish each result to the backend callback."""
+        # Chuẩn hóa danh sách đầu vào; nếu không có danh sách thì lấy account từ feed.
+        targets = self._build_targets(usernames, urls)
+        target_from_feed = not targets
+        crawl_target_count = target_count or len(targets)
 
-		# check if max_count is lower than or equal to 0, raise a ValueError
-        if max_count <= 0:
-            raise ValueError(
-                "max_count must be greater than 0"
-            )
+        if crawl_target_count <= 0:
+            raise ValueError("At least one username, URL, or positive count is required")
 
-		# create a new crawl job and get the job_id
-        job_id = self.job_service.create_job()
-
-		# initialize counters for total accounts, successful crawls, failed crawls, and scroll attempts
-        total_accounts = 0
-        total_success = 0
-        total_failed = 0
-        scroll_attempts = 0
-
-        crawled_usernames = set()
+        success_count = 0
+        failed_count = 0
 
         try:
-
             async with async_playwright() as playwright:
-
-				# launch a new Chromium browser instance in non-headless mode
-                browser = await playwright.chromium.launch(
-                    headless=False
-                )
-
+                # Một browser context dùng xuyên suốt job để giữ session TikTok.
+                browser = await playwright.chromium.launch(headless=False)
                 context = await browser.new_context(
-                    viewport={
-                        "width": 1280,
-                        "height": 720,
-                    }
+                    viewport={"width": 1280, "height": 720}
                 )
-
-				# create a new page in the browser context and navigate to the TikTok home page
                 page = await context.new_page()
 
-				# open the TikTok home page and wait for it to load
-                await open_url(
-                    page,
-                    self.TIKTOK_HOME_URL,
-                    wait_time=3000,
-                )
+                if target_from_feed:
+                    # Chế độ count bắt đầu từ trang feed và chuyển video bằng scroll.
+                    await open_url(page, self.TIKTOK_HOME_URL, wait_time=3000)
 
-                while (
-                    len(crawled_usernames) < max_count
-                ):
-
-                    scroll_attempts += 1
-
-					# collection username from the video page
-                    username = (
-                        await extract_username_from_video(
-                            page
+                # Dùng set để bỏ qua username bị lặp, đặc biệt trong chế độ feed.
+                crawled_usernames: set[str] = set()
+                target_index = 0
+                while len(crawled_usernames) < crawl_target_count:
+                    if targets:
+                        # Với username/URL list, xử lý tuần tự đúng theo danh sách.
+                        if target_index >= len(targets):
+                            break
+                        profile_url = targets[target_index]
+                        target_index += 1
+                        username = normalize_username(
+                            profile_url.rstrip("/").split("/@")[-1]
                         )
-                    )
+                    else:
+                        # Với chế độ count, lấy username của video hiện tại.
+                        username = await extract_username_from_video(page)
+                        if not username:
+                            await scroll_page(page)
+                            continue
+                        profile_url = build_profile_url(username)
 
-					# check if username is found, continue scrolling next video
-                    if not username:
-
-                        print(
-                            "Could not find username."
-                        )
-
-                        await scroll_page(page)
-                        continue
-
-                    print(
-                        f"Found @{username}"
-                    )
-
-					# check duplicate username, if found skip and continue scrolling next video
                     if username in crawled_usernames:
-
-                        print(
-                            f"Skip @{username}"
-                        )
-
-                        await scroll_page(page)
+                        if target_from_feed:
+                            await scroll_page(page)
                         continue
 
                     crawled_usernames.add(username)
-
-                    total_accounts += 1
-
-                    profile_url = (
-                        build_profile_url(username)
-                    )
-
                     try:
-						# crawl the profile page and found nessary information
-                        await self.crawl_profile(
+                        # Chỉ phần crawl được bắt lỗi ở đây; lỗi callback không
+                        # được biến thành một callback account thứ hai.
+                        account = await self.crawl_profile(
                             page=page,
-                            job_id=job_id,
                             username=username,
                             profile_url=profile_url,
                         )
-
-                        total_success += 1
-
                     except Exception as error:
+                        # Một account lỗi không làm dừng các account còn lại.
+                        failed_count += 1
+                        account = None
+                        account_error = str(error)
 
-                        total_failed += 1
-
-						# save the failed result with the error message
-                        self.save_failed_result(
-                            job_id=job_id,
-                            username=username,
-                            profile_url=profile_url,
-                            error=error,
+                    if account is not None:
+                        # Mỗi account thành công chỉ phát một account event.
+                        await self._callback(
+                            "account",
+                            job_id,
+                            {
+                                "status": "success",
+                                "account": account.model_dump(mode="json"),
+                            },
+                        )
+                        success_count += 1
+                    else:
+                        # Mỗi account crawl lỗi chỉ phát một failed event.
+                        await self._callback(
+                            "account",
+                            job_id,
+                            {
+                                "status": "failed",
+                                "username": username,
+                                "profile_url": profile_url,
+                                "error_message": account_error,
+                            },
                         )
 
-                    await go_back(page)
-
-                    if (
-                        len(crawled_usernames)
-                        >= max_count
-                    ):
-                        break
-
-                    await scroll_page(page)
+                    if target_from_feed:
+                        await scroll_page(page)
 
                 await browser.close()
 
-            self.job_service.update_job(
-                job_id=job_id,
-                status="completed",
-                total_accounts=total_accounts,
-                success_count=total_success,
-                failed_count=total_failed,
+            await self._callback(
+                "completed",
+                job_id,
+                {
+                    "status": "completed",
+                    "total_accounts": success_count + failed_count,
+                    "success_count": success_count,
+                    "failed_count": failed_count,
+                },
             )
-
         except Exception as error:
-
-            self.job_service.update_job(
-                job_id=job_id,
-                status="failed",
-                total_accounts=total_accounts,
-                success_count=total_success,
-                failed_count=total_failed,
-                error_message=str(error),
+            # Báo trạng thái failed nếu lỗi làm dừng toàn bộ job.
+            await self._callback(
+                "completed",
+                job_id,
+                {
+                    "status": "failed",
+                    "total_accounts": success_count + failed_count,
+                    "success_count": success_count,
+                    "failed_count": failed_count,
+                    "error_message": str(error),
+                },
             )
-
             raise
 
-	# save to database with success status
+    @staticmethod
+    def _build_targets(
+        usernames: list[str] | None,
+        urls: list[str] | None,
+    ) -> list[str]:
+        # Chuyển username thành profile URL và loại bỏ target trùng nhau.
+        if usernames:
+            return list(dict.fromkeys(
+                build_profile_url(normalize_username(value))
+                for value in usernames
+                if normalize_username(value)
+            ))
+        if urls:
+            # Giữ nguyên URL người dùng nhập, chỉ loại khoảng trắng và duplicate.
+            return list(dict.fromkeys(value.strip() for value in urls if value.strip()))
+        return []
+
     async def crawl_profile(
         self,
         page,
-        job_id,
-        username,
-        profile_url,
-    ):
-
-        print(
-            f"Opening profile @{username}"
-        )
-
-        await open_url(
-            page,
-            profile_url,
-            wait_time=3000,
-        )
-
-        html = await page.content()
-
+        username: str,
+        profile_url: str,
+    ) -> TikTokAccount:
+        # Mở profile và trích xuất dữ liệu từ HTML đã render bởi Playwright.
+        await open_url(page, profile_url, wait_time=3000)
         profile = extract_profile(
-            html=html,
+            html=await page.content(),
             profile_url=profile_url,
         )
-
         if not profile.username:
-            raise Exception(
-                "Could not extract profile username"
+            raise RuntimeError("Could not extract profile username")
+        if profile.avatar_url:
+            # Avatar được tải local để backend có thể lưu đường dẫn file.
+            profile.avatar_path = await self.download_avatar(
+                page, profile.username, profile.avatar_url
+            )
+        return profile
+
+    async def download_avatar(self, page, username: str, avatar_url: str) -> str:
+        # Lưu avatar cạnh source service, không ghi trực tiếp vào database.
+        avatar_dir = Path(__file__).resolve().parent.parent / "avatars"
+        avatar_dir.mkdir(parents=True, exist_ok=True)
+        response = await page.request.get(avatar_url)
+        if not response.ok:
+            raise RuntimeError(
+                f"Could not download avatar (HTTP {response.status})"
             )
 
-        account_id = (
-            self.account_service.save_account(
-                profile
+        content_type = (response.headers.get("content-type") or "").lower()
+        # Ưu tiên content-type vì URL CDN TikTok thường không có extension rõ ràng.
+        extension = {
+            "image/jpeg": ".jpg",
+            "image/png": ".png",
+            "image/webp": ".webp",
+            "image/gif": ".gif",
+        }.get(content_type.split(";")[0], "")
+        if not extension:
+            extension = Path(urlparse(avatar_url).path).suffix.lower()
+        if extension not in {".jpg", ".jpeg", ".png", ".webp", ".gif"}:
+            extension = ".jpg"
+
+        avatar_path = avatar_dir / f"{username}{extension}"
+        avatar_path.write_bytes(await response.body())
+        return str(
+            avatar_path.relative_to(Path(__file__).resolve().parent.parent)
+        )
+
+    async def _callback(self, event: str, job_id: int, data: dict) -> None:
+        # Callback là nơi duy nhất crawler bàn giao dữ liệu cho backend.
+        headers = {}
+        if self.callback_token:
+            headers["Authorization"] = f"Bearer {self.callback_token}"
+        payload = {"event": event, "job_id": job_id, **data}
+        callback_endpoint = (
+            f"{self.callback_url}/crawl-jobs/{job_id}/events"
+        )
+        async with httpx.AsyncClient(timeout=30) as client:
+            response = await client.post(
+                callback_endpoint,
+                json=payload,
+                headers=headers,
             )
-        )
-
-        self.result_service.save_result(
-            crawl_job_id=job_id,
-            username=username,
-            tiktok_account_id=account_id,
-            followers=profile.followers,
-            following=profile.following,
-            likes=profile.likes,
-            profile_url=profile.profile_url,
-            status="success",
-            crawled_at=profile.crawled_at,
-        )
-
-        print(
-            f"Success @{username} | "
-            f"Followers: {profile.followers} | "
-            f"Following: {profile.following} | "
-            f"Likes: {profile.likes}"
-        )
-
-	# save to database with failed status and error message
-    def save_failed_result(
-        self,
-        job_id,
-        username,
-        profile_url,
-        error,
-    ):
-
-        print(
-            f"Failed @{username}: {error}"
-        )
-
-        try:
-
-            self.result_service.save_result(
-                crawl_job_id=job_id,
-                username=username,
-                tiktok_account_id=None,
-                followers=0,
-                following=0,
-                likes=0,
-                profile_url=profile_url,
-                status="failed",
-                error_message=str(error),
-            )
-
-        except Exception as result_error:
-
-            print(
-                f"Failed to save result: "
-                f"{result_error}"
-            )
+            if response.is_error:
+                try:
+                    error_body = response.json()
+                except ValueError:
+                    error_body = response.text
+                raise RuntimeError(
+                    "Backend callback failed "
+                    f"(HTTP {response.status_code}) at {callback_endpoint}: "
+                    f"{error_body}"
+                )

@@ -15,7 +15,7 @@ def extract_profile(
 
     soup = BeautifulSoup(html, "html.parser")
 
-	# get username from profile page
+    # Lấy username và các chỉ số thống kê từ profile page.
     username_tag = soup.find(
         "h2",
         {"data-e2e": "user-subtitle"}
@@ -27,7 +27,6 @@ def extract_profile(
         else None
     )
 
-	# get followers from profile page
     followers_tag = soup.find(
         "strong",
         {"data-e2e": "followers-count"}
@@ -35,7 +34,6 @@ def extract_profile(
 
     followers = parse_count(followers_tag)
 
-	# get following from profile page
     following_tag = soup.find(
         "strong",
         {"data-e2e": "following-count"}
@@ -43,7 +41,6 @@ def extract_profile(
 
     following = parse_count(following_tag)
 
-	# get likes from profile page
     likes_tag = soup.find(
         "strong",
         {"data-e2e": "likes-count"}
@@ -51,26 +48,51 @@ def extract_profile(
 
     likes = parse_count(likes_tag)
 
+    # Avatar có thể nằm trong img hoặc meta og:image tùy HTML TikTok trả về.
+    avatar_url = extract_avatar_url(soup)
 
     now = datetime.now()
 
-    # create TikTokAccount object
+    # Tạo object trung gian để crawler serialize và gửi qua callback.
     account = TikTokAccount(
         username=username,
         followers=followers,
         following=following,
         likes=likes,
         profile_url=profile_url,
+        avatar_url=avatar_url,
         crawled_at=now,
         status="active" if username else "inactive",
         last_crawled_at=now
     )
 
-    # return the account object
     return account
 
 
-# function to parse count from tag
+def extract_avatar_url(soup: BeautifulSoup) -> str | None:
+    """Extract the profile avatar URL from the profile page HTML."""
+    selectors = (
+        'img[data-e2e="user-avatar"]',
+        'img[alt*="profile photo" i]',
+        'meta[property="og:image"]',
+    )
+
+    for selector in selectors:
+        element = soup.select_one(selector)
+        if not element:
+            continue
+
+        avatar_url = element.get("content") or element.get("src")
+        if avatar_url:
+            return avatar_url.strip()
+
+        srcset = element.get("srcset")
+        if srcset:
+            return srcset.split(",")[0].strip().split(" ")[0]
+
+    return None
+
+
 def parse_count(tag) -> int:
 
     if not tag:
@@ -81,14 +103,13 @@ def parse_count(tag) -> int:
     return parse_count_text(text)
 
 
-# function to parse count from text
 def parse_count_text(text: str) -> int:
 
 
     if not text:
         return 0
 
-    # Normalize text
+    # Chuẩn hóa các dạng 1.2K, 3M, 4B trước khi chuyển sang integer.
     text = (
         text
         .strip()
