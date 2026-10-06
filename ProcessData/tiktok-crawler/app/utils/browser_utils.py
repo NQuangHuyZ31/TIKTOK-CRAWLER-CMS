@@ -1,7 +1,6 @@
 from playwright.async_api import Page
 
 
-# util funtions for browser interactions
 async def open_url(
     page: Page,
     url: str,
@@ -20,34 +19,33 @@ async def open_url(
     await page.wait_for_timeout(wait_time)
 
 
-# util funtions for going back page
 async def go_back(
     page: Page,
-    timeout: int = 5000,
-    wait_time: int = 3000,
+    timeout: int = 7000,
+    wait_time: int = 2500,
 ):
+    """Return from a profile page to the TikTok feed."""
     try:
         await page.go_back(
             wait_until="commit",
             timeout=timeout,
         )
     except Exception as error:
-        print(f"go_back warning: {error}")
+        print(f"Back navigation warning: {error}")
 
     await page.wait_for_timeout(wait_time)
 
 
-# util funtions for scrolling page
 async def scroll_page(
     page: Page,
     distance: int = 700,
     wait_time: int = 2500,
 ):
-    print("Scrolling to next video...")
+    # Đảm bảo sự kiện scroll được gửi vào feed page, không phải profile page.
+    await page.bring_to_front()
+    await page.mouse.move(640, 360)
+    await page.mouse.wheel(0, distance)
+    await page.keyboard.press("PageDown")
 
-    await page.mouse.wheel(
-        0,
-        distance,
-    )
-
+    # TikTok thường cập nhật video bằng JavaScript sau khi nhận wheel/PageDown.
     await page.wait_for_timeout(wait_time)

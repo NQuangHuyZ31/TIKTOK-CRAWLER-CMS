@@ -1,7 +1,8 @@
+import re
+
 from playwright.async_api import Page
 
 
-# util funtions for normalizing username
 def normalize_username(username: str) -> str:
     return (
         username
@@ -12,59 +13,71 @@ def normalize_username(username: str) -> str:
     )
 
 
-# util function for extracting username from video
+def extract_username_from_href(href: str | None) -> str | None:
+    if not href or "/@" not in href:
+        return None
+
+    username = normalize_username(href.split("/@")[-1])
+
+    return username if is_valid_username(username) else None
+
+
+def is_valid_username(username: str) -> bool:
+    placeholders = {
+        "profile",
+        "user",
+        "username",
+        "unknown",
+        "follow",
+    }
+
+    return (
+        bool(re.fullmatch(r"[A-Za-z0-9._]{2,24}", username))
+        and username.lower() not in placeholders
+    )
+
+
+def build_profile_url(username: str) -> str:
+    return f"https://www.tiktok.com/@{username}"
+
+
 async def extract_username_from_video(
     page: Page,
-):
+    excluded_usernames: set[str] | None = None,
+) -> str | None:
+
+    excluded_usernames = excluded_usernames or set()
+
     selectors = [
-        'a[data-e2e="video-author-avatar"]',
         'a[data-e2e="video-author-uniqueid"]',
-        'a[href^="/@"]',
+        'a[data-e2e="video-author-avatar"]',
     ]
 
     for selector in selectors:
-
         try:
-            element = page.locator(
-                selector
-            ).first
+            elements = page.locator(selector)
 
-            if await element.count() == 0:
-                continue
+            count = await elements.count()
 
-            href = await element.get_attribute(
-                "href"
-            )
+            for index in range(count):
+                element = elements.nth(index)
 
-            if href and "/@" in href:
+                if not await element.is_visible():
+                    continue
 
-                username = (
-                    href
-                    .split("/@")[-1]
-                    .split("?")[0]
-                    .strip("/")
-                )
+                href = await element.get_attribute("href")
 
-                if username:
-                    return normalize_username(
-                        username
-                    )
+                username = extract_username_from_href(href)
 
-            text = await element.inner_text()
+                if not username:
+                    continue
 
-            if text:
+                if username in excluded_usernames:
+                    continue
 
-                text = normalize_username(text)
-
-                if text:
-                    return text
+                return username
 
         except Exception:
             continue
 
     return None
-
-
-# util function for building profile url
-def build_profile_url(username: str) -> str:
-    return f"https://www.tiktok.com/@{username}"

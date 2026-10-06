@@ -1,4 +1,7 @@
 from datetime import datetime
+import json
+from html import unescape
+from urllib.parse import urlparse
 
 from bs4 import BeautifulSoup
 
@@ -73,6 +76,7 @@ def extract_avatar_url(soup: BeautifulSoup) -> str | None:
     """Extract the profile avatar URL from the profile page HTML."""
     selectors = (
         'img[data-e2e="user-avatar"]',
+        'img[data-e2e*="avatar"]',
         'img[alt*="profile photo" i]',
         'meta[property="og:image"]',
     )
@@ -82,13 +86,72 @@ def extract_avatar_url(soup: BeautifulSoup) -> str | None:
         if not element:
             continue
 
-        avatar_url = element.get("content") or element.get("src")
-        if avatar_url:
-            return avatar_url.strip()
+        for attribute in ("content", "src", "data-src", "data-lazy-src"):
+            avatar_url = normalize_avatar_url(element.get(attribute))
+            if avatar_url:
+                return avatar_url
 
-        srcset = element.get("srcset")
-        if srcset:
-            return srcset.split(",")[0].strip().split(" ")[0]
+        avatar_url = normalize_avatar_url(element.get("srcset"))
+        if avatar_url:
+            return avatar_url
+
+    # TikTok frequently stores the rendered profile data in JSON script tags
+    # instead of exposing the avatar as a stable DOM attribute.
+    avatar_keys = (
+        "avatarLarger",
+        "avatarMedium",
+        "avatarThumb",
+        "avatar_url",
+        "avatarUrl",
+    )
+    for script in soup.select("script"):
+        script_text = script.string or script.get_text()
+        if not script_text:
+            continue
+
+        try:
+            data = json.loads(script_text)
+        except (TypeError, json.JSONDecodeError):
+            continue
+
+        avatar_url = find_avatar_in_json(data, avatar_keys)
+        if avatar_url:
+            return avatar_url
+
+    return None
+
+
+def normalize_avatar_url(value: str | None) -> str | None:
+    """Normalize an image URL or srcset candidate from TikTok HTML."""
+    if not value:
+        return None
+
+    candidate = unescape(value).strip().split(",")[0].split(" ")[0]
+    candidate = candidate.replace("\\/", "/").replace("\\u002F", "/")
+    parsed = urlparse(candidate)
+
+    if parsed.scheme in {"http", "https"} and parsed.netloc:
+        return candidate
+
+    return None
+
+
+def find_avatar_in_json(value, avatar_keys: tuple[str, ...]) -> str | None:
+    """Recursively find a profile avatar URL in embedded TikTok JSON."""
+    if isinstance(value, dict):
+        for key in avatar_keys:
+            avatar_url = normalize_avatar_url(value.get(key))
+            if avatar_url:
+                return avatar_url
+        for nested_value in value.values():
+            avatar_url = find_avatar_in_json(nested_value, avatar_keys)
+            if avatar_url:
+                return avatar_url
+    elif isinstance(value, list):
+        for item in value:
+            avatar_url = find_avatar_in_json(item, avatar_keys)
+            if avatar_url:
+                return avatar_url
 
     return None
 
