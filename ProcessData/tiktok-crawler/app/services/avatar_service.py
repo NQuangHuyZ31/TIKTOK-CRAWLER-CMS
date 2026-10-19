@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -5,10 +6,24 @@ from urllib.parse import urlparse
 class AvatarService:
 
     def __init__(self):
-        self.avatar_dir = (
-            Path(__file__).resolve().parent.parent.parent
+        self.project_root = Path(__file__).resolve().parents[4]
+        self.public_storage_dir = (
+            self.project_root
+            / "cms-tiktok-crawler"
+            / "storage"
+            / "app"
+            / "public"
+        )
+        default_avatar_dir = (
+            self.public_storage_dir
+            / "tiktok-accounts"
             / "avatars"
         )
+        configured_avatar_dir = os.getenv("AVATAR_DIR")
+        self.avatar_dir = Path(
+            configured_avatar_dir
+            or default_avatar_dir
+        ).resolve()
 
         self.avatar_dir.mkdir(
             parents=True,
@@ -74,8 +89,9 @@ class AvatarService:
             await response.body()
         )
 
-        return str(
-            path.relative_to(
-                self.avatar_dir.parent
-            )
-        )
+        try:
+            relative_path = path.relative_to(self.public_storage_dir)
+        except ValueError:
+            relative_path = path
+
+        return str(relative_path).replace("\\", "/")

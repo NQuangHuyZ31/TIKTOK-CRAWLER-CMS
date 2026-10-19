@@ -1,8 +1,9 @@
 Develop TikTok profile crawler.
 
 Avatar được lấy từ trang profile và tải vào thư mục
-`ProcessData/tiktok-crawler/avatars`. Đường dẫn file và URL gốc được gửi
-trong callback để backend lưu vào database.
+`cms-tiktok-crawler/storage/app/public/tiktok-account/avatars`. Đường dẫn
+public tương đối và URL gốc được gửi trong callback để backend lưu vào
+database. Có thể ghi đè thư mục lưu avatar bằng biến môi trường `AVATAR_DIR`.
 
 ## Service API
 
