@@ -29,6 +29,34 @@ export default defineConfig({
         },
     },
 
+    build: {
+        chunkSizeWarningLimit: 1000,
+        rollupOptions: {
+            output: {
+                manualChunks(id) {
+                    if (id.includes('node_modules')) {
+                        if (id.includes('@ant-design/icons')) {
+                            return 'vendor-icons';
+                        }
+                        if (id.includes('antd') || id.includes('rc-')) {
+                            return 'vendor-antd';
+                        }
+                        if (id.includes('react') || id.includes('react-dom') || id.includes('react-router-dom')) {
+                            return 'vendor-react';
+                        }
+                        if (id.includes('@reduxjs') || id.includes('react-redux')) {
+                            return 'vendor-redux';
+                        }
+                        if (id.includes('axios')) {
+                            return 'vendor-axios';
+                        }
+                        return 'vendor';
+                    }
+                },
+            },
+        },
+    },
+
     server: {
         proxy: {
             '/api': {

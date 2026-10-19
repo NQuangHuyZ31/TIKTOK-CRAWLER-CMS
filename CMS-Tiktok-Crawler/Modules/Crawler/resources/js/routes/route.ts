@@ -1,8 +1,10 @@
-import CrawlJobsPage from '../pages/CrawlJobsPage';
-import CreateCrawlJobPage from '../pages/CreateCrawlJobPage';
-import CrawlJobDetailPage from '../pages/CrawlJobDetailPage';
-import EditCrawlJobPage from '../pages/EditCrawlJobPage';
+import { lazy } from 'react';
 import type { RouteDef } from '../../../../Core/resources/js/routes/registry';
+
+const CrawlJobsPage = lazy(() => import('../pages/CrawlJobsPage'));
+const CreateCrawlJobPage = lazy(() => import('../pages/CreateCrawlJobPage'));
+const CrawlJobDetailPage = lazy(() => import('../pages/CrawlJobDetailPage'));
+const EditCrawlJobPage = lazy(() => import('../pages/EditCrawlJobPage'));
 
 const crawlerRoutes: RouteDef[] = [
     {

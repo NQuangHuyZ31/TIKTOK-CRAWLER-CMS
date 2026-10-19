@@ -1,7 +1,9 @@
-import TiktokAccountPage from '../pages/TiktokAccountPage';
-import TiktokAccountDetailPage from '../pages/TiktokAccountDetailPage';
-import TiktokAccountEditPage from '../pages/TiktokAccountEditPage';
+import { lazy } from 'react';
 import type { RouteDef } from '../../../../Core/resources/js/routes/registry';
+
+const TiktokAccountPage = lazy(() => import('../pages/TiktokAccountPage'));
+const TiktokAccountDetailPage = lazy(() => import('../pages/TiktokAccountDetailPage'));
+const TiktokAccountEditPage = lazy(() => import('../pages/TiktokAccountEditPage'));
 
 const tiktokAccountRoutes: RouteDef[] = [
     {
