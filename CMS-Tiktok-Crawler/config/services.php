@@ -35,4 +35,9 @@ return [
         ],
     ],
 
+    'crawler' => [
+        'url' => env('CRAWLER_SERVICE_URL', 'http://127.0.0.1:8001'),
+        // 'token' => env('CRAWLER_SERVICE_TOKEN'),
+    ],
+
 ];

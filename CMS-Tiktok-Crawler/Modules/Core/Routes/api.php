@@ -1,9 +1,8 @@
-<?php
+﻿<?php
 
 use Illuminate\Support\Facades\Route;
 use Modules\Core\Controllers\DynamicModuleController;
 
-// Core owns the route resolver so new modules do not require core route edits.
 Route::match(
     ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
     '/{module}/{controller}/{action}/{parameters?}',

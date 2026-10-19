@@ -21,6 +21,7 @@ return new class extends Migration
             $table->enum('status', ['active', 'inactive'])->default('active');
             $table->datetime('crawled_at')->nullable();
             $table->datetime('last_crawled_at')->nullable();
+            $table->softDeletes();
             $table->timestamps();
         });
     }

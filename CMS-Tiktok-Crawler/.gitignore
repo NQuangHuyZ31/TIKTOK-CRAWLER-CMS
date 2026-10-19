@@ -28,3 +28,8 @@ Homestead.yaml
 Thumbs.db
 CLAUDE.md
 AGENTS.md
+.prettierrc
+jsconfig.json
+.agents/rules/*
+PROJECT_SUMMARY.md
+/dist

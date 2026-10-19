@@ -1,10 +1,19 @@
-<?php
+﻿<?php
 
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-// Route::get('/user', function (Request $request) {
-//     return $request->user();
-// })->middleware('auth:sanctum');
+// 1. Explicit module routes
+if (file_exists(base_path('Modules/API/routes/api.php'))) {
+    Route::group([], base_path('Modules/API/routes/api.php'));
+}
+if (file_exists(base_path('Modules/Crawler/routes/api.php'))) {
+    Route::group([], base_path('Modules/Crawler/routes/api.php'));
+}
+if (file_exists(base_path('Modules/TiktokAccount/routes/api.php'))) {
+    Route::group([], base_path('Modules/TiktokAccount/routes/api.php'));
+}
 
-require __DIR__ . '/../Modules/Crawler/Routes/api.php';
+// 2. Dynamic module route dispatcher (Core)
+if (file_exists(base_path('Modules/Core/routes/api.php'))) {
+    Route::group([], base_path('Modules/Core/routes/api.php'));
+}

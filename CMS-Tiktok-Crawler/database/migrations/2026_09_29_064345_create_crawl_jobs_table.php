@@ -15,11 +15,14 @@ return new class extends Migration
             $table->id();
             $table->dateTime('started_at')->nullable();
             $table->dateTime('finished_at')->nullable();
-            $table->enum('status', ['pending', 'in_progress', 'completed', 'failed'])->default('pending');
+            $table->enum('status', ['pending', 'running', 'completed', 'failed'])->default('pending');
+            $table->string('source_type')->nullable();
+            $table->text('data_crawls')->nullable();
             $table->integer('total_accounts')->default(0);
             $table->integer('success_count')->default(0);
             $table->integer('failed_count')->default(0);
             $table->text('error_message')->nullable();
+            $table->softDeletes();
             $table->timestamps();
         });
     }

@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::table('crawl_results', function (Blueprint $table) {
             //
-            $table->string('avatar_url')->nullable()->after('profile_url');
-            $table->string('avatar_path')->nullable()->after('avatar_url');
+            $table->text('avatar_url')->nullable()->after('profile_url');
+            $table->text('avatar_path')->nullable()->after('avatar_url');
         });
     }
 

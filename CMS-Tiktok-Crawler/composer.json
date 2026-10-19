@@ -30,7 +30,10 @@
             "App\\": "app/",
             "Database\\Factories\\": "database/factories/",
             "Database\\Seeders\\": "database/seeders/",
-            "Modules\\": "Modules/"
+            "Modules\\Core\\": "Modules/Core/src/",
+            "Modules\\Crawler\\": "Modules/Crawler/src/",
+            "Modules\\TiktokAccount\\": "Modules/TiktokAccount/src/",
+            "Modules\\API\\": "Modules/API/src/"
         }
     },
     "autoload-dev": {
