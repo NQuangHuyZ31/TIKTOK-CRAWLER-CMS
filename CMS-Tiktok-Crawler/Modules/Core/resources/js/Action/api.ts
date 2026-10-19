@@ -1,4 +1,4 @@
-﻿import axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios';
+import axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios';
 
 export class ApiError extends Error {
     status: number;
