@@ -1,39 +1,25 @@
 {
-  "compilerOptions": {
-    "target": "ESNext",
-    "useDefineForClassFields": true,
-    "lib": [
-      "DOM",
-      "DOM.Iterable",
-      "ESNext"
-    ],
-    "allowJs": true,
-    "skipLibCheck": true,
-    "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
-    "strict": false,
-    "forceConsistentCasingInFileNames": true,
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "noEmit": true,
-    "jsx": "react-jsx",
-    "paths": {
-      "@/*": [
-        "./resources/js/*"
-      ],
-      "@modules/*": [
-        "./Modules/*"
-      ],
-      "@core/*": [
-        "./Modules/Core/resources/js/*"
-      ]
-    }
-  },
-  "include": [
-    "resources/js/**/*",
-    "Modules/**/resources/js/**/*",
-    "vite.config.ts"
-  ]
+	"compilerOptions": {
+		"target": "ESNext",
+		"useDefineForClassFields": true,
+		"lib": ["DOM", "DOM.Iterable", "ESNext"],
+		"allowJs": true,
+		"skipLibCheck": true,
+		"esModuleInterop": true,
+		"allowSyntheticDefaultImports": true,
+		"strict": false,
+		"forceConsistentCasingInFileNames": true,
+		"module": "ESNext",
+		"moduleResolution": "bundler",
+		"resolveJsonModule": true,
+		"isolatedModules": true,
+		"noEmit": true,
+		"jsx": "react-jsx",
+		"paths": {
+			"@/*": ["./modules/Core/resources/js/*"],
+			"@modules/*": ["./modules/*"],
+			"@core/*": ["./modules/Core/resources/js/*"]
+		}
+	},
+	"include": ["modules/**/resources/js/**/*", "vite.config.ts"]
 }

@@ -1,5 +1,6 @@
-import ModuleRoute from './moduleRoutes'
-import NotFound from '../pages/NotFound'
+import ModuleRoute from './moduleRoutes';
+import NotFound from '../pages/NotFound';
+import DashboardPage from '../pages/DashboardPage';
 
 const publicRoutes = [
 	{
@@ -9,6 +10,10 @@ const publicRoutes = [
 ];
 
 const privateRoutes = [
+	{
+		path: '/dashboard',
+		component: DashboardPage
+	},
 	...ModuleRoute
 ];
 
