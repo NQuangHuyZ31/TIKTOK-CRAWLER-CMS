@@ -8,8 +8,8 @@ import {
 import {
 	PlusOutlined,
 } from '@ant-design/icons';
-import StatisticSummary from '@modules/TiktokAccount/resources/js/components/StatisticSummary';
-import TiktokAccountTableList from '@modules/TiktokAccount/resources/js/components/TiktokAccountTableList';
+import StatisticSummary from '../components/StatisticSummary';
+import TiktokAccountTableList from '../components/TiktokAccountTableList';
 
 const { Text, Title } = Typography;
 

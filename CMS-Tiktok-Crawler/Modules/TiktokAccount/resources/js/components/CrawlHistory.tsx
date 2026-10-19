@@ -1,8 +1,8 @@
 import React, { useEffect } from 'react';
-import { useDispatch, useSelector } from '@core/store';
-import { setParams } from '@modules/TiktokAccount/resources/js/store/tiktokAccount/tiktokAccountSlice';
-import { fetchResultsByAccountID } from '@modules/TiktokAccount/resources/js/store/tiktokAccount/tiktokAccountThunks';
-import CrawlResultTable from '@modules/Crawler/resources/js/components/CrawlResultTable';
+import { useDispatch, useSelector } from '../../../../Core/resources/js/store';
+import { setParams } from '../store/tiktokAccount/tiktokAccountSlice';
+import { fetchResultsByAccountID } from '../store/tiktokAccount/tiktokAccountThunks';
+import CrawlResultTable from '../../../../Crawler/resources/js/components/CrawlResultTable';
 import { Alert } from 'antd';
 
 const CrawlHistory = ({ accountId }) => {

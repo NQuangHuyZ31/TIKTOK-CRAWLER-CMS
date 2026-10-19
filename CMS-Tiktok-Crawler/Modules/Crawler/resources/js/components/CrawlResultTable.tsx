@@ -1,9 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import TableComponent from '@core/components/Table';
-import { crawlResultColumnConfig } from '@modules/Crawler/resources/js/configs/tableConfig';
-import StatusTag from '@core/components/StatusTag';
-import SearchColumnTable from '@core/components/SearchColumnTable';
+import TableComponent from '../../../../Core/resources/js/components/Table';
+import { crawlResultColumnConfig } from '../configs/tableConfig';
+import StatusTag from '../../../../Core/resources/js/components/StatusTag';
+import SearchColumnTable from '../../../../Core/resources/js/components/SearchColumnTable';
 
 const CrawlResultTable = ({ data, setParams, params, loading, pagination, dispatch, error }) => {
 	// config column

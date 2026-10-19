@@ -12,16 +12,16 @@ import {
 	SaveOutlined,
 } from '@ant-design/icons';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useDispatch, useSelector } from '@core/store';
+import { useDispatch, useSelector } from '../../../../Core/resources/js/store';
 
 import {
 	fetchTiktokAccountByID,
 	updateTiktokAccount,
-} from '@modules/TiktokAccount/resources/js/store/tiktokAccount/tiktokAccountThunks';
+} from '../store/tiktokAccount/tiktokAccountThunks';
 
-import SpinComponent from '@core/components/SpinComponent';
-import AccountFields from '@modules/TiktokAccount/resources/js/components/AccountField';
-import AvatarUpload from '@modules/TiktokAccount/resources/js/components/AvatarUpload';
+import SpinComponent from '../../../../Core/resources/js/components/SpinComponent';
+import AccountFields from '../components/AccountField';
+import AvatarUpload from '../components/AvatarUpload';
 
 const { Text, Title } = Typography;
 

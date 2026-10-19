@@ -1,5 +1,5 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import tiktokAccountAPI from "@modules/TiktokAccount/resources/js/Action/tiktokAccount";
+import tiktokAccountAPI from "../../Action/tiktokAccount";
 
 export const fechAllTiktokAccounts = createAsyncThunk<any, any>(
 	'tiktokAccount/fetchAllTiktokAccounts',

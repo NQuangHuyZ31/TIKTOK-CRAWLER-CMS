@@ -1,6 +1,6 @@
 import { Layout, Menu } from 'antd';
 import { NavLink, useLocation } from 'react-router-dom';
-import { menuSidebarConfig } from '@core/configs/menuConfig';
+import { menuSidebarConfig } from '../configs/menuConfig';
 
 const { Sider } = Layout;
 

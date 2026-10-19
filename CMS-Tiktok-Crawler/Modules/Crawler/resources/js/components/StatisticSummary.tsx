@@ -7,10 +7,10 @@ import {
 	UserDeleteOutlined,
 } from '@ant-design/icons';
 import { App as AntdApp } from 'antd';
-import { useDispatch, useSelector } from '@core/store';
-import { fetchStatisticsSummary } from '@modules/Crawler/resources/js/store/crawlJob/crawlJobThunks';
-import CardKPI from '@core/components/CardKPI';
-import SpinComponent from '@core/components/SpinComponent';
+import { useDispatch, useSelector } from '../../../../Core/resources/js/store';
+import { fetchStatisticsSummary } from '../store/crawlJob/crawlJobThunks';
+import CardKPI from '../../../../Core/resources/js/components/CardKPI';
+import SpinComponent from '../../../../Core/resources/js/components/SpinComponent';
 
 
 const StatisticSummary = () => {

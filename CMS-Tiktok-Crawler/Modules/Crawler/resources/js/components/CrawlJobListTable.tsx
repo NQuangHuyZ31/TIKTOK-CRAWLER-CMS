@@ -1,14 +1,14 @@
 import { useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { useDispatch, useSelector } from '@core/store';
+import { useDispatch, useSelector } from '../../../../Core/resources/js/store';
 import { Space, Alert } from 'antd';
-import { fetchCrawlJobs } from '@modules/Crawler/resources/js/store/crawlJob/crawlJobThunks';
-import { setParams } from '@modules/Crawler/resources/js/store/crawlJob/crawlJobSlice';
-import StatusTag from '@core/components/StatusTag';
-import TableComponent from '@core/components/Table';
-import { crawlJobColumnConfig } from '@modules/Crawler/resources/js/configs/tableConfig';
-import SearchColumnTable from '@core/components/SearchColumnTable';
-import DeleteCrawlJobButton from '@modules/Crawler/resources/js/components/DeleteCrawlJobButton';
+import { fetchCrawlJobs } from '../store/crawlJob/crawlJobThunks';
+import { setParams } from '../store/crawlJob/crawlJobSlice';
+import StatusTag from '../../../../Core/resources/js/components/StatusTag';
+import TableComponent from '../../../../Core/resources/js/components/Table';
+import { crawlJobColumnConfig } from '../configs/tableConfig';
+import SearchColumnTable from '../../../../Core/resources/js/components/SearchColumnTable';
+import DeleteCrawlJobButton from './DeleteCrawlJobButton';
 
 export default function CrawlJobListTable() {
 	const dispatch = useDispatch();

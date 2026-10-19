@@ -1,58 +1,376 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# CMS TikTok Crawler
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+> Hệ thống quản lý, giám sát và thu thập dữ liệu tài khoản TikTok chuyên nghiệp, được xây dựng theo kiến trúc **Modular Monorepo (chuẩn Ureka)** với backend **Laravel 11/12** và frontend **React 18 + TypeScript + Ant Design 5**.
 
-## About Laravel
+---
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## 📑 Mục lục
+- [1. Giới thiệu tổng quan](#1-giới-thiệu-tổng-quan)
+- [2. Điểm nổi bật về kiến trúc](#2-điểm-nổi-bật-về-kiến-trúc)
+- [3. Tính năng chính](#3-tính-năng-chính)
+- [4. Công nghệ sử dụng](#4-công-nghệ-sử-dụng)
+- [5. Cấu trúc thư mục dự án](#5-cấu-trúc-thư-mục-dự-án)
+- [6. Yêu cầu hệ thống](#6-yêu-cầu-hệ-thống)
+- [7. Hướng dẫn cài đặt](#7-hướng-dẫn-cài-đặt)
+- [8. Khởi chạy dự án](#8-khởi-chạy-dự-án)
+- [9. Danh sách API chính](#9-danh-sách-api-chính)
+- [10. Kiểm thử & Kiểm tra chất lượng](#10-kiểm-thử--kiểm-tra-chất-lượng)
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+---
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## 1. Giới thiệu tổng quan
 
-## Learning Laravel
+**CMS TikTok Crawler** là nền tảng quản trị và điều phối thu thập thông tin tài khoản TikTok. Hệ thống cho phép:
+- Lên lịch và điều phối các tác vụ crawl dữ liệu TikTok từ nhiều nguồn (danh sách username, link URL, số lượng tài khoản hoặc tài khoản có sẵn trong cơ sở dữ liệu).
+- Đồng bộ hóa kết quả crawl tự động thông qua webhook callback từ Python Crawler Service.
+- Quản lý hồ sơ tài khoản TikTok: thông tin cá nhân, chỉ số tương tác (followers, following, likes), trạng thái hoạt động và lưu trữ avatar về storage cục bộ.
+- Báo cáo thống kê KPI trực quan và theo dõi chi tiết lịch sử thu thập dữ liệu theo thời gian thực.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+---
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## 2. Điểm nổi bật về kiến trúc
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+Hệ thống được tái cấu trúc hoàn toàn theo mô hình **Ureka Enterprise Architecture**:
 
-## Agentic Development
+1. **100% TypeScript**:
+   - Toàn bộ frontend được viết bằng TypeScript (`.ts` và `.tsx`) với `tsconfig.json` cấu hình path aliases chuẩn (`@/*`, `@modules/*`, `@core/*`).
+   - Kiểm tra kiểu dữ liệu tĩnh nghiêm ngặt (`npx tsc --noEmit` đạt 0 error).
 
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+2. **Laravel Blade Shell (Không dùng `index.html` độc lập)**:
+   - Thay thế hoàn toàn file HTML tĩnh bằng template Blade chuẩn Laravel: [`resources/views/app.blade.php`](resources/views/app.blade.php).
+   - Tích hợp trực tiếp Vite qua `@viteReactRefresh` và `@vite(['resources/css/app.css', 'resources/js/app.tsx'])`.
+   - Cơ chế SPA Catch-all Route tại `routes/web.php` hỗ trợ React Router điều hướng mượt mà và bảo mật CSRF Token tự động.
 
-```bash
-composer require laravel/boost --dev
+3. **Cấu trúc Module Backend Chuẩn Ureka**:
+   - Mã nguồn PHP của mỗi module đặt gọn gàng trong `Modules/<ModuleName>/src/` (Controllers, Models, Repositories, Services, Requests, Resources, Providers).
+   - Route API phân tách riêng biệt tại `Modules/<ModuleName>/routes/api.php`.
+   - Composer PSR-4 tự động ánh xạ class namespace chuẩn xác.
 
-php artisan boost:install
+4. **Cấu trúc Module Frontend Đồng Bộ**:
+   - Mỗi module frontend đặt tại `Modules/<ModuleName>/resources/js/` bao gồm:
+     - `Action/`: Các hàm gọi API có định kiểu (Typed API Clients).
+     - `components/`: Thành phần giao diện tái sử dụng.
+     - `pages/`: Các trang tính năng.
+     - `routes/`: Cấu hình route con của module.
+     - `store/`: Redux slice và thunk tương ứng.
+
+5. **Central Core API Client**:
+   - Triển khai tại [`Modules/Core/resources/js/Action/api.ts`](Modules/Core/resources/js/Action/api.ts) theo kiến trúc Ureka.
+   - Tự động lấy CSRF token từ thẻ `<meta name="csrf-token">`, gắn header `X-Requested-With: XMLHttpRequest`.
+   - Xử lý lỗi tập trung với class `ApiError` chuẩn hóa thông báo lỗi từ server.
+
+6. **Typed State Management**:
+   - Quản trị state bằng Redux Toolkit với các hook định kiểu sẵn [`Modules/Core/resources/js/store/index.ts`](Modules/Core/resources/js/store/index.ts): `useAppDispatch`, `useAppSelector`, `useDispatch`, `useSelector`.
+
+---
+
+## 3. Tính năng chính
+
+### 🔄 Quản lý Crawl Jobs (`Modules/Crawler`)
+- **Tạo job thu thập linh hoạt**: Hỗ trợ 4 nguồn đầu vào:
+  1. *Usernames*: Nhập danh sách username TikTok (mỗi dòng một username).
+  2. *URLs*: Nhập danh sách đường dẫn trang cá nhân TikTok.
+  3. *Database*: Chọn các tài khoản có sẵn trong cơ sở dữ liệu hệ thống.
+  4. *Count*: Thu thập tự động theo số lượng chỉ định.
+- **Bảng điều khiển KPI**: Tổng số jobs, jobs hoàn thành, jobs thất bại, tổng số tài khoản đã crawl.
+- **Danh sách & Bộ lọc**: Tìm kiếm, sắp xếp, phân trang và xem chi tiết tiến độ từng job.
+- **Chi tiết Job**: Theo dõi kết quả từng tài khoản (avatar, trạng thái, thời gian chạy, log lỗi nếu có).
+- **Thao tác nhanh**: Khởi chạy lại job (Start Job), xóa job khỏi hệ thống.
+
+### 👥 Quản lý Tài khoản TikTok (`Modules/TiktokAccount`)
+- **Danh sách tài khoản**: Bảng dữ liệu hiển thị avatar, username, số lượng followers, following, likes, trạng thái (`active` / `inactive`).
+- **Tìm kiếm & Sắp xếp**: Sắp xếp đa tiêu chí theo followers, likes, trạng thái; lọc theo từ khóa.
+- **Chi tiết hồ sơ**: Xem đầy đủ thông tin cá nhân và lịch sử crawl dữ liệu liên quan của tài khoản.
+- **Chỉnh sửa & Tải lên Avatar**: Cập nhật thông tin tài khoản, tải lên avatar mới (tự động lưu vào storage cục bộ).
+- **Xóa tài khoản**: Hỗ trợ xóa tài khoản khỏi cơ sở dữ liệu.
+
+### 🌐 Webhook & Tích hợp Microservice (`Modules/API` & `ProcessData`)
+- Tiếp nhận sự kiện webhook bất đồng bộ từ Python Crawler Service qua endpoint:
+  `POST /api/public/crawler/crawl-jobs/{jobId}/events`
+- Tự động lưu trữ avatar vào: `storage/app/public/tiktok-accounts/avatars/`.
+- Cập nhật thời gian thực kết quả crawl vào bảng `crawl_results` và cập nhật thông số tài khoản vào bảng `tiktok_accounts`.
+
+---
+
+## 4. Công nghệ sử dụng
+
+| Lĩnh vực | Công nghệ | Phiên bản / Mô tả |
+| :--- | :--- | :--- |
+| **Backend Framework** | Laravel | v11 / v12 (PHP 8.2+) |
+| **Kiến trúc Module** | PSR-4 Modules | `Modules/*/src/` & `Modules/*/routes/` |
+| **Frontend Framework** | React | v18 |
+| **Ngôn ngữ Frontend** | TypeScript | v5.8+ (Strict Type Checking) |
+| **UI Component Library** | Ant Design | v5.x |
+| **Styling** | Tailwind CSS + CSS Modules | v4.x |
+| **Build Tool & Bundler** | Vite (via Laravel Vite Plugin) | v8.x |
+| **State Management** | Redux Toolkit & React-Redux | v2.x & v9.x |
+| **Router** | React Router DOM | v6.x |
+| **Icons** | Ant Design Icons | v5.x |
+| **Cơ sở dữ liệu** | MySQL / MariaDB | v8.0+ |
+| **Crawler Engine** | Python (Playwright / FastAPI) | v3.10+ (Thư mục `ProcessData/tiktok-crawler`) |
+
+---
+
+## 5. Cấu trúc thư mục dự án
+
+```
+cms-tiktok-crawler/
+├── app/                                 # Laravel Core Framework code
+├── bootstrap/
+│   ├── app.php                          # Bootstrap Laravel 11/12 (Routing, Middleware, Exceptions)
+│   └── providers.php                    # Service Providers đăng ký
+├── config/                              # Cấu hình hệ thống (app, database, cors, services...)
+├── database/
+│   └── migrations/                      # Database Schema Migrations (tiktok_accounts, crawl_jobs, crawl_results...)
+├── Modules/                             # Tầng Module nghiệp vụ (Kiến trúc Ureka)
+│   ├── API/                             # Module API công khai / Webhook
+│   │   ├── routes/api.php               # Route webhook callback từ crawler
+│   │   └── src/Controllers/, Requests/
+│   ├── Core/                            # Module lõi dùng chung
+│   │   ├── resources/js/
+│   │   │   ├── Action/api.ts            # Central API Client (CSRF, ApiError, Typed HTTP methods)
+│   │   │   ├── components/              # CardKPI, Table, CustomModal, Spin, StatusTag...
+│   │   │   ├── layouts/                 # MainLayout, Header, Sidebar, Footer
+│   │   │   ├── pages/                   # DashboardPage, NotFoundPage
+│   │   │   ├── store/index.ts          # Root Redux Store & Typed Hooks (useAppDispatch, useAppSelector)
+│   │   │   └── utils/                   # formatCurrency, validation helpers
+│   │   ├── routes/api.php               # Dynamic Module Controller routes
+│   │   └── src/Controllers/, Middleware/, Utils/
+│   ├── Crawler/                         # Module Quản lý Crawl Jobs
+│   │   ├── resources/js/
+│   │   │   ├── Action/                  # crawlJob.ts, crawlResult.ts (API calls)
+│   │   │   ├── components/              # CrawlJobListTable, StatisticSummary, DeleteCrawlJobButton...
+│   │   │   ├── configs/tableConfig.ts   # Cấu hình bảng dữ liệu
+│   │   │   ├── pages/                   # CrawlJobsPage, CrawlJobDetailPage, Create, Edit
+│   │   │   ├── routes/route.ts          # Route definitions cho Crawler
+│   │   │   └── store/                   # crawlJobSlice.ts, crawlJobThunks.ts...
+│   │   ├── routes/api.php               # API endpoints cho Crawler (/api/crawlers/...)
+│   │   └── src/                         # Controllers, Models, Repositories, Services, Requests...
+│   └── TiktokAccount/                   # Module Quản lý Tài khoản TikTok
+│       ├── resources/js/
+│       │   ├── Action/tiktokAccount.ts  # API calls cho tài khoản TikTok
+│       │   ├── components/              # TiktokAccountTableList, AvatarUpload, DeleteAccount...
+│       │   ├── configs/columnConfig.ts  # Cấu hình cột hiển thị & bộ lọc
+│       │   ├── pages/                   # TiktokAccountPage, DetailPage, EditPage
+│       │   ├── routes/route.ts          # Route definitions cho TiktokAccount
+│       │   └── store/                   # tiktokAccountSlice.ts, tiktokAccountThunks.ts
+│       ├── routes/api.php               # API endpoints cho TikTok Accounts (/api/tiktok-accounts/...)
+│       └── src/                         # Controllers, Models, Repositories, Services, Requests...
+├── public/
+│   └── build/                           # Thư mục chứa production bundle do Vite sinh ra
+├── resources/
+│   ├── css/app.css                      # Global Tailwind & Ant Design Reset styles
+│   ├── js/
+│   │   ├── app.tsx                      # Entry point React DOM mount
+│   │   ├── App.tsx                      # Root component chứa Provider & AppLayout Routing
+│   │   └── vite-env.d.ts                # TypeScript declarations cho Vite
+│   └── views/
+│       └── app.blade.php                # Blade template duy nhất (@viteReactRefresh, @vite)
+├── routes/
+│   ├── api.php                          # Master API routes loader (nạp routes từ Modules)
+│   ├── web.php                          # SPA catch-all route {any?} -> view('app')
+│   └── console.php
+├── storage/
+│   └── app/public/                      # Public storage (lưu avatar tài khoản TikTok)
+├── composer.json                        # Khai báo PSR-4: "Modules\<Name>\": "Modules/<Name>/src/"
+├── package.json                         # Dependencies frontend & scripts (dev, build, tsc)
+├── tsconfig.json                        # Cấu hình TypeScript & path aliases
+└── vite.config.ts                       # Cấu hình Laravel Vite Plugin
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+---
 
-## Contributing
+## 6. Yêu cầu hệ thống
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+Trước khi cài đặt, hãy đảm bảo máy chủ/môi trường phát triển đã cài đặt:
+- **PHP**: `>= 8.2` (Khuyến nghị PHP 8.3) với các extensions: `pdo`, `pdo_mysql`, `mbstring`, `openssl`, `curl`, `fileinfo`.
+- **Composer**: `>= 2.2`
+- **Node.js**: `>= 18.x` (Khuyến nghị Node.js v20 hoặc v22+) & **npm**: `>= 9.x`
+- **Cơ sở dữ liệu**: MySQL `>= 8.0` hoặc MariaDB `>= 10.4`
+- *(Tùy chọn nếu chạy Crawler Service)*: **Python**: `>= 3.10`
 
-## Code of Conduct
+---
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+## 7. Hướng dẫn cài đặt
 
-## Security Vulnerabilities
+Thực hiện các bước sau để thiết lập dự án trên môi trường cục bộ:
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+### Bước 1: Sao chép file cấu hình môi trường
+```bash
+cp .env.example .env
+```
 
-## License
+### Bước 2: Cài đặt PHP dependencies
+```bash
+composer install
+```
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+### Bước 3: Tạo Application Key
+```bash
+php artisan key:generate
+```
+
+### Bước 4: Cấu hình cơ sở dữ liệu
+Mở file `.env` và cập nhật thông tin kết nối MySQL:
+```env
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=cms_tiktok_crawler
+DB_USERNAME=root
+DB_PASSWORD=your_password
+
+CRAWLER_SERVICE_URL=http://127.0.0.1:8001
+CRAWLER_SERVICE_TOKEN=
+```
+
+Tạo cơ sở dữ liệu trong MySQL:
+```sql
+CREATE DATABASE cms_tiktok_crawler CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+```
+
+### Bước 5: Chạy Database Migrations
+```bash
+php artisan migrate
+```
+
+### Bước 6: Tạo liên kết Symbolic Link cho Storage
+Đảm bảo thư mục lưu avatar có thể truy cập qua HTTP:
+```bash
+php artisan storage:link
+```
+
+### Bước 7: Cài đặt JavaScript/TypeScript dependencies
+```bash
+npm install
+```
+
+---
+
+## 8. Khởi chạy dự án
+
+### Chế độ phát triển (Local Development)
+
+Mở **2 cửa sổ dòng lệnh (Terminal)** riêng biệt:
+
+1. **Terminal 1 - Chạy Laravel Backend API & Web Server**:
+   ```bash
+   php artisan serve
+   ```
+   Server sẽ lắng nghe tại: `http://127.0.0.1:8000`
+
+2. **Terminal 2 - Chạy Vite HMR Development Server**:
+   ```bash
+   npm run dev
+   ```
+   Vite server sẽ khởi chạy và tự động cập nhật giao diện mỗi khi bạn chỉnh sửa mã nguồn TypeScript/CSS.
+
+3. **Truy cập ứng dụng**:
+   Mở trình duyệt và truy cập vào:
+   ```
+   http://127.0.0.1:8000
+   ```
+
+---
+
+### Khởi chạy Crawler Service (Python Microservice)
+
+Nếu muốn kiểm thử tính năng crawl thực tế, điều hướng vào thư mục crawler và khởi chạy:
+```bash
+cd ../ProcessData/tiktok-crawler
+python -m venv venv
+# Windows:
+venvScriptsactivate
+# Linux/macOS:
+source venv/bin/activate
+
+pip install -r requirements.txt
+playwright install
+
+# Khởi chạy crawler service
+python -m uvicorn app.main:app --port 8001 --reload
+```
+
+---
+
+## 9. Danh sách API chính
+
+Dưới đây là tổng hợp các endpoint API chính trong hệ thống:
+
+### Quản lý Crawl Jobs
+| Phương thức | Endpoint | Mô tả |
+| :--- | :--- | :--- |
+| `GET` | `/api/crawlers/crawl-jobs` | Lấy danh sách crawl jobs (có phân trang & bộ lọc) |
+| `POST` | `/api/crawlers/crawl-jobs` | Tạo mới một crawl job |
+| `GET` | `/api/crawlers/crawl-jobs/{id}` | Lấy chi tiết thông tin một crawl job |
+| `GET` | `/api/crawlers/crawl-jobs/{id}/results` | Lấy danh sách kết quả chi tiết của job |
+| `DELETE` | `/api/crawlers/crawl-jobs/{id}` | Xóa một crawl job theo ID |
+
+### Webhook Callback từ Crawler Service
+| Phương thức | Endpoint | Mô tả |
+| :--- | :--- | :--- |
+| `POST` | `/api/public/crawler/crawl-jobs/{jobId}/events` | Webhook nhận kết quả crawl tài khoản và trạng thái hoàn thành từ Python service |
+
+### Quản lý Tài khoản TikTok
+| Phương thức | Endpoint | Mô tả |
+| :--- | :--- | :--- |
+| `GET` | `/api/tiktok-accounts` | Lấy danh sách tài khoản TikTok (có phân trang & sắp xếp) |
+| `POST` | `/api/tiktok-accounts` | Thêm mới tài khoản TikTok vào cơ sở dữ liệu |
+| `GET` | `/api/tiktok-accounts/all` | Lấy toàn bộ tài khoản (dùng cho dropdown select) |
+| `GET` | `/api/tiktok-accounts/{id}` | Xem chi tiết thông tin hồ sơ tài khoản |
+| `PUT` / `POST` | `/api/tiktok-accounts/{id}` | Cập nhật thông tin & upload avatar tài khoản |
+| `DELETE` | `/api/tiktok-accounts/{id}` | Xóa tài khoản TikTok |
+
+### Bộ điều hướng động (Dynamic Module Controller)
+| Phương thức | Endpoint | Mô tả |
+| :--- | :--- | :--- |
+| `ANY` | `/api/{module}/{controller}/{action}/{parameters?}` | Dispatch tự động theo quy chuẩn module |
+
+---
+
+## 10. Kiểm thử & Kiểm tra chất lượng
+
+### 1. Kiểm tra biên dịch TypeScript
+Kiểm tra tính đúng đắn của toàn bộ kiểu dữ liệu mà không cần xuất file:
+```bash
+npx tsc --noEmit
+```
+*(Yêu cầu: Kết quả trả về mã lỗi 0, không có bất kỳ error hay warning nào).*
+
+### 2. Biên dịch Production Bundle (Vite Build)
+Đóng gói mã nguồn frontend tối ưu cho môi trường Production:
+```bash
+npm run build
+```
+Các file bundle tối ưu được tạo ra trong thư mục `public/build/`.
+
+### 3. Kiểm thử tự động Backend (PHP Artisan Test / Pest)
+Chạy bộ test suite của Laravel:
+```bash
+php artisan test
+```
+
+### 4. Kiểm tra danh sách Route
+Xác nhận toàn bộ 19 routes của các module đã được đăng ký chính xác:
+```bash
+php artisan route:list
+```
+
+---
+
+## 📝 Quy chuẩn đóng góp mã nguồn (Coding Conventions)
+
+1. **Frontend**:
+   - Mọi file logic hoặc UI đều phải dùng TypeScript (`.ts`, `.tsx`). Tuyệt đối không dùng `.js` hay `.jsx` trong thư mục `resources/` hoặc `Modules/*/resources/`.
+   - Mọi lời gọi HTTP API phải đi qua các hàm định kiểu trong thư mục `Action/` của module tương ứng.
+   - Luôn sử dụng typed hooks từ `@core/store`: `useDispatch`, `useSelector`, `useAppDispatch`, `useAppSelector`.
+2. **Backend**:
+   - Tất cả class PHP của module phải nằm trong thư mục `Modules/<ModuleName>/src/`.
+   - Giữ nguyên kiến trúc phân lớp: Controller $ightarrow$ Service $ightarrow$ Repository $ightarrow$ Model.
+   - Đảm bảo tuân thủ chuẩn PSR-12 và PSR-4.
+
+---
+
+## 📄 Bản quyền (License)
+
+Dự án được phát triển nội bộ bởi **Ureka Media**. Mọi quyền được bảo lưu.

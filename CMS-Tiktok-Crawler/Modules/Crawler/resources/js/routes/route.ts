@@ -1,7 +1,7 @@
-import CrawlJobsPage from '@modules/Crawler/resources/js/pages/CrawlJobsPage';
-import CreateCrawlJobPage from '@modules/Crawler/resources/js/pages/CreateCrawlJobPage';
-import CrawlJobDetailPage from '@modules/Crawler/resources/js/pages/CrawlJobDetailPage';
-import EditCrawlJobPage from '@modules/Crawler/resources/js/pages/EditCrawlJobPage';
+import CrawlJobsPage from '../pages/CrawlJobsPage';
+import CreateCrawlJobPage from '../pages/CreateCrawlJobPage';
+import CrawlJobDetailPage from '../pages/CrawlJobDetailPage';
+import EditCrawlJobPage from '../pages/EditCrawlJobPage';
 
 const crawlerRoutes = [
 	{

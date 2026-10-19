@@ -1,14 +1,14 @@
 import { useEffect, useState } from 'react';
-import { useDispatch, useSelector } from '@core/store';
+import { useDispatch, useSelector } from '../../../../Core/resources/js/store';
 import { Alert, Button, Card, Descriptions, Space, Typography, App as AntdApp } from 'antd';
 import { PlayCircleOutlined } from '@ant-design/icons';
 import { useNavigate, useParams } from 'react-router-dom';
-import { fetchCrawlJobById, startCrawlJobById, getCrawlJobResults } from '@modules/Crawler/resources/js/store/crawlJob/crawlJobThunks';
-import { setParams } from '@modules/Crawler/resources/js/store/crawlJob/crawlJobSlice';
-import StatusTag from '@core/components/StatusTag';
-import SpinComponent from '@core/components/SpinComponent';
-import CrawlResultTable from '@modules/Crawler/resources/js/components/CrawlResultTable';
-import DeleteCrawljobButton from '@modules/Crawler/resources/js/components/DeleteCrawlJobButton';
+import { fetchCrawlJobById, startCrawlJobById, getCrawlJobResults } from '../store/crawlJob/crawlJobThunks';
+import { setParams } from '../store/crawlJob/crawlJobSlice';
+import StatusTag from '../../../../Core/resources/js/components/StatusTag';
+import SpinComponent from '../../../../Core/resources/js/components/SpinComponent';
+import CrawlResultTable from '../components/CrawlResultTable';
+import DeleteCrawljobButton from '../components/DeleteCrawlJobButton';
 
 const { Title } = Typography;
 

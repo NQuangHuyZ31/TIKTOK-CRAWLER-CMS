@@ -1,4 +1,4 @@
-﻿import { api } from '@core/Action/api';
+﻿import { api } from '../../../../Core/resources/js/Action/api';
 
 export const getCrawlJobs = (params: Record<string, any> = {}) =>
     api('/crawler/crawl-job/all', { params });

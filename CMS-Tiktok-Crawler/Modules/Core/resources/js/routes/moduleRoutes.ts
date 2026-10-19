@@ -1,5 +1,5 @@
-import CrawlJobRoute from '@modules/Crawler/resources/js/routes/route';
-import TiktokAccountRoute from '@modules/TiktokAccount/resources/js/routes/route';
+import CrawlJobRoute from '../../../../Crawler/resources/js/routes/route';
+import TiktokAccountRoute from '../../../../TiktokAccount/resources/js/routes/route';
 
 const moduleRoutes = [
 	...CrawlJobRoute,

@@ -1,8 +1,8 @@
 import { Button, Card, Typography } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
-import StatisticSummary from '@modules/Crawler/resources/js/components/StatisticSummary';
-import CrawlJobListTable from '@modules/Crawler/resources/js/components/CrawlJobListTable';
+import StatisticSummary from '../components/StatisticSummary';
+import CrawlJobListTable from '../components/CrawlJobListTable';
 
 const { Title } = Typography;
 

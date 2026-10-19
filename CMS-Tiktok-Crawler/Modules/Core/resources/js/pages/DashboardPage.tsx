@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Alert, Card, Col, Row, Statistic, Typography } from 'antd';
-import api from '@core/Action/api';
+import api from '../Action/api';
 
 const { Title, Text } = Typography;
 

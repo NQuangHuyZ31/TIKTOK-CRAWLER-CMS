@@ -1,5 +1,5 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import crawlJobAPI from "@modules/Crawler/resources/js/Action/crawlJob";
+import crawlJobAPI from "../../Action/crawlJob";
 
 export const fetchCrawlJobs = createAsyncThunk<any, any>(
 	'crawlJob/fetchAll',

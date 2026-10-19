@@ -1,7 +1,7 @@
 import { SearchOutlined } from '@ant-design/icons';
 import { Alert, Button, Input, Space } from 'antd';
 import { useState } from 'react';
-import validateDateUtil from '@core/utils/validationDateUtil';
+import validateDateUtil from '../utils/validationDateUtil';
 
 function SearchDropdown({ column, type, setParams, dispatch, params, dropdownProps }) {
 	const {

@@ -2,10 +2,10 @@ import { useEffect } from 'react';
 import { Alert, Button, Card, Form, Input, InputNumber, Radio, Space, Typography, App as AntdApp } from 'antd';
 import { ArrowLeftOutlined, DatabaseOutlined, LinkOutlined, NumberOutlined, SaveOutlined, UserOutlined } from '@ant-design/icons';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useDispatch, useSelector } from '@core/store';
-import { fetchCrawlJobById, updateCrawlJob } from '@modules/Crawler/resources/js/store/crawlJob/crawlJobThunks';
-import TiktokAccountSelect from '@modules/Crawler/resources/js/components/TiktokAccountSelect';
-import Spin from '@core/components/SpinComponent';
+import { useDispatch, useSelector } from '../../../../Core/resources/js/store';
+import { fetchCrawlJobById, updateCrawlJob } from '../store/crawlJob/crawlJobThunks';
+import TiktokAccountSelect from '../components/TiktokAccountSelect';
+import Spin from '../../../../Core/resources/js/components/SpinComponent';
 
 const { Text, Title } = Typography;
 

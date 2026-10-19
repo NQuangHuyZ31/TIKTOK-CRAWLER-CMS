@@ -1,6 +1,6 @@
-import TiktokAccountPage from '@modules/TiktokAccount/resources/js/pages/TiktokAccountPage';
-import TiktokAccountDetailPage from '@modules/TiktokAccount/resources/js/pages/TiktokAccountDetailPage';
-import TiktokAccountEditPage from '@modules/TiktokAccount/resources/js/pages/TiktokAccountEditPage';
+import TiktokAccountPage from '../pages/TiktokAccountPage';
+import TiktokAccountDetailPage from '../pages/TiktokAccountDetailPage';
+import TiktokAccountEditPage from '../pages/TiktokAccountEditPage';
 
 const tiktokAccountRoutes = [
 	{

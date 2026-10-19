@@ -7,7 +7,7 @@ import {
 	deleteCrawlJobById,
 	startCrawlJobById,
 	getCrawlJobResults
-} from "@modules/Crawler/resources/js/store/crawlJob/crawlJobThunks";
+} from "./crawlJobThunks";
 
 export interface CrawlJobState {
 	data: any[];

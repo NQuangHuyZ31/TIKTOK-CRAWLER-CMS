@@ -1,7 +1,7 @@
 import { Form, Select, App as AntdApp } from "antd";
 import React, { useEffect, useState } from "react";
-import { useDispatch, useSelector } from '@core/store';
-import { fechAllTiktokAccounts } from "@modules/TiktokAccount/resources/js/store/tiktokAccount/tiktokAccountThunks";
+import { useDispatch, useSelector } from '../../../../Core/resources/js/store';
+import { fechAllTiktokAccounts } from "../../../../TiktokAccount/resources/js/store/tiktokAccount/tiktokAccountThunks";
 
 const TiktokAccountSelect = ({ onChange }) => {
 	const dispatch = useDispatch();

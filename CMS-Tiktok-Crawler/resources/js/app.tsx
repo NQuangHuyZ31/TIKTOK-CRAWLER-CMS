@@ -1,8 +1,8 @@
 ﻿import 'antd/dist/reset.css';
 import { App as AntdApp, ConfigProvider } from 'antd';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { publicRoutes, privateRoutes } from '@core/routes';
-import MainLayout from '@core/layouts/MainLayout';
+import { publicRoutes, privateRoutes } from '../../modules/Core/resources/js/routes';
+import MainLayout from '../../modules/Core/resources/js/layouts/MainLayout';
 
 export default function App() {
     return (

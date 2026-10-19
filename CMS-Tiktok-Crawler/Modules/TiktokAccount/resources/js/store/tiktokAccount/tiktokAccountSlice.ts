@@ -7,7 +7,7 @@ import {
 	updateTiktokAccountStatus,
 	updateTiktokAccount,
 	fetchResultsByAccountID
-} from "@modules/TiktokAccount/resources/js/store/tiktokAccount/tiktokAccountThunks";
+} from "./tiktokAccountThunks";
 
 export interface TiktokAccountState {
 	data: any[];
