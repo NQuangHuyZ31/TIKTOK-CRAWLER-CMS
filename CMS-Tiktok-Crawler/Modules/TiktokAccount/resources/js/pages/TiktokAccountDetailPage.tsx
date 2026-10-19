@@ -22,11 +22,11 @@ import {
 } from 'antd';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useEffect, useRef, useState } from 'react';
-import { useDispatch, useSelector } from '../../../../Core/resources/js/store';
+import { useDispatch, useSelector } from '@core/store';
 import { fetchTiktokAccountByID, updateTiktokAccountStatus } from '../store/tiktokAccount/tiktokAccountThunks';
 import DeleteAccount from '../components/DeleteAccount';
-import SpinComponent from '../../../../Core/resources/js/components/SpinComponent';
-import formatCurrency from '../../../../Core/resources/js/utils/formatCurrency';
+import SpinComponent from '@core/components/SpinComponent';
+import formatCurrency from '@core/utils/formatCurrency';
 import CrawlHistory from '../components/CrawlHistory';
 
 const { Text, Title } = Typography;

@@ -1,13 +1,13 @@
 import React, { useEffect, useMemo } from "react";
-import { useDispatch, useSelector } from '../../../../Core/resources/js/store';
+import { useDispatch, useSelector } from '@core/store';
 import { Alert, Space } from "antd";
 import { fechAllTiktokAccounts } from "../store/tiktokAccount/tiktokAccountThunks";
 import { setParams } from "../store/tiktokAccount/tiktokAccountSlice";
 import columnConfig from "../configs/columnConfig";
 import AccountColumn from "./AccountColumn";
-import StatusTag from "../../../../Core/resources/js/components/StatusTag";
-import TableComponent from "../../../../Core/resources/js/components/Table";
-import SearchColumnTable from "../../../../Core/resources/js/components/SearchColumnTable";
+import StatusTag from "@core/components/StatusTag";
+import TableComponent from "@core/components/Table";
+import SearchColumnTable from "@core/components/SearchColumnTable";
 import { Link } from "react-router-dom";
 import DeleteAccount from './DeleteAccount';
 

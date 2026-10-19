@@ -1,4 +1,4 @@
-import { api } from '../../../../Core/resources/js/Action/api';
+import { api } from '@core/Action/api';
 
 const baseURL = '/tiktok-account/tiktok-account';
 

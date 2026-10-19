@@ -7,11 +7,11 @@ import {
 	UserOutlined,
 	UsergroupAddOutlined,
 } from "@ant-design/icons";
-import { useDispatch, useSelector } from '../../../../Core/resources/js/store';
+import { useDispatch, useSelector } from '@core/store';
 import { fetchStatisticSummary } from "../store/tiktokAccount/tiktokAccountThunks";
-import formatCurrency from "../../../../Core/resources/js/utils/formatCurrency";
-import SpinComponent from "../../../../Core/resources/js/components/SpinComponent";
-import CardKPI from "../../../../Core/resources/js/components/CardKPI";
+import formatCurrency from "@core/utils/formatCurrency";
+import SpinComponent from "@core/components/SpinComponent";
+import CardKPI from "@core/components/CardKPI";
 
 const StatisticSummary = () => {
 	const dispatch = useDispatch();

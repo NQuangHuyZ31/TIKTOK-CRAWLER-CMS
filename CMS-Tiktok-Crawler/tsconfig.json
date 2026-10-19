@@ -20,7 +20,9 @@
 			"@/*": ["./modules/Core/resources/js/*"],
 			"@modules/*": ["./modules/*"],
 			"@core": ["./modules/Core/resources/js/index.ts"],
-			"@core/*": ["./modules/Core/resources/js/*"]
+			"@core/*": ["./modules/Core/resources/js/*"],
+			"@crawler/*": ["./modules/Crawler/resources/js/*"],
+			"@tiktok-account/*": ["./modules/TiktokAccount/resources/js/*"]
 		}
 	},
 	"include": ["modules/**/resources/js/**/*", "vite.config.ts"]

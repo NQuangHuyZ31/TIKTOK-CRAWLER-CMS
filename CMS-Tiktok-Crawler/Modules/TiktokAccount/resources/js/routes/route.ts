@@ -1,5 +1,5 @@
 import { lazy } from 'react';
-import type { RouteDef } from '../../../../Core/resources/js/routes/registry';
+import type { RouteDef } from '@core/routes/registry';
 
 const TiktokAccountPage = lazy(() => import('../pages/TiktokAccountPage'));
 const TiktokAccountDetailPage = lazy(() => import('../pages/TiktokAccountDetailPage'));

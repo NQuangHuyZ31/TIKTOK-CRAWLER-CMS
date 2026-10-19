@@ -24,8 +24,10 @@ export default defineConfig({
     resolve: {
         alias: {
             '@': path.resolve(__dirname, './modules/Core/resources/js'),
-            '@modules': path.resolve(__dirname, './modules'),
             '@core': path.resolve(__dirname, './modules/Core/resources/js'),
+            '@modules': path.resolve(__dirname, './modules'),
+            '@crawler': path.resolve(__dirname, './modules/Crawler/resources/js'),
+            '@tiktok-account': path.resolve(__dirname, './modules/TiktokAccount/resources/js'),
         },
     },
 

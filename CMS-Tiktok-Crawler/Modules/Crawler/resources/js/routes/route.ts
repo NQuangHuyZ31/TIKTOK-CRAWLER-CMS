@@ -1,5 +1,5 @@
 import { lazy } from 'react';
-import type { RouteDef } from '../../../../Core/resources/js/routes/registry';
+import type { RouteDef } from '@core/routes/registry';
 
 const CrawlJobsPage = lazy(() => import('../pages/CrawlJobsPage'));
 const CreateCrawlJobPage = lazy(() => import('../pages/CreateCrawlJobPage'));

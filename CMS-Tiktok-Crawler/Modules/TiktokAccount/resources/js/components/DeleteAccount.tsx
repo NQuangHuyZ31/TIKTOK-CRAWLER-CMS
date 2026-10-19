@@ -1,6 +1,6 @@
 import { Button } from "antd";
-import { useDispatch } from '../../../../Core/resources/js/store';
-import CustomModal from "../../../../Core/resources/js/components/CustomModal";
+import { useDispatch } from '@core/store';
+import CustomModal from "@core/components/CustomModal";
 import { useState } from "react";
 import { App as AntdApp } from "antd";
 import { deleteTiktokAccount } from "../store/tiktokAccount/tiktokAccountThunks";

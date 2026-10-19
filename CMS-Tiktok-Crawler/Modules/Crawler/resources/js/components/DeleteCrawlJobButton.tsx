@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button, App as AntdApp } from 'antd';
-import { useDispatch, useSelector } from '../../../../Core/resources/js/store';
+import { useDispatch, useSelector } from '@core/store';
 import { deleteCrawlJobById, fetchStatisticsSummary } from '../store/crawlJob/crawlJobThunks';
-import CustomModal from '../../../../Core/resources/js/components/CustomModal';
+import CustomModal from '@core/components/CustomModal';
 
 
 interface DeleteCrawlJobButtonProps {
