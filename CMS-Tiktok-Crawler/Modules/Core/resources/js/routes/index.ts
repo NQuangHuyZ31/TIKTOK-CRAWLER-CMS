@@ -1,20 +1,14 @@
-import ModuleRoute from './moduleRoutes';
-import NotFound from '../pages/NotFound';
-import DashboardPage from '../pages/DashboardPage';
+import { initRouteRegistry } from './autoRegister';
+import { getRoutes, getPublicRoutes, getPrivateRoutes } from './registry';
 
-const publicRoutes = [
-	{
-		path: '/404',
-		component: NotFound
-	}
-];
+// Initialize auto-registration immediately
+initRouteRegistry();
 
-const privateRoutes = [
-	{
-		path: '/dashboard',
-		component: DashboardPage
-	},
-	...ModuleRoute
-];
+export * from './registry';
+export * from './autoRegister';
 
-export { publicRoutes, privateRoutes };
+// Export publicRoutes and privateRoutes getters for backward compatibility
+export const publicRoutes = getPublicRoutes();
+export const privateRoutes = getPrivateRoutes();
+
+export default getRoutes;
