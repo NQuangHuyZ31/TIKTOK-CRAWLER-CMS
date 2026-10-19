@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 use Modules\TiktokAccount\Controllers\TiktokAccountController;
 use Illuminate\Support\Facades\Route;

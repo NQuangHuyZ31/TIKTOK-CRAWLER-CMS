@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 use Modules\Crawler\Controllers\CrawlJobController;
 use Illuminate\Support\Facades\Route;
