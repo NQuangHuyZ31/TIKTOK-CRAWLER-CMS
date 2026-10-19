@@ -1,19 +1,50 @@
+import React from 'react';
 import { Tag } from 'antd';
 
-const statusConfig = {
-	pending: { color: 'default' },
-	in_progress: { color: 'processing' },
-	running: { color: 'processing' },
-	completed: { color: 'success' },
-	success: { color: 'success' },
-	failed: { color: 'error' },
-	inactive: { color: 'default' },
-	active: { color: 'success' },
+export type StatusType =
+    | 'pending'
+    | 'in_progress'
+    | 'running'
+    | 'completed'
+    | 'success'
+    | 'failed'
+    | 'inactive'
+    | 'active'
+    | string;
+
+const statusConfig: Record<string, { color: string; label?: string }> = {
+    pending: { color: 'default', label: 'Pending' },
+    in_progress: { color: 'processing', label: 'In Progress' },
+    running: { color: 'processing', label: 'Running' },
+    completed: { color: 'success', label: 'Completed' },
+    success: { color: 'success', label: 'Success' },
+    failed: { color: 'error', label: 'Failed' },
+    inactive: { color: 'default', label: 'Inactive' },
+    active: { color: 'success', label: 'Active' },
 };
 
-export default function StatusTag({ status }) {
-	const value = String(status || 'pending');
-	const config = statusConfig[value] || { color: 'default' };
+export interface StatusTagProps {
+    status?: StatusType | null;
+    label?: string;
+    style?: React.CSSProperties;
+}
 
-	return <Tag color={config.color}>{value.replace('_', ' ')}</Tag>;
+export default function StatusTag({ status, label, style }: StatusTagProps) {
+    const value = String(status || 'unknown').toLowerCase();
+    const config = statusConfig[value] || { color: 'default', label: status || 'Unknown' };
+    const displayLabel = label ?? config.label ?? status;
+
+    return (
+        <Tag
+            color={config.color}
+            style={{
+                textTransform: 'capitalize',
+                borderRadius: 4,
+                fontWeight: 500,
+                ...style,
+            }}
+        >
+            {displayLabel}
+        </Tag>
+    );
 }
