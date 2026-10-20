@@ -33,3 +33,4 @@ jsconfig.json
 .agents/rules/*
 PROJECT_SUMMARY.md
 /dist
+tests/

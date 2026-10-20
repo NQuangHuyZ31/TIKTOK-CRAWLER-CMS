@@ -41,9 +41,10 @@ Hệ thống được tái cấu trúc hoàn toàn theo mô hình **Ureka Enterp
    - Tích hợp trực tiếp Vite qua `@viteReactRefresh` và `@vite(['resources/css/app.css', 'resources/js/app.tsx'])`.
    - Cơ chế SPA Catch-all Route tại `routes/web.php` hỗ trợ React Router điều hướng mượt mà và bảo mật CSRF Token tự động.
 
-3. **Cấu trúc Module Backend Chuẩn Ureka**:
+3. **Cấu trúc Module Backend & Route Discovery Chuẩn Ureka**:
    - Mã nguồn PHP của mỗi module đặt gọn gàng trong `Modules/<ModuleName>/src/` (Controllers, Models, Repositories, Services, Requests, Resources, Providers).
    - Route API phân tách riêng biệt tại `Modules/<ModuleName>/routes/api.php`.
+   - **Xử lý Route tự động & Dynamic Routing qua Core**: Core sở hữu `ModuleRegistry` và `CoreServiceProvider` tự động phát hiện module và nạp route. Toàn bộ cơ chế dynamic routing được đóng gói trong class [`Modules\Core\Support\DynamicRouteResovle`](modules/Core/src/Support/DynamicRouteResovle.php) và kết nối qua [`modules/Core/routes/api.php`](modules/Core/routes/api.php) (tự động phân giải controller, ánh xạ action alias, inject dependency và parameter) xử lý tất cả mẫu route RESTful và custom action (`/{module}/{controller}/{id}/{action}`, `/{module}/{controller}/{action}`, `/{module}/{controller}/{id}`, `/{module}/{controller}`, `/public/...`). Tuyệt đối không đăng ký route cứng bên ngoài module tại `routes/api.php`.
    - Composer PSR-4 tự động ánh xạ class namespace chuẩn xác.
 
 4. **Cấu trúc Module Frontend Đồng Bộ**:
@@ -139,7 +140,7 @@ cms-tiktok-crawler/
 │   │   │   ├── store/index.ts          # Root Redux Store & Typed Hooks (useAppDispatch, useAppSelector)
 │   │   │   └── utils/                   # formatCurrency, validation helpers
 │   │   ├── routes/api.php               # Dynamic Module Controller routes
-│   │   └── src/Controllers/, Middleware/, Utils/
+│   │   └── src/Controllers/, Middleware/, Providers/, Repositories/, Support/, Traits/, Utils/
 │   ├── Crawler/                         # Module Quản lý Crawl Jobs
 │   │   ├── resources/js/
 │   │   │   ├── Action/                  # crawlJob.ts, crawlResult.ts (API calls)
@@ -171,7 +172,7 @@ cms-tiktok-crawler/
 │   └── views/
 │       └── app.blade.php                # Blade template duy nhất (@viteReactRefresh, @vite)
 ├── routes/
-│   ├── api.php                          # Master API routes loader (nạp routes từ Modules)
+│   ├── api.php                          # Master API routes shell (Core tự động nạp routes từ Modules)
 │   ├── web.php                          # SPA catch-all route {any?} -> view('app')
 │   └── console.php
 ├── storage/

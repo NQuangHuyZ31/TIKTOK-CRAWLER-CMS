@@ -1,15 +1,20 @@
 <?php
 
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use Modules\Core\Controllers\DynamicModuleController;
+use Modules\Core\Support\DynamicRouteResovle;
 
-Route::match(
-    ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
-    '/{module}/{controller}/{action}/{parameters?}',
-    [DynamicModuleController::class, 'dispatch']
-)->where([
-    'module' => '[a-z0-9-]+',
-    'controller' => '[a-z0-9-]+',
-    'action' => '[a-z0-9-]+',
-    'parameters' => '.*',
-]);
+/*
+|--------------------------------------------------------------------------
+| Core Dynamic Module API Routing Engine
+|--------------------------------------------------------------------------
+|
+| Handles all module routing dynamically without requiring explicit route
+| registrations outside modules. Supports:
+| - Pattern 1: /{module}/{controller}/{id}/{action}/{parameters?}
+| - Pattern 2: /{module}/{controller}/{action}/{parameters?}
+| - Pattern 3: /{module}/{controller}/{id}  (RESTful Show/Update/Delete)
+| - Pattern 4: /{module}/{controller}       (RESTful Index/Store)
+*/
+
+DynamicRouteResovle::routes();
