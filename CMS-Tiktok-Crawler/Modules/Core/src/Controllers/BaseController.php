@@ -202,7 +202,7 @@ abstract class BaseController extends Controller
             }
 
             // 1. Filter lower bound (>=): column_from / column_start / column_min / column_gte
-            if (preg_match('/^(.+)_(from|start|min|gte)$/', $key, $m) && $this->isFilterableColumn($m[1])) {
+            if (preg_match('/^(.+)_(from|start|min|gte|at)$/', $key, $m) && $this->isFilterableColumn($m[1])) {
                 if (is_numeric($value)) {
                     $query->where($m[1], '>=', $value + 0);
                 } else {
