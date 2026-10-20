@@ -15,7 +15,7 @@ class CrawlJobController extends Controller {
     }
 
     // Get all crawl jobs
-    public function getAll(Request $request) {
+    public function index(Request $request) {
         $params = $request->all(); // Get all query parameters
 
         return CrawlJobResource::collection($this->crawlJobService->getAll($params['per_page'] ?? 5, $params));

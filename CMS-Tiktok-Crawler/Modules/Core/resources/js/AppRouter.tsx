@@ -7,7 +7,7 @@ import AdminLayout from './layouts/AdminLayout';
 export default function AppRouter() {
 	const adminRoutes = useAdminRoutes();
 	const bareRoutes = useBareRoutes();
-
+	const adminPath = '/admin';
 	return (
 		<ConfigProvider
 			theme={{
@@ -19,7 +19,7 @@ export default function AppRouter() {
 			}}
 		>
 			<AntdApp>
-				<BrowserRouter>
+				<BrowserRouter basename={adminPath}>
 					<Suspense
 						fallback={
 							<div

@@ -6,6 +6,19 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Modules\Core\Support\ModuleRegistry;
 
+/*
+|--------------------------------------------------------------------------
+| Core Dynamic Module API Routing Engine
+|--------------------------------------------------------------------------
+|
+| Handles all module routing dynamically without requiring explicit route
+| registrations outside modules. Supports:
+| - Pattern 1: /{module}/{controller}/{id}/{action}/{parameters?}
+| - Pattern 2: /{module}/{controller}/{action}/{parameters?}
+| - Pattern 3: /{module}/{controller}/{id}  (RESTful Show/Update/Delete)
+| - Pattern 4: /{module}/{controller}       (RESTful Index/Store)
+*/
+
 class DynamicRouteResovle {
     public function __construct(private ?ModuleRegistry $moduleRegistry = null,private ?Request $request = null) {
         $this->moduleRegistry = $moduleRegistry ?? (app()->bound(ModuleRegistry::class) ? app(ModuleRegistry::class) : null);
@@ -20,22 +33,18 @@ class DynamicRouteResovle {
     }
 
     public static function registerRoutes(): void {
-        // 1. Module route with ID and Action: /{module}/{controller}/{id}/{action}/{parameters?}
         Route::any('/{module}/{controller}/{id}/{action}/{parameters?}', function (Request $request, string $module, string $controller, int | string $id, string $action, ?string $parameters = null) {
             return app(self::class)->handle($request, $module, $controller, $action, $id, $parameters);
         })->where(['module' => '[a-zA-Z0-9_-]+', 'controller' => '[a-zA-Z0-9_-]+', 'id' => '[0-9]+', 'action' => '[a-zA-Z0-9_-]+', 'parameters' => '.*']);
 
-        // 2. Module route with Action only: /{module}/{controller}/{action}/{parameters?}
         Route::any('/{module}/{controller}/{action}/{parameters?}', function (Request $request, string $module, string $controller, string $action, ?string $parameters = null) {
             return app(self::class)->handle($request, $module, $controller, $action, null, $parameters);
         })->where(['module' => '[a-zA-Z0-9_-]+', 'controller' => '[a-zA-Z0-9_-]+', 'action' => '^(?![0-9]+$)[a-zA-Z0-9_-]+', 'parameters' => '.*']);
 
-        // 3. RESTful route with ID: /{module}/{controller}/{id}
         Route::any('/{module}/{controller}/{id}', function (Request $request, string $module, string $controller, int | string $id) {
             return app(self::class)->handle($request, $module, $controller, null, $id, null);
         })->where(['module' => '[a-zA-Z0-9_-]+', 'controller' => '[a-zA-Z0-9_-]+', 'id' => '[0-9]+']);
 
-        // 4. RESTful root collection route: /{module}/{controller}
         Route::any('/{module}/{controller}', function (Request $request, string $module, string $controller) {
             return app(self::class)->handle($request, $module, $controller, null, null, null);
         })->where(['module' => '[a-zA-Z0-9_-]+', 'controller' => '[a-zA-Z0-9_-]+']);

@@ -1,5 +1,5 @@
 <?php
 
 return [
-    'admin_path' => 'admin',
-];	
+    'admin_path' => env('ADMIN_PATH', 'admin'),
+];

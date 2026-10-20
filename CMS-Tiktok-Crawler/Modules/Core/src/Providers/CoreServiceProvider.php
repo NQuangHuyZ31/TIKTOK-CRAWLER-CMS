@@ -61,9 +61,11 @@ class CoreServiceProvider extends ServiceProvider
         /** @var ModuleRegistry $registry */
         $registry = $this->app->make(ModuleRegistry::class);
         $adminPath = trim((string) config('admin.admin_path', 'admin'), '/');
+        $adminPrefix = $adminPath !== '' ? $adminPath : 'admin';
 
-        // 1. Helper to register API routes for all modules
-        $registerApiRoutes = function () use ($registry) {
+        Route::prefix($adminPrefix)->group(function () use ($registry) {
+            // 1. Register API routes for all modules under /{admin_path}/api
+            Route::prefix('api')->middleware('api')->group(function () use ($registry) {
                 foreach ($registry->all() as $name => $moduleDir) {
                     if ($name === 'Core') {
                         continue;
@@ -80,18 +82,10 @@ class CoreServiceProvider extends ServiceProvider
                 if (is_file($coreApiRoutes)) {
                     $this->loadRoutesFrom($coreApiRoutes);
                 }
-        };
+            });
 
-        // Standard /api routes
-        Route::prefix('api')->middleware('api')->group($registerApiRoutes);
-
-        // Admin API routes: /{admin_path}/api if admin_path is configured
-        if ($adminPath !== '' && $adminPath !== 'api') {
-            Route::prefix("{$adminPath}/api")->middleware('api')->group($registerApiRoutes);
-        }
-
-        // 2. Helper to register Web routes for all modules
-        $registerWebRoutes = function () use ($registry) {
+            // 2. Register Web routes for modules under /{admin_path}
+            Route::middleware('web')->group(function () use ($registry) {
                 foreach ($registry->all() as $name => $moduleDir) {
                     if ($name === 'Core') {
                         continue;
@@ -108,15 +102,12 @@ class CoreServiceProvider extends ServiceProvider
                 if (is_file($coreWebRoutes)) {
                     $this->loadRoutesFrom($coreWebRoutes);
                 }
-        };
+            });
+        });
 
-        // Standard Web routes & Admin Web routes
-        Route::middleware('web')->group(function () use ($registerWebRoutes, $adminPath) {
-            $registerWebRoutes();
-
-            if ($adminPath !== '') {
-                Route::prefix($adminPath)->group($registerWebRoutes);
-            }
+        // 3. Web root redirect to admin path
+        Route::middleware('web')->get('/', function () use ($adminPrefix) {
+            return redirect('/' . $adminPrefix);
         });
     }
 }
