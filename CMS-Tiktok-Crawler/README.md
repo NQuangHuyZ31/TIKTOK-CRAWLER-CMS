@@ -305,31 +305,34 @@ Dưới đây là tổng hợp các endpoint API chính trong hệ thống:
 ### Quản lý Crawl Jobs
 | Phương thức | Endpoint | Mô tả |
 | :--- | :--- | :--- |
-| `GET` | `/api/crawlers/crawl-jobs` | Lấy danh sách crawl jobs (có phân trang & bộ lọc) |
-| `POST` | `/api/crawlers/crawl-jobs` | Tạo mới một crawl job |
-| `GET` | `/api/crawlers/crawl-jobs/{id}` | Lấy chi tiết thông tin một crawl job |
-| `GET` | `/api/crawlers/crawl-jobs/{id}/results` | Lấy danh sách kết quả chi tiết của job |
-| `DELETE` | `/api/crawlers/crawl-jobs/{id}` | Xóa một crawl job theo ID |
+| `GET` | `/admin/api/crawler/crawl-job/all` | Lấy danh sách crawl jobs (có phân trang & bộ lọc) |
+| `POST` | `/admin/api/crawler/crawl-job/add` | Tạo mới một crawl job |
+| `GET` | `/admin/api/crawler/crawl-job/{id}/details` | Lấy chi tiết thông tin một crawl job |
+| `GET` | `/admin/api/crawler/crawl-job/statistics-summary` | Lấy thống kê KPI tổng quan crawl jobs |
 
 ### Webhook Callback từ Crawler Service
 | Phương thức | Endpoint | Mô tả |
 | :--- | :--- | :--- |
-| `POST` | `/api/public/crawler/crawl-jobs/{jobId}/events` | Webhook nhận kết quả crawl tài khoản và trạng thái hoàn thành từ Python service |
+| `POST` | `/admin/api/public/crawler/crawl-jobs/{jobId}/events` | Webhook nhận kết quả crawl tài khoản và trạng thái hoàn thành từ Python service |
 
 ### Quản lý Tài khoản TikTok
 | Phương thức | Endpoint | Mô tả |
 | :--- | :--- | :--- |
-| `GET` | `/api/tiktok-accounts` | Lấy danh sách tài khoản TikTok (có phân trang & sắp xếp) |
-| `POST` | `/api/tiktok-accounts` | Thêm mới tài khoản TikTok vào cơ sở dữ liệu |
-| `GET` | `/api/tiktok-accounts/all` | Lấy toàn bộ tài khoản (dùng cho dropdown select) |
-| `GET` | `/api/tiktok-accounts/{id}` | Xem chi tiết thông tin hồ sơ tài khoản |
-| `PUT` / `POST` | `/api/tiktok-accounts/{id}` | Cập nhật thông tin & upload avatar tài khoản |
-| `DELETE` | `/api/tiktok-accounts/{id}` | Xóa tài khoản TikTok |
+| `GET` | `/admin/api/tiktok-account/tiktok-account/all` | Lấy danh sách tài khoản TikTok |
+| `GET` | `/admin/api/tiktok-account/tiktok-account/statistic-summary` | Thống kê tổng quan tài khoản TikTok |
+| `GET` | `/admin/api/tiktok-account/tiktok-account/{id}` | Xem chi tiết thông tin hồ sơ tài khoản |
+| `PUT` / `POST` | `/admin/api/tiktok-account/tiktok-account/{id}` | Cập nhật thông tin & upload avatar tài khoản |
+| `DELETE` | `/admin/api/tiktok-account/tiktok-account/{id}` | Xóa tài khoản TikTok |
 
-### Bộ điều hướng động (Dynamic Module Controller)
-| Phương thức | Endpoint | Mô tả |
+### Dynamic Route Resolver (`Modules\Core\Support\DynamicRouteResovle`)
+| Phương thức | Endpoint Pattern | Mô tả |
 | :--- | :--- | :--- |
-| `ANY` | `/api/{module}/{controller}/{action}/{parameters?}` | Dispatch tự động theo quy chuẩn module |
+| `ANY` | `/admin/api/{module}/{controller}/{id}/{action}/{parameters?}` | Dispatch custom action kèm ID và params phụ |
+| `ANY` | `/admin/api/{module}/{controller}/{action}/{parameters?}` | Dispatch custom action không ID (VD: `all`, `statistics-summary`) |
+| `ANY` | `/admin/api/{module}/{controller}/{id}` | RESTful show/update/delete theo HTTP method |
+| `ANY` | `/admin/api/{module}/{controller}` | RESTful index/store theo HTTP method |
+
+*Ghi chú: Prefix `/admin` được định cấu hình động tại `modules/Core/configs/admin.php` (`admin_path`) và có thể tùy chỉnh thông qua biến môi trường `ADMIN_PATH=admin` trong `.env`.*
 
 ---
 
@@ -350,13 +353,14 @@ npm run build
 Các file bundle tối ưu được tạo ra trong thư mục `public/build/`.
 
 ### 3. Kiểm thử tự động Backend (PHP Artisan Test / Pest)
-Chạy bộ test suite của Laravel:
+Chạy bộ test suite của Laravel (bao gồm Feature Tests cho Dynamic Routes, CORS preflight/headers, Web SPA routes, Root redirect):
 ```bash
 php artisan test
 ```
+*(17 tests passed 100%, 35 assertions).*
 
 ### 4. Kiểm tra danh sách Route
-Xác nhận toàn bộ 19 routes của các module đã được đăng ký chính xác:
+Xác nhận toàn bộ routes của các module đã được đăng ký chính xác bắt đầu bằng prefix admin:
 ```bash
 php artisan route:list
 ```

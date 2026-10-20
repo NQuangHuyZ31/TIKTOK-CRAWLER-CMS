@@ -15,13 +15,13 @@ return [
     |
     */
 
-    'paths' => ['api/*', 'sanctum/csrf-cookie'],
+    'paths' => [config('admin.api_path') . '/*', 'sanctum/csrf-cookie'],
 
     'allowed_methods' => ['*'],
 
     'allowed_origins' => array_values(array_filter([
-        env('FRONTEND_URL'),
         env('APP_URL'),
+        env('FRONTEND_URL'),
         'http://localhost:8000',
         'http://127.0.0.1:8000',
         'http://localhost:5173',
