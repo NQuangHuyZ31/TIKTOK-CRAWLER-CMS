@@ -62,6 +62,10 @@ Hệ thống được tái cấu trúc hoàn toàn theo mô hình **Ureka Enterp
 6. **Typed State Management**:
    - Quản trị state bằng Redux Toolkit với các hook định kiểu sẵn [`Modules/Core/resources/js/store/index.ts`](Modules/Core/resources/js/store/index.ts): `useAppDispatch`, `useAppSelector`, `useDispatch`, `useSelector`.
 
+7. **Cơ chế Route Registry & AdminLayout Chuẩn React Router v6**:
+   - **`AdminLayout`**: Cấu hình theo mô hình Layout Route chuẩn (`<Route element={<AdminLayout />}>`), các route chức năng con hiển thị qua `<Outlet />` giúp tránh re-mount layout không cần thiết khi chuyển trang.
+   - **Điều hướng Sidebar theo Route Registration**: Sidebar loại bỏ cấu hình menu tĩnh (`menuConfig`), tự động đồng bộ danh sách menu từ Route Registry thông qua hook `useMenuRoutes()` dựa trên các trường metadata của route (`label`, `icon`, `order`).
+
 ---
 
 ## 3. Tính năng chính
@@ -130,7 +134,7 @@ cms-tiktok-crawler/
 │   │   ├── resources/js/
 │   │   │   ├── Action/api.ts            # Central API Client (CSRF, ApiError, Typed HTTP methods)
 │   │   │   ├── components/              # CardKPI, Table, CustomModal, Spin, StatusTag...
-│   │   │   ├── layouts/                 # MainLayout, Header, Sidebar, Footer
+│   │   │   ├── layouts/                 # AdminLayout, Header, Sidebar
 │   │   │   ├── pages/                   # DashboardPage, NotFoundPage
 │   │   │   ├── store/index.ts          # Root Redux Store & Typed Hooks (useAppDispatch, useAppSelector)
 │   │   │   └── utils/                   # formatCurrency, validation helpers

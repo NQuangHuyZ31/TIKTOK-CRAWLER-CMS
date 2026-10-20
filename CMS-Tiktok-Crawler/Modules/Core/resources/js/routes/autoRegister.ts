@@ -1,3 +1,4 @@
+import { DashboardOutlined } from '@ant-design/icons';
 import { registerRoute, registerRoutes, type RouteDef } from './registry';
 import NotFound from '../pages/NotFound';
 import DashboardPage from '../pages/DashboardPage';
@@ -24,10 +25,11 @@ export function initRouteRegistry(): void {
     registerRoute({
         path: '/dashboard',
         component: DashboardPage,
-        layout: 'main',
+        layout: 'admin',
         isPrivate: true,
         title: 'Dashboard',
         label: 'Dashboard',
+        icon: DashboardOutlined,
         order: 0,
     });
 

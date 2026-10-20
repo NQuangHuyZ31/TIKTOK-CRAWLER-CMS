@@ -5,13 +5,13 @@ export interface RouteDef {
     path: string;
     /** Component to render */
     component: ComponentType<any>;
-    /** 'main' (wrapped in MainLayout) | 'bare' (full screen, no layout) */
-    layout?: 'main' | 'bare' | 'none';
+    /** 'admin' (wrapped in AdminLayout) | 'main' (alias for admin) | 'bare' (full screen, no layout) | 'none' */
+    layout?: 'admin' | 'main' | 'bare' | 'none';
     /** Whether the route requires authentication / private (default true) */
     isPrivate?: boolean;
     /** Page title */
     title?: string;
-    /** Label to show in menu (routes without label are routed but not shown in menu) */
+    /** Label to show in navigation menu (routes without label are routed but not shown in sidebar menu) */
     label?: string;
     /** Icon for navigation menu */
     icon?: ComponentType<any> | ReactNode;
@@ -42,6 +42,13 @@ export const subscribe = (listener: () => void) => {
 };
 
 /**
+ * Check whether a route belongs to AdminLayout.
+ */
+export function isAdminRoute(route: RouteDef): boolean {
+    return route.layout !== 'bare' && route.layout !== 'none' && route.isPrivate !== false;
+}
+
+/**
  * Register a single route into the Core Route Registry.
  * If a route with the same path already exists, it will be updated/overwritten.
  */
@@ -49,7 +56,7 @@ export function registerRoute(def: RouteDef): void {
     const r = registry();
     const cleanPath = def.path.startsWith('/') ? def.path : `/${def.path}`;
     const normalized: RouteDef = {
-        layout: 'main',
+        layout: 'admin',
         isPrivate: true,
         order: 100,
         ...def,
@@ -83,15 +90,57 @@ export function useRoutes(): readonly RouteDef[] {
 }
 
 /**
- * Get only public (bare/unprotected) routes.
+ * Get only admin (AdminLayout-wrapped) routes.
  */
-export function getPublicRoutes(): RouteDef[] {
-    return registry().routes.filter((r) => r.isPrivate === false || r.layout === 'bare');
+export function getAdminRoutes(): RouteDef[] {
+    return registry().routes.filter(isAdminRoute);
 }
 
 /**
- * Get only private (layout-wrapped) routes.
+ * Get only public or bare routes (not wrapped in AdminLayout).
+ */
+export function getPublicRoutes(): RouteDef[] {
+    return registry().routes.filter((r) => !isAdminRoute(r));
+}
+
+/**
+ * Alias for getAdminRoutes for backward compatibility.
  */
 export function getPrivateRoutes(): RouteDef[] {
-    return registry().routes.filter((r) => r.isPrivate !== false && r.layout !== 'bare');
+    return getAdminRoutes();
+}
+
+/**
+ * Get routes configured for sidebar navigation menu.
+ */
+export function getMenuRoutes(): RouteDef[] {
+    return registry()
+        .routes.filter((r) => Boolean(r.label) && isAdminRoute(r))
+        .sort((a, b) => (a.order ?? 100) - (b.order ?? 100));
+}
+
+/**
+ * React hook to reactively get admin routes.
+ */
+export function useAdminRoutes(): readonly RouteDef[] {
+    const routes = useRoutes();
+    return routes.filter(isAdminRoute);
+}
+
+/**
+ * React hook to reactively get bare/public routes.
+ */
+export function useBareRoutes(): readonly RouteDef[] {
+    const routes = useRoutes();
+    return routes.filter((r) => !isAdminRoute(r));
+}
+
+/**
+ * React hook to reactively get sidebar navigation menu routes.
+ */
+export function useMenuRoutes(): readonly RouteDef[] {
+    const routes = useRoutes();
+    return routes
+        .filter((r) => Boolean(r.label) && isAdminRoute(r))
+        .sort((a, b) => (a.order ?? 100) - (b.order ?? 100));
 }

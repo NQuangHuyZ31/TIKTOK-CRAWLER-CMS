@@ -1,3 +1,4 @@
+import React from 'react';
 import { Layout, theme } from 'antd';
 import { Outlet } from 'react-router-dom';
 import Header from './Header';
@@ -5,7 +6,11 @@ import Sidebar from './Sidebar';
 
 const { Content } = Layout;
 
-export default function MainLayout({ children }) {
+export interface AdminLayoutProps {
+	children?: React.ReactNode;
+}
+
+export default function AdminLayout({ children }: AdminLayoutProps) {
 	const {
 		token: { colorBgContainer, borderRadiusLG },
 	} = theme.useToken();
@@ -31,7 +36,6 @@ export default function MainLayout({ children }) {
 							borderRadius: borderRadiusLG,
 						}}
 					>
-
 						{children || <Outlet />}
 					</div>
 				</Content>
