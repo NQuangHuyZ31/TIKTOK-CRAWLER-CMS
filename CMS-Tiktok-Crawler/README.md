@@ -67,6 +67,10 @@ Hệ thống được tái cấu trúc hoàn toàn theo mô hình **Ureka Enterp
    - **`AdminLayout`**: Cấu hình theo mô hình Layout Route chuẩn (`<Route element={<AdminLayout />}>`), các route chức năng con hiển thị qua `<Outlet />` giúp tránh re-mount layout không cần thiết khi chuyển trang.
    - **Điều hướng Sidebar theo Route Registration**: Sidebar loại bỏ cấu hình menu tĩnh (`menuConfig`), tự động đồng bộ danh sách menu từ Route Registry thông qua hook `useMenuRoutes()` dựa trên các trường metadata của route (`label`, `icon`, `order`).
 
+8. **Nền tảng RESTful Controller Dùng Chung (`BaseController` & `CoreController`)**:
+   - **`BaseController`**: Cung cấp sẵn 5 hành vi chuẩn RESTful (`index`, `show`, `store`, `update`, `destroy`), tích hợp pipeline tìm kiếm toàn văn (`?search=...`), lọc theo cột động (lọc số `_min`/`_max`/`_gte`/`_lte`/`1000..5000`, lọc ngày `_from`/`_to`, `whereIn`, wildcards), sắp xếp mặc định theo cấu hình `$defaultSort` (ví dụ: `['id', 'desc']` hoặc `['created_at', 'desc']`), phân trang và hỗ trợ tắt phân trang (`pagination=false`). Các tính năng tìm kiếm và lọc chỉ thực thi khi được khai báo tường minh (`$searchableColumns`, `$filterableColumns`).
+   - **`CoreController`**: Controller cụ thể kế thừa `BaseController` xử lý các tác vụ hệ thống dùng chung (`ping`, tải lên file `upload`, xóa file `delete-uploaded-file`), đồng thời hỗ trợ truy vấn RESTful CRUD trực tiếp cho bất kỳ Model nào thông qua tham số `?model=...`.
+
 ---
 
 ## 3. Tính năng chính
@@ -324,6 +328,16 @@ Dưới đây là tổng hợp các endpoint API chính trong hệ thống:
 | `PUT` / `POST` | `/admin/api/tiktok-account/tiktok-account/{id}` | Cập nhật thông tin & upload avatar tài khoản |
 | `DELETE` | `/admin/api/tiktok-account/tiktok-account/{id}` | Xóa tài khoản TikTok |
 
+### Hệ thống Core & Tác vụ dùng chung (`CoreController` & `BaseController`)
+| Phương thức | Endpoint | Mô tả |
+| :--- | :--- | :--- |
+| `GET` | `/admin/api/core/core/ping` | Kiểm tra trạng thái hoạt động (health check) & môi trường hệ thống |
+| `POST` | `/admin/api/core/core/upload` | Tải lên file chung (hỗ trợ chỉ định folder, disk, validate ảnh) |
+| `POST` | `/admin/api/core/core/delete-uploaded-file` | Xóa file khỏi storage hệ thống |
+| `GET` | `/admin/api/core/core?model={ModelName}` | Truy vấn danh sách bản ghi bất kỳ Model nào (hỗ trợ search, filter cột, sort, phân trang) |
+| `POST` | `/admin/api/core/core?model={ModelName}` | Tạo mới bản ghi cho Model chỉ định qua Core |
+| `GET` / `PUT` / `DELETE` | `/admin/api/core/core/{id}?model={ModelName}` | Xem, cập nhật, xóa bản ghi Model chỉ định qua Core |
+
 ### Dynamic Route Resolver (`Modules\Core\Support\DynamicRouteResovle`)
 | Phương thức | Endpoint Pattern | Mô tả |
 | :--- | :--- | :--- |
@@ -341,7 +355,7 @@ Dưới đây là tổng hợp các endpoint API chính trong hệ thống:
 ### 1. Kiểm tra biên dịch TypeScript
 Kiểm tra tính đúng đắn của toàn bộ kiểu dữ liệu mà không cần xuất file:
 ```bash
-npx tsc --noEmit
+node ./node_modules/typescript/bin/tsc --noEmit
 ```
 *(Yêu cầu: Kết quả trả về mã lỗi 0, không có bất kỳ error hay warning nào).*
 
@@ -353,11 +367,11 @@ npm run build
 Các file bundle tối ưu được tạo ra trong thư mục `public/build/`.
 
 ### 3. Kiểm thử tự động Backend (PHP Artisan Test / Pest)
-Chạy bộ test suite của Laravel (bao gồm Feature Tests cho Dynamic Routes, CORS preflight/headers, Web SPA routes, Root redirect):
+Chạy bộ test suite của Laravel (bao gồm Feature Tests cho Dynamic Routes, CORS preflight/headers, Web SPA routes, Root redirect, CoreController ping/upload/delete, BaseController 5 RESTful actions, keyword search, column filtering, sorting, pagination):
 ```bash
 php artisan test
 ```
-*(17 tests passed 100%, 35 assertions).*
+*(21 tests passed 100%, 74 assertions).*
 
 ### 4. Kiểm tra danh sách Route
 Xác nhận toàn bộ routes của các module đã được đăng ký chính xác bắt đầu bằng prefix admin:
