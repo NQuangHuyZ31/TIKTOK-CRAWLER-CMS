@@ -49,9 +49,9 @@ export function buildColumns<T = any>(
         const key = String(col.key ?? col.dataIndex ?? '');
         const dataIndex = typeof col.dataIndex === 'string' ? col.dataIndex : undefined;
 
-        // Ưu tiên 1: render tùy biến do component sử dụng truyền vào qua renderColumns
+        const colKey = col.key !== undefined && col.key !== null ? String(col.key) : undefined;
         const customRender =
-            (col.key && renderColumns[col.key]) ||
+            (colKey && renderColumns[colKey]) ||
             (dataIndex && renderColumns[dataIndex]);
 
         if (customRender) {

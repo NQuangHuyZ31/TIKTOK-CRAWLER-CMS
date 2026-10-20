@@ -1,19 +1,16 @@
 import { useState } from 'react';
-import { Alert, Button, Card, Divider, Form, Input, InputNumber, message, Radio, Space, Typography, App as AntdApp } from 'antd';
+import { Button, Card, Divider, Form, Input, InputNumber, Radio, Space, Typography, App as AntdApp } from 'antd';
 import { ArrowLeftOutlined, DatabaseOutlined, LinkOutlined, NumberOutlined, SaveOutlined, UserOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
-import { useDispatch, useSelector } from '@core/store';
-import { createCrawlJob } from '../store/crawlJob/crawlJobThunks';
+import crawlJobAPI from '../Action/crawlJob';
 import TiktokAccountSelect from '../components/TiktokAccountSelect';
-import SpinComponent from '@core/components/SpinComponent';
 
 const { Text, Title } = Typography;
 
 export default function CreateCrawlJobPage() {
 	const { message } = AntdApp.useApp();
 	const navigate = useNavigate();
-	const dispatch = useDispatch();
-	const { loading, error } = useSelector((state) => state.crawlJob);
+	const [loading, setLoading] = useState(false);
 
 	const [form] = Form.useForm();
 	const sourceType = Form.useWatch('source_type', form);
@@ -29,41 +26,45 @@ export default function CreateCrawlJobPage() {
 		});
 	};
 
-	const handleSubmit = async (values) => {
+	const handleSubmit = async (values: any) => {
 		const dataCrawl = values.source_type === 'usernames'
-			? values.usernames?.split('\n').map((value) => value.trim()).filter(Boolean) ?? []
+			? values.usernames?.split('\n').map((value: string) => value.trim()).filter(Boolean) ?? []
 			: values.source_type === 'urls'
-				? values.urls?.split('\n').map((value) => value.trim()).filter(Boolean) ?? []
+				? values.urls?.split('\n').map((value: string) => value.trim()).filter(Boolean) ?? []
 				: values.source_type === 'database'
 					? values.account_ids ?? []
 					: (values.total_accounts ? [values.total_accounts] : []);
 
+		setLoading(true);
 		try {
-			const result = await dispatch(createCrawlJob({ source_type: values.source_type, data_crawl: dataCrawl })).unwrap();
+			const result = await crawlJobAPI.createCrawlJob({
+				source_type: values.source_type,
+				data_crawl: dataCrawl,
+			});
 			const job = result?.data ?? result;
 			const jobId = job?.id;
 
-			if (!jobId) {
-				throw new Error('Không thể lấy ID của crawl job');
+			message.success(result?.message || 'Tạo crawl job thành công');
+			if (jobId) {
+				navigate(`/crawler/crawl-job/${jobId}`);
+			} else {
+				navigate('/crawler/crawl-job');
 			}
-
-			message.success(result?.message || 'Create completed');
-			navigate(`/crawler/crawl-job/${jobId}`);
-		} catch (error) {
-			message.error(error?.message || error || 'Create failed');
-			return;
+		} catch (err: any) {
+			message.error(err?.response?.data?.message ?? err?.message ?? 'Tạo crawl job thất bại');
+		} finally {
+			setLoading(false);
 		}
 	};
 
 	return (
 		<div>
-			<Space orientation="vertical" size={4} style={{ marginBottom: 24 }}>
+			<Space direction="vertical" size={4} style={{ marginBottom: 24 }}>
 				<Title level={4} style={{ margin: 0 }}>Tạo Crawl Job</Title>
 				<Text type="secondary">Thiết lập thông tin cho phiên crawl mới.</Text>
 			</Space>
 
 			<Card style={{ maxWidth: 680 }}>
-				{error && <Alert type="error" title={error} showIcon style={{ marginBottom: 24 }} />}
 				<Form
 					form={form}
 					layout="vertical"
@@ -122,7 +123,7 @@ export default function CreateCrawlJobPage() {
 					)}
 
 					<Space>
-						<Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/crawl-jobs')}>
+						<Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/crawler/crawl-job')}>
 							Hủy
 						</Button>
 						<Button type="primary" htmlType="submit" icon={<SaveOutlined />} loading={loading}>
@@ -131,10 +132,6 @@ export default function CreateCrawlJobPage() {
 					</Space>
 				</Form>
 			</Card>
-
-			{loading && (
-				<SpinComponent />
-			)}
 		</div>
 	);
 }

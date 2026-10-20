@@ -6,28 +6,33 @@ import { crawlResultColumnConfig } from '../configs/tableConfig';
 
 interface CrawlResultTableProps {
 	data: any[];
-	setParams?: any;
 	loading?: boolean;
 	pagination?: any;
+	onPageChange?: (page: number, per_page: number) => void;
+	setParams?: any;
+	params?: any;
 	dispatch?: any;
 	error?: string | null;
+	[key: string]: any;
 }
 
 const CrawlResultTable: React.FC<CrawlResultTableProps> = ({
 	data,
-	setParams,
 	loading,
 	pagination,
-	dispatch,
+	onPageChange,
+	setParams,
 	error,
 }) => {
 	if (error) {
 		return <div className="text-red-500 py-2">Error: {error}</div>;
 	}
 
-	const handlePageChange = (page: number, per_page: number) => {
-		if (dispatch && setParams) {
-			dispatch(setParams({ page, per_page }));
+	const handlePage = (page: number, per_page: number) => {
+		if (onPageChange) {
+			onPageChange(page, per_page);
+		} else if (setParams) {
+			setParams({ page, per_page });
 		}
 	};
 
@@ -36,7 +41,7 @@ const CrawlResultTable: React.FC<CrawlResultTableProps> = ({
 			columns={crawlResultColumnConfig}
 			data={data}
 			pagination={pagination}
-			handlePageChange={handlePageChange}
+			handlePageChange={handlePage}
 			loading={loading}
 			renderColumns={{
 				status: (status) => <StatusTag status={status} />,

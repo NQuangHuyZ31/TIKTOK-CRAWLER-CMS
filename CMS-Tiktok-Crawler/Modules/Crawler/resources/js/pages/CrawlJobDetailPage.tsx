@@ -1,48 +1,99 @@
-import { useEffect, useState } from 'react';
-import { useDispatch, useSelector } from '@core/store';
-import { Alert, Button, Card, Descriptions, Space, Typography, App as AntdApp } from 'antd';
-import { PlayCircleOutlined } from '@ant-design/icons';
+import { useEffect, useState, useCallback } from 'react';
+import { Alert, Button, Card, Descriptions, Space, Typography, Popconfirm, App as AntdApp } from 'antd';
+import { PlayCircleOutlined, DeleteOutlined, EditOutlined, ArrowLeftOutlined } from '@ant-design/icons';
 import { useNavigate, useParams } from 'react-router-dom';
-import { fetchCrawlJobById, startCrawlJobById, getCrawlJobResults } from '../store/crawlJob/crawlJobThunks';
-import { setParams } from '../store/crawlJob/crawlJobSlice';
+import crawlJobAPI from '../Action/crawlJob';
 import StatusTag from '@core/components/StatusTag';
 import SpinComponent from '@core/components/SpinComponent';
 import CrawlResultTable from '../components/CrawlResultTable';
-import DeleteCrawljobButton from '../components/DeleteCrawlJobButton';
 
 const { Title } = Typography;
 
 export default function CrawlJobDetailPage() {
-	const dispatch = useDispatch();
 	const { message } = AntdApp.useApp();
-	// Get crawl job details from Redux store
-	const { currentJob: job, loading, error } = useSelector((state) => state.crawlJob);
-	// Get crawl results from Redux store
-	const { results, crawlResultsLoading: loadingResults, crawlResultsError: errorResults, pagination, params } = useSelector((state) => state.crawlJob);
-
-	// Start loading state for crawl job
-	const { startLoaing } = useSelector((state) => state.crawlJob);
 	const { id } = useParams();
 	const navigate = useNavigate();
 
-	// Fetch crawl job details when the component mounts or when the job ID changes
-	useEffect(() => {
-		dispatch(fetchCrawlJobById(id));
-	}, [id, dispatch]);
+	// Local states for Job Detail
+	const [job, setJob] = useState<any>(null);
+	const [loading, setLoading] = useState(true);
+	const [error, setError] = useState<string | null>(null);
+	const [starting, setStarting] = useState(false);
+	const [deleting, setDeleting] = useState(false);
 
-	// Fetch crawl results when the component mounts or when the job ID or params change
-	useEffect(() => {
-		dispatch(getCrawlJobResults({ id, params }));
-	}, [dispatch, id, params]);
+	// Local states for Crawl Results
+	const [results, setResults] = useState<any[]>([]);
+	const [resultsLoading, setResultsLoading] = useState(false);
+	const [pagination, setPagination] = useState({ page: 1, per_page: 10, total: 0 });
 
-	// Handle starting the crawl job
-	const handleStartCrawlJob = async () => {
+	// 1. Fetch chi tiết Crawl Job
+	const loadJobDetail = useCallback(async () => {
+		if (!id) return;
 		try {
-			const result = await dispatch(startCrawlJobById(id)).unwrap();
-			message.success(result?.message || 'Start completed');
-		} catch (startError) {
-			message.error(startError?.message || startError || 'Start failed');
+			const res: any = await crawlJobAPI.getCrawlJobByID(id);
+			setJob(res?.data ?? res);
+		} catch (err: any) {
+			setError(err?.response?.data?.message ?? err?.message ?? 'Không thể tải thông tin crawl job');
+		} finally {
+			setLoading(false);
 		}
+	}, [id]);
+
+	// 2. Fetch danh sách kết quả Crawl
+	const loadResults = useCallback(async (page = 1, perPage = 10) => {
+		if (!id) return;
+		setResultsLoading(true);
+		try {
+			const res: any = await crawlJobAPI.getResults(id, { page, per_page: perPage });
+			setResults(res?.data ?? []);
+			setPagination({
+				page: res?.meta?.current_page ?? page,
+				per_page: res?.meta?.per_page ?? perPage,
+				total: res?.meta?.total ?? 0,
+			});
+		} catch {
+			// Error loading results silently handled
+		} finally {
+			setResultsLoading(false);
+		}
+	}, [id]);
+
+	useEffect(() => {
+		loadJobDetail();
+		loadResults(1, 10);
+	}, [loadJobDetail, loadResults]);
+
+	// 3. Khởi chạy Crawl Job trực tiếp qua API
+	const handleStartCrawlJob = async () => {
+		if (!id) return;
+		setStarting(true);
+		try {
+			const res: any = await crawlJobAPI.startCrawlJobByID(id);
+			message.success(res?.message || 'Khởi chạy crawl job thành công');
+			loadJobDetail();
+		} catch (err: any) {
+			message.error(err?.response?.data?.message ?? err?.message ?? 'Khởi chạy thất bại');
+		} finally {
+			setStarting(false);
+		}
+	};
+
+	// 4. Xóa Crawl Job trực tiếp qua API (không cần component trung gian)
+	const handleDelete = async () => {
+		if (!id) return;
+		setDeleting(true);
+		try {
+			const res: any = await crawlJobAPI.deleteCrawlJobByID(id);
+			message.success(res?.message || 'Xóa crawl job thành công');
+			navigate('/crawler/crawl-job');
+		} catch (err: any) {
+			message.error(err?.response?.data?.message ?? err?.message ?? 'Xóa crawl job thất bại');
+			setDeleting(false);
+		}
+	};
+
+	if (loading) {
+		return <SpinComponent />;
 	}
 
 	if (error) {
@@ -52,17 +103,44 @@ export default function CrawlJobDetailPage() {
 	return (
 		<div>
 			<Space align="center" style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', width: '100%' }}>
-				<Title level={4} style={{ margin: 0 }}>Chi tiết Crawl Job #{job?.id ?? id}</Title>
+				<Space align="center">
+					<Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/crawler/crawl-job')}>
+						Quay lại
+					</Button>
+					<Title level={4} style={{ margin: 0 }}>Chi tiết Crawl Job #{job?.id ?? id}</Title>
+				</Space>
+
 				<Space align="center" style={{ gap: 8 }}>
 					{job?.status === 'pending' ? (
 						<>
-							<Button onClick={() => navigate(`/crawler/crawl-job/${id}/edit`)}>Edit</Button>
-							<Button type="primary" icon={<PlayCircleOutlined />} loading={startLoaing} onClick={handleStartCrawlJob}>Start</Button>
+							<Button icon={<EditOutlined />} onClick={() => navigate(`/crawler/crawl-job/${id}/edit`)}>
+								Edit
+							</Button>
+							<Button
+								type="primary"
+								icon={<PlayCircleOutlined />}
+								loading={starting}
+								onClick={handleStartCrawlJob}
+							>
+								Start
+							</Button>
 						</>
-					) : <Button color='default' disabled>
-						{job?.status}
-					</Button>}
-					<DeleteCrawljobButton jobID={id} />
+					) : (
+						<Button disabled>{job?.status}</Button>
+					)}
+
+					<Popconfirm
+						title="Xóa crawl job"
+						description="Bạn có chắc chắn muốn xóa crawl job này?"
+						onConfirm={handleDelete}
+						okText="Xóa"
+						cancelText="Hủy"
+						okButtonProps={{ danger: true, loading: deleting }}
+					>
+						<Button danger icon={<DeleteOutlined />} loading={deleting}>
+							Delete
+						</Button>
+					</Popconfirm>
 				</Space>
 			</Space>
 
@@ -74,15 +152,19 @@ export default function CrawlJobDetailPage() {
 					<Descriptions.Item label="Failed">{job?.failed_count ?? 0}</Descriptions.Item>
 					<Descriptions.Item label="Started at">{job?.started_at || '-'}</Descriptions.Item>
 					<Descriptions.Item label="Finished at">{job?.finished_at || '-'}</Descriptions.Item>
-					<Descriptions.Item label="Duration" className="text-nowrap">{job?.duration ? `${job?.duration} seconds` : '-'}</Descriptions.Item>
+					<Descriptions.Item label="Duration">{job?.duration ? `${job?.duration}s` : '-'}</Descriptions.Item>
 					<Descriptions.Item label="Error">{job?.error_message || '-'}</Descriptions.Item>
 				</Descriptions>
 			</Card>
 
-			<Card>
-				<CrawlResultTable data={results} loading={loadingResults} setParams={setParams} error={errorResults} pagination={pagination} params={params} dispatch={dispatch} />
+			<Card title="Danh sách kết quả crawl">
+				<CrawlResultTable
+					data={results}
+					loading={resultsLoading}
+					pagination={pagination}
+					setParams={(p: any) => loadResults(p.page, p.per_page)}
+				/>
 			</Card>
-			{loading && <SpinComponent />}
 		</div>
 	);
 }

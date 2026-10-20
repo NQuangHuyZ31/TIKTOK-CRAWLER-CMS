@@ -33,20 +33,22 @@ export function initRouteRegistry(): void {
         order: 0,
     });
 
-    // 2. Auto-discover all module route definitions across Modules/*/resources/js/routes/route.{ts,tsx}
+    // 2. Auto-discover all module route definitions if running under Vite (in Mix, modules register via DOM scripts)
     try {
-        const modules = import.meta.glob<{ default: RouteDef[] | RouteDef }>(
-            ['/Modules/**/resources/js/routes/route.{ts,tsx}', '/modules/**/resources/js/routes/route.{ts,tsx}'],
-            { eager: true }
-        );
+        if (typeof import.meta !== 'undefined' && typeof (import.meta as any).glob === 'function') {
+            const modules = (import.meta as any).glob(
+                ['/Modules/**/resources/js/routes/route.{ts,tsx}', '/modules/**/resources/js/routes/route.{ts,tsx}'],
+                { eager: true }
+            );
 
-        for (const path in modules) {
-            const mod = modules[path];
-            if (mod && mod.default) {
-                if (Array.isArray(mod.default)) {
-                    registerRoutes(mod.default);
-                } else if (typeof mod.default === 'object' && 'path' in mod.default) {
-                    registerRoute(mod.default as RouteDef);
+            for (const path in modules) {
+                const mod = modules[path];
+                if (mod && mod.default) {
+                    if (Array.isArray(mod.default)) {
+                        registerRoutes(mod.default);
+                    } else if (typeof mod.default === 'object' && 'path' in mod.default) {
+                        registerRoute(mod.default as RouteDef);
+                    }
                 }
             }
         }
