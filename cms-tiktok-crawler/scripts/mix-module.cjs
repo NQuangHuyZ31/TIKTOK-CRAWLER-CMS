@@ -8,8 +8,7 @@ const nonFlagArgs = args.filter((a) => !a.startsWith('-'));
 const moduleName = nonFlagArgs[0] || 'all';
 
 process.env.NODE_ENV = isProd ? 'production' : 'development';
-process.env.NODE_OPTIONS =
-	`${process.env.NODE_OPTIONS || ''} --max-old-space-size=4096`.trim();
+process.env.NODE_OPTIONS = `${process.env.NODE_OPTIONS || ''}`.trim();
 
 console.log(`\n======================================================`);
 console.log(` CMS TikTok Crawler - Modular Build Runner (CMS Tiktok Crawler)`);

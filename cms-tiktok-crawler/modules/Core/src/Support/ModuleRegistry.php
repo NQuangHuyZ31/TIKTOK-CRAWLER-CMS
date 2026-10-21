@@ -148,7 +148,7 @@ class ModuleRegistry {
      */
     public function renderCss(?string $module = null): string
     {
-        $targetModule = $module ?: 'Core';
+        $targetModule = $module ?: 'all';
         $endpoints = $this->getEntrypoints();
 
         // Core CSS is always required on every page
@@ -161,8 +161,21 @@ class ModuleRegistry {
             }
         }
 
-        // Module-specific CSS
-        if ($targetModule !== 'Core' && isset($endpoints[$targetModule]['css'])) {
+        // Auto-load all module CSS if 'all', or load requested module CSS
+        if ($targetModule === 'all') {
+            foreach ($endpoints as $modName => $modConfig) {
+                if ($modName === 'Core') {
+                    continue;
+                }
+                if (isset($modConfig['css']) && is_array($modConfig['css'])) {
+                    foreach ($modConfig['css'] as $file) {
+                        if (!in_array($file, $cssFiles, true)) {
+                            $cssFiles[] = $file;
+                        }
+                    }
+                }
+            }
+        } elseif ($targetModule !== 'Core' && isset($endpoints[$targetModule]['css'])) {
             foreach ($endpoints[$targetModule]['css'] as $file) {
                 if (!in_array($file, $cssFiles, true)) {
                     $cssFiles[] = $file;
@@ -190,12 +203,12 @@ class ModuleRegistry {
      * Core JS (vendor.js, index.js) is always loaded first if not already rendered.
      * Already rendered JS files are cached in memory to prevent duplicate DOM tags.
      *
-     * @param string|null $module Target module passed from blade (defaults to 'Core')
+     * @param string|null $module Target module passed from blade (defaults to 'all' for automatic loading)
      * @return string
      */
     public function renderJs(?string $module = null): string
     {
-        $targetModule = $module ?: 'Core';
+        $targetModule = $module ?: 'all';
         $endpoints = $this->getEntrypoints();
 
         // Core JS is shared across all pages (vendor.js must load before index.js)
@@ -208,8 +221,21 @@ class ModuleRegistry {
             }
         }
 
-        // Module-specific JS
-        if ($targetModule !== 'Core' && isset($endpoints[$targetModule]['js'])) {
+        // Auto-load all module JS if 'all', or load requested module JS
+        if ($targetModule === 'all') {
+            foreach ($endpoints as $modName => $modConfig) {
+                if ($modName === 'Core') {
+                    continue;
+                }
+                if (isset($modConfig['js']) && is_array($modConfig['js'])) {
+                    foreach ($modConfig['js'] as $file) {
+                        if (!in_array($file, $jsFiles, true)) {
+                            $jsFiles[] = $file;
+                        }
+                    }
+                }
+            }
+        } elseif ($targetModule !== 'Core' && isset($endpoints[$targetModule]['js'])) {
             foreach ($endpoints[$targetModule]['js'] as $file) {
                 if (!in_array($file, $jsFiles, true)) {
                     $jsFiles[] = $file;

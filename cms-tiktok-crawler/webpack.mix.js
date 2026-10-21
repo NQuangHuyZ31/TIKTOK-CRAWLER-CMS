@@ -114,6 +114,9 @@ mix.webpackConfig({
         chunkFilename: 'modules/Core/chunks/[name].js',
     },
     optimization: {
+        runtimeChunk: {
+            name: VENDOR_CHUNK,
+        },
         splitChunks: {
             cacheGroups: {
                 // Tắt các nhóm tự động chia vụn node_modules

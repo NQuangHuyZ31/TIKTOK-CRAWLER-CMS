@@ -81,9 +81,12 @@ Hệ thống được tái cấu trúc hoàn toàn theo mô hình **Ureka Enterp
    - Các tác vụ thao tác đơn lẻ (`delete`, `create`, `update`, `start`) chuyển sang gọi API trực tiếp qua Typed Client `crawlJobAPI`.
    - Xóa bỏ component `DeleteCrawlJobButton`, thay bằng `Popconfirm` gọi API xóa trực quan tại chỗ.
 
-9. **Cơ chế Route Registry & AdminLayout Chuẩn React Router v6**:
+9. **Cơ chế Route Registry & AdminLayout Chuẩn Kiến Trúc Ureka**:
    - **`AdminLayout`**: Cấu hình theo mô hình Layout Route chuẩn (`<Route element={<AdminLayout />}>`), các route chức năng con hiển thị qua `<Outlet />` giúp tránh re-mount layout không cần thiết khi chuyển trang.
-   - **Điều hướng Sidebar theo Route Registration**: Sidebar loại bỏ cấu hình menu tĩnh (`menuConfig`), tự động đồng bộ danh sách menu từ Route Registry thông qua hook `useMenuRoutes()` dựa trên các trường metadata của route (`label`, `icon`, `order`).
+   - **Điều hướng Sidebar theo Route Registration Tự Động**:
+     - **Core hoàn toàn độc lập**: `Core` chỉ sở hữu router và layout, hoàn toàn không cần duy trì danh sách page, menu hay đường dẫn của các module con (`Core has no list of pages, menu entries or paths to maintain`).
+     - **Tự động đăng ký qua từng Module**: Mỗi module (`Crawler`, `TiktokAccount`...) tự đăng ký page và menu item của mình khi script thực thi thông qua `registerRoute(def)`. Danh sách route được lưu và duy trì tập trung trên `window.__CMS_ROUTES_REGISTRY__`.
+     - **Không còn hiện tượng load 2 lần**: Loại bỏ hoàn toàn component tạm `createModuleLoader` và script injection thủ công lúc runtime. Trình duyệt nạp sẵn các bundle module (~180 KiB tổng cộng), chuyển trang SPA tức thì (0ms trễ, không chớp giật spinner).
 
 10. **Nền tảng RESTful Controller Dùng Chung (`BaseController` & `CoreController`)**:
     - **`BaseController`**: Cung cấp sẵn 5 hành vi chuẩn RESTful (`index`, `show`, `store`, `update`, `destroy`), tích hợp pipeline tìm kiếm toàn văn (`?search=...`), lọc theo cột động (lọc số `_min`/`_max`/`_gte`/`_lte`/`1000..5000`, lọc ngày `_from`/`_to`, `whereIn`, wildcards), sắp xếp mặc định theo cấu hình `$defaultSort` (ví dụ: `['id', 'desc']` hoặc `['created_at', 'desc']`), phân trang và hỗ trợ tắt phân trang (`pagination=false`). Các tính năng tìm kiếm và lọc chỉ thực thi khi được khai báo tường minh (`$searchableColumns`, `$filterableColumns`).
@@ -326,15 +329,21 @@ Hệ thống cung cấp cơ chế build frontend thông qua **Webpack 5 & Larave
   - Mỗi module sinh ra đúng **2 file**: `public/modules/<Name>/index.js` và `public/modules/<Name>/app.css`.
   - Riêng module `Core` sinh thêm **`public/modules/Core/vendor.js`**: Chứa toàn bộ thư viện dùng chung (`react`, `react-dom`, `antd`, `@ant-design/icons`, `axios`, `@reduxjs/toolkit`, `react-redux`, `dayjs`).
   - Không sinh ra các file chunk `node_modules_*` vụn vặt.
+- **Chia sẻ Webpack Runtime Duy Nhất (`runtimeChunk: { name: VENDOR_CHUNK }`)**:
+  - Toàn bộ runtime của Webpack và bộ nhớ cache module (`__webpack_module_cache__`) được gom duy nhất vào `public/modules/Core/vendor.js`.
+  - Các bundle module (`Core/index.js`, `Crawler/index.js`, `TiktokAccount/index.js`) đều là chunk liên kết vào Webpack runtime chung và chia sẻ cùng một instance React / React Router.
+  - Triệt tiêu hoàn toàn lỗi `Minified React error #520` (`TypeError: Cannot read properties of null (reading 'useContext')`) khi nạp nhiều module trên cùng một trang.
 - **Manifest `entrypoints.json`**:
   - Tự động tạo và cập nhật cấu trúc file JS/CSS và route prefix của từng module để Blade DOM ra web.
-- **Cơ chế Scoped DOM ra Web (`app.blade.php`)**:
-  - Route (`modules/Core/routes/web.php`) tự động xác định `$module` từ prefix URL (`config('modules.routes')`, mặc định `'Core'`) và truyền trực tiếp vào Blade template.
-  - Template sử dụng Blade directives `@moduleCss($module)` trong `<head>` và `@moduleJs($module)` trong `<body>`.
-  - `ModuleRegistry` nạp Core (`vendor.js`, `index.js`, `app.css`) trước tiên, sau đó nạp file tương ứng của module được yêu cầu và tự động cache tránh render thẻ DOM trùng lặp:
-    - Tại Dashboard (`/admin`): **Chỉ nạp Core** (`Core/app.css`, `Core/vendor.js`, `Core/index.js`), không nạp script của Crawler hay TiktokAccount.
-    - Tại Crawler (`/admin/crawler/*`): Chỉ nạp Core + `Crawler/index.js`.
-    - Tại TikTok Account (`/admin/tiktok-account/*`): Chỉ nạp Core + `TiktokAccount/index.js`.
+- **Cơ chế Nạp Tự Động Module ra Web (`app.blade.php`) Chuẩn Kiến Trúc Ureka**:
+  - Template sử dụng Blade directives `@moduleCss('all')` trong `<head>` và `@moduleJs('all')` trong `<body>`.
+  - `ModuleRegistry` tự động quét toàn bộ modules có trong `public/entrypoints.json`:
+    - Nạp gói dùng chung Core (`vendor.js`, `Core/index.js`, `Core/app.css`) trước tiên.
+    - Tự động nạp toàn bộ các file JS/CSS của các module con (`Crawler/index.js`, `TiktokAccount/index.js`, và bất kỳ module mới nào được build trong tương lai).
+    - Bộ nhớ cache (`$dommedJs`, `$dommedCss`) đảm bảo mỗi file chỉ được render 1 lần duy nhất trên DOM.
+  - **Lợi ích**:
+    - **Không cần cấu hình thủ công**: Khi tạo thêm module mới (như `Report`, `Settings`...), chỉ cần build module, Blade tự động nhận diện và nạp vào trang.
+    - **Triệt tiêu hiện tượng load 2 lần**: Toàn bộ trang và menu được đăng ký sẵn vào `window.__CMS_ROUTES_REGISTRY__` ngay khi nạp trang, điều hướng SPA tức thì 0ms, không còn màn hình chờ hay flicker.
 
 | Lệnh npm | Mô tả |
 | :--- | :--- |
