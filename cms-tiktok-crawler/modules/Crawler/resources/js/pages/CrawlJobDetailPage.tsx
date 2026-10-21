@@ -5,9 +5,9 @@ import { useNavigate, useParams } from 'react-router-dom';
 import crawlJobAPI from '../Action/crawlJob';
 import StatusTag from '@core/components/StatusTag';
 import SpinComponent from '@core/components/SpinComponent';
+import PageHeader from '@core/components/PageHeader';
 import CrawlResultTable from '../components/CrawlResultTable';
 
-const { Title } = Typography;
 
 export default function CrawlJobDetailPage() {
 	const { message } = AntdApp.useApp();
@@ -101,48 +101,46 @@ export default function CrawlJobDetailPage() {
 	}
 
 	return (
-		<div>
-			<Space align="center" style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', width: '100%' }}>
-				<Space align="center">
-					<Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/crawler/crawl-job')}>
-						Quay lại
-					</Button>
-					<Title level={4} style={{ margin: 0 }}>Chi tiết Crawl Job #{job?.id ?? id}</Title>
-				</Space>
+		<div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+			<PageHeader
+				title={`Chi tiết Crawl Job #${job?.id ?? id}`}
+				subtitle="Theo dõi tiến độ và kết quả của tác vụ cào dữ liệu."
+				onBack={() => navigate('/crawler/crawl-job')}
+				extra={
+					<Space align="center" style={{ gap: 8 }}>
+						{job?.status === 'pending' ? (
+							<>
+								<Button icon={<EditOutlined />} onClick={() => navigate(`/crawler/crawl-job/${id}/edit`)}>
+									Edit
+								</Button>
+								<Button
+									type="primary"
+									icon={<PlayCircleOutlined />}
+									loading={starting}
+									onClick={handleStartCrawlJob}
+								>
+									Start
+								</Button>
+							</>
+						) : (
+							<Button disabled>{job?.status}</Button>
+						)}
 
-				<Space align="center" style={{ gap: 8 }}>
-					{job?.status === 'pending' ? (
-						<>
-							<Button icon={<EditOutlined />} onClick={() => navigate(`/crawler/crawl-job/${id}/edit`)}>
-								Edit
+						<Popconfirm
+							title="Xóa crawl job"
+							description="Bạn có chắc chắn muốn xóa crawl job này?"
+							onConfirm={handleDelete}
+							okText="Xóa"
+							cancelText="Hủy"
+							okButtonProps={{ danger: true, loading: deleting }}
+						>
+							<Button danger icon={<DeleteOutlined />} loading={deleting}>
+								Delete
 							</Button>
-							<Button
-								type="primary"
-								icon={<PlayCircleOutlined />}
-								loading={starting}
-								onClick={handleStartCrawlJob}
-							>
-								Start
-							</Button>
-						</>
-					) : (
-						<Button disabled>{job?.status}</Button>
-					)}
-
-					<Popconfirm
-						title="Xóa crawl job"
-						description="Bạn có chắc chắn muốn xóa crawl job này?"
-						onConfirm={handleDelete}
-						okText="Xóa"
-						cancelText="Hủy"
-						okButtonProps={{ danger: true, loading: deleting }}
-					>
-						<Button danger icon={<DeleteOutlined />} loading={deleting}>
-							Delete
-						</Button>
-					</Popconfirm>
-				</Space>
-			</Space>
+						</Popconfirm>
+					</Space>
+				}
+			/>
 
 			<Card style={{ marginBottom: 20 }}>
 				<Descriptions bordered column={{ xs: 1, sm: 2, lg: 4 }}>

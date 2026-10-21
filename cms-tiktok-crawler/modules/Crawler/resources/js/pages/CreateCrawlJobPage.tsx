@@ -4,8 +4,8 @@ import { ArrowLeftOutlined, DatabaseOutlined, LinkOutlined, NumberOutlined, Save
 import { useNavigate } from 'react-router-dom';
 import crawlJobAPI from '../Action/crawlJob';
 import TiktokAccountSelect from '../components/TiktokAccountSelect';
+import PageHeader from '@core/components/PageHeader';
 
-const { Text, Title } = Typography;
 
 export default function CreateCrawlJobPage() {
 	const { message } = AntdApp.useApp();
@@ -58,11 +58,12 @@ export default function CreateCrawlJobPage() {
 	};
 
 	return (
-		<div>
-			<Space direction="vertical" size={4} style={{ marginBottom: 24 }}>
-				<Title level={4} style={{ margin: 0 }}>Tạo Crawl Job</Title>
-				<Text type="secondary">Thiết lập thông tin cho phiên crawl mới.</Text>
-			</Space>
+		<div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+			<PageHeader
+				title="Tạo Crawl Job"
+				subtitle="Thiết lập thông tin cho phiên crawl mới."
+				onBack={() => navigate('/crawler/crawl-job')}
+			/>
 
 			<Card style={{ maxWidth: 680 }}>
 				<Form

@@ -115,19 +115,28 @@ Hệ thống được tái cấu trúc hoàn toàn theo mô hình **Ureka Enterp
 
 ## 3. Tính năng chính
 
+### 📊 Bảng Điều Khiển Tổng Quan (`modules/Core/pages/DashboardPage`)
+- **Giám sát tập trung toàn hệ thống**: Hợp nhất toàn bộ chỉ số KPI từ cả 2 module Crawler và TiktokAccount vào một dashboard duy nhất.
+- **4 Hero KPI Cards**: Tổng Crawl Jobs (phân loại completed/failed), Mục tiêu tài khoản thu thập (success/failed), Hồ sơ TikTok lưu trữ (active/inactive), Tổng lượt thích & followers.
+- **Phân tích hiệu năng chuyên sâu**:
+  - *Crawl Engine Performance*: Thanh tiến độ tỷ lệ cào thành công, lưới số liệu jobs hoàn tất, jobs thất bại, tài khoản thành công, tài khoản lỗi và số job đang xếp hàng xử lý.
+  - *TikTok Social Database*: Thanh tiến độ tỷ lệ tài khoản hoạt động, số liệu followers, likes, following, và tài khoản active.
+- **Bảng hoạt động crawl gần đây**: Danh sách 5 crawl job mới nhất với trạng thái, tiến độ, thời gian tạo và link truy cập chi tiết.
+- **Lối tắt tác vụ nhanh**: Phím tắt tạo Crawl Job, quản lý danh sách jobs và tra cứu hồ sơ TikTok.
+
 ### 🔄 Quản lý Crawl Jobs (`modules/Crawler`)
 - **Tạo job thu thập linh hoạt**: Hỗ trợ 4 nguồn đầu vào:
   1. *Usernames*: Nhập danh sách username TikTok (mỗi dòng một username).
   2. *URLs*: Nhập danh sách đường dẫn trang cá nhân TikTok.
   3. *Database*: Chọn các tài khoản có sẵn trong cơ sở dữ liệu hệ thống.
   4. *Count*: Thu thập tự động theo số lượng chỉ định.
-- **Bảng điều khiển KPI**: Tổng số jobs, jobs hoàn thành, jobs thất bại, tổng số tài khoản đã crawl.
-- **Danh sách & Bộ lọc**: Tìm kiếm, sắp xếp, phân trang và xem chi tiết tiến độ từng job.
+- **Giao diện tinh gọn**: Loại bỏ khối thống kê cục bộ, tập trung toàn diện vào bảng danh sách jobs, tìm kiếm, phân trang và thao tác tạo job.
 - **Chi tiết Job**: Theo dõi kết quả từng tài khoản (avatar, trạng thái, thời gian chạy, log lỗi nếu có).
 - **Thao tác nhanh**: Khởi chạy lại job (Start Job), xóa job khỏi hệ thống.
 
 ### 👥 Quản lý Tài khoản TikTok (`modules/TiktokAccount`)
 - **Danh sách tài khoản**: Bảng dữ liệu hiển thị avatar, username, số lượng followers, following, likes, trạng thái (`active` / `inactive`).
+- **Giao diện làm việc sạch sẽ**: Loại bỏ khối summary cục bộ trên đầu trang, đưa vào bảng điều khiển Dashboard trung tâm.
 - **Tìm kiếm & Sắp xếp**: Sắp xếp đa tiêu chí theo followers, likes, trạng thái; lọc theo từ khóa.
 - **Chi tiết hồ sơ**: Xem đầy đủ thông tin cá nhân và lịch sử crawl dữ liệu liên quan của tài khoản.
 - **Chỉnh sửa & Tải lên Avatar**: Cập nhật thông tin tài khoản, tải lên avatar mới (tự động lưu vào storage cục bộ).
@@ -171,7 +180,8 @@ cms-tiktok-crawler/
 │   └── providers.php                    # Service Providers đăng ký
 ├── config/                              # Cấu hình hệ thống (app, database, cors, services...)
 ├── database/
-│   └── migrations/                      # Database Schema Migrations (tiktok_accounts, crawl_jobs, crawl_results...)
+│   ├── migrations/                      # Bảng hạ tầng Framework (cache, jobs)
+│   └── seeders/                         # Master DatabaseSeeder (gọi các module seeders)
 ├── modules/                             # Tầng Module nghiệp vụ (Kiến trúc Ureka)
 │   ├── API/                             # Module API công khai / Webhook
 │   │   ├── routes/api.php               # Route webhook callback từ crawler
@@ -180,6 +190,9 @@ cms-tiktok-crawler/
 │   │   ├── configs/
 │   │   │   ├── admin.php                # Cấu hình admin prefix và api path
 │   │   │   └── modules.php              # Mapping URL prefix sang module
+│   │   ├── database/
+│   │   │   ├── migrations/              # users, roles, permissions, role_permissions, personal_access_tokens...
+│   │   │   └── seeders/                 # RolePermissionSeeder, UserSeeder, CoreDatabaseSeeder
 │   │   ├── resources/
 │   │   │   ├── css/app.css              # Global Tailwind & Ant Design Reset styles
 │   │   │   ├── js/
@@ -187,6 +200,7 @@ cms-tiktok-crawler/
 │   │   │   │   ├── components/          # CardKPI, Table, CustomModal, Spin, StatusTag...
 │   │   │   │   ├── layouts/             # AdminLayout, Header, Sidebar
 │   │   │   │   ├── pages/               # DashboardPage, NotFoundPage
+│   │   │   │   │   └── ui/              # Dashboard UI subcomponents (Header, KpiCards, Overview, Table, Shortcuts)
 │   │   │   │   ├── routes/              # Route registry, autoRegister
 │   │   │   │   ├── store/index.ts       # Root Redux Store & Typed Hooks
 │   │   │   │   └── utils/               # formatCurrency, validation helpers
@@ -197,9 +211,12 @@ cms-tiktok-crawler/
 │   │   │   └── web.php                  # SPA catch-all & route-level module resolver
 │   │   └── src/                         # Controllers, Repositories, Providers, Support, Traits...
 │   ├── Crawler/                         # Module Quản lý Crawl Jobs
+│   │   ├── database/
+│   │   │   ├── migrations/              # crawl_jobs, crawl_results
+│   │   │   └── seeders/                 # CrawlJobSeeder
 │   │   ├── resources/js/
-│   │   │   ├── Action/                  # crawlJob.ts, crawlResult.ts (API calls)
-│   │   │   ├── components/              # CrawlJobListTable, StatisticSummary, CrawlResultTable...
+│   │   │   ├── Action/                  # crawlJob.ts (API calls)
+│   │   │   ├── components/              # CrawlJobListTable, CrawlResultTable...
 │   │   │   ├── configs/tableConfig.ts   # Cấu hình bảng dữ liệu
 │   │   │   ├── pages/                   # CrawlJobsPage, CrawlJobDetailPage, Create, Edit
 │   │   │   ├── routes/route.ts          # Route definitions cho Crawler
@@ -207,6 +224,9 @@ cms-tiktok-crawler/
 │   │   ├── routes/api.php               # API endpoints cho Crawler (Dynamic routing qua Core)
 │   │   └── src/                         # Controllers, Models, Repositories, Services, Providers...
 │   └── TiktokAccount/                   # Module Quản lý Tài khoản TikTok
+│       ├── database/
+│       │   ├── migrations/              # tiktok_accounts
+│       │   └── seeders/                 # TiktokAccountSeeder
 │       ├── resources/js/
 │       │   ├── Action/tiktokAccount.ts  # API calls cho tài khoản TikTok
 │       │   ├── components/              # TiktokAccountTableList, AvatarUpload, DeleteAccount...
@@ -428,6 +448,14 @@ Dưới đây là tổng hợp các endpoint API chính trong hệ thống:
 | `PUT` / `POST` | `/admin/api/tiktok-account/tiktok-account/{id}` | Cập nhật thông tin & upload avatar tài khoản |
 | `DELETE` | `/admin/api/tiktok-account/tiktok-account/{id}` | Xóa tài khoản TikTok |
 
+### Xác thực CMS & Phân quyền Role/Permission (`AuthController`)
+| Phương thức | Endpoint | Mô tả |
+| :--- | :--- | :--- |
+| `POST` | `/admin/api/core/auth/login` | Đăng nhập hệ thống bằng email & password, cấp Sanctum Bearer Token & ma trận quyền |
+| `POST` | `/admin/api/core/auth/logout` | Đăng xuất, hủy bỏ Bearer Token hiện tại và logout session |
+| `GET` | `/admin/api/core/auth/me` | Lấy thông tin user đăng nhập hiện tại, vai trò và ma trận quyền hạn module |
+| `GET` | `/admin/api/core/auth/permissions` | Lấy danh mục quyền hạn toàn hệ thống phân nhóm theo module |
+
 ### Hệ thống Core & Tác vụ dùng chung (`CoreController` & `BaseController`)
 | Phương thức | Endpoint | Mô tả |
 | :--- | :--- | :--- |
@@ -450,7 +478,49 @@ Dưới đây là tổng hợp các endpoint API chính trong hệ thống:
 
 ---
 
-## 10. Kiểm thử & Kiểm tra chất lượng
+## 10. Hệ thống Phân quyền Role & Permission theo Module (View/Edit)
+
+Hệ thống được thiết kế theo mô hình Modular RBAC, cho phép phân quyền chi tiết theo từng module:
+
+### 1. Phân định quyền theo Module (View & Edit)
+- **Module Crawler**:
+  - `crawler.view`: Quyền xem danh sách, chi tiết job cào, thống kê KPI và bảng kết quả cào.
+  - `crawler.edit`: Quyền tạo mới, chỉnh sửa, xóa và kích hoạt khởi chạy cào dữ liệu (`start`).
+- **Module TikTok Account**:
+  - `tiktok_account.view`: Quyền xem danh sách tài khoản TikTok, chi tiết hồ sơ và lịch sử crawl.
+  - `tiktok_account.edit`: Quyền thêm mới, cập nhật hồ sơ, tải lên avatar và xóa tài khoản.
+- **Module Core System**:
+  - `core.view`: Quyền xem Dashboard KPI, trạng thái hệ thống ping health check.
+  - `core.edit`: Quyền tải lên file, xóa file lưu trữ và quản lý cấu hình hệ thống.
+- **Module User & Phân quyền**:
+  - `user.view`: Quyền xem danh sách người dùng, vai trò (Roles) và quyền hạn (Permissions).
+  - `user.edit`: Quyền tạo mới, chỉnh sửa người dùng, phân vai trò và gán quyền trực tiếp.
+
+### 2. Các Vai trò mặc định (Roles)
+- **Super Administrator (`admin`)**: Toàn quyền View & Edit trên tất cả các module.
+- **Operations Manager (`manager`)**: Quyền View & Edit cho `crawler`, `tiktok_account`, `core`; quyền View cho `user`.
+- **Crawler Specialist (`editor`)**: Quyền View & Edit cho `crawler`, `tiktok_account`; quyền View cho `core`.
+- **Data Viewer / Guest Auditor (`viewer`)**: Chỉ có quyền View cho `crawler`, `tiktok_account`, `core`; không có quyền Edit.
+
+### 3. Tài khoản Demo có sẵn (Mật khẩu: `password`)
+- **Admin**: `admin@cms.com` (Role: `admin`)
+- **Manager**: `manager@cms.com` (Role: `manager`)
+- **Editor**: `editor@cms.com` (Role: `editor`)
+- **Viewer**: `viewer@cms.com` (Role: `viewer`)
+
+### 4. Middleware Phân quyền Route
+Sử dụng middleware `module.permission:{module},{action}` trong khai báo route hoặc controller:
+```php
+// Ví dụ bảo vệ route chỉnh sửa crawler
+Route::post('/crawler/job/create', [CrawlJobController::class, 'store'])
+    ->middleware('module.permission:crawler,edit');
+
+// Ví dụ bảo vệ route xem tài khoản TikTok
+Route::get('/tiktok-account/list', [TiktokAccountController::class, 'index'])
+    ->middleware('module.permission:tiktok_account,view');
+```
+
+## 11. Kiểm thử & Kiểm tra chất lượng
 
 ### 1. Kiểm tra biên dịch TypeScript
 Kiểm tra tính đúng đắn của toàn bộ kiểu dữ liệu tĩnh:
@@ -467,11 +537,11 @@ npm run mix
 *(Kết quả: Core `index.js` ~40 KiB, vendor bundle ~1.36 MiB, modules ~65-71 KiB, `entrypoints.json` được sinh tự động).*
 
 ### 3. Kiểm thử tự động Backend (PHP Artisan Test / Pest)
-Chạy bộ test suite của Laravel (bao gồm Feature Tests cho Dynamic Routes, CORS preflight/headers, Web SPA routes, Root redirect, CoreController ping/upload/delete, BaseController 5 RESTful actions, keyword search, column filtering, sorting, pagination, Scoped DOM manifest reading và duplicate prevention cache):
+Chạy bộ test suite của Laravel (bao gồm Feature Tests cho Dynamic Routes, CORS preflight/headers, Web SPA routes, Root redirect, CoreController ping/upload/delete, BaseController 5 RESTful actions, keyword search, column filtering, sorting, pagination, Scoped DOM manifest reading, duplicate prevention cache, Authentication, và Module-based RBAC View/Edit partitioning):
 ```bash
 php artisan test
 ```
-*(43 tests passed 100%, 153 assertions).*
+*(51 tests passed 100%, 228 assertions).*
 
 ### 4. Kiểm tra danh sách Route
 Xác nhận toàn bộ routes của các module đã được đăng ký chính xác bắt đầu bằng prefix admin:
@@ -485,6 +555,14 @@ php artisan route:list
 
 1. **Frontend**:
    - Mọi file logic hoặc UI đều phải dùng TypeScript (`.ts`, `.tsx`). Tuyệt đối không dùng `.js` hay `.jsx` trong thư mục `modules/*/resources/js/`.
+   - **Tái sử dụng Component dùng chung (`@core/components`)**: Tuyệt đối không tạo mới hoặc bọc thêm wrapper không cần thiết nếu đã có component dùng chung:
+     - `TableComponent`: Bảng dữ liệu chính, tùy biến cột qua `renderColumns`. Không tạo thêm component bọc bảng nếu chỉ để bọc `<TableComponent>`.
+     - `PageHeader`: Tiêu đề trang chuẩn hóa kèm `onBack`, `subtitle`, `breadcrumbs`, `extra`. Không tự dựng tiêu đề bằng `<Space><Title><Text>`.
+     - `CardKPI`: Hiển thị chỉ số thống kê, tiến độ và icon trực quan.
+     - `StatusTag`: Hiển thị nhãn trạng thái thống nhất cho toàn bộ modules.
+     - `ConfirmDialog`: Hộp thoại xác nhận thao tác quan trọng/nguy hiểm.
+     - `SpinComponent`: Trạng thái đang tải dữ liệu / Suspense fallback.
+     - `EmptyState`: Trạng thái danh sách rỗng kèm nút hành động.
    - Mọi lời gọi HTTP API phải đi qua các hàm định kiểu trong thư mục `Action/` của module tương ứng.
    - Luôn sử dụng typed hooks từ `@core/store`: `useDispatch`, `useSelector`, `useAppDispatch`, `useAppSelector`.
 2. **Backend**:

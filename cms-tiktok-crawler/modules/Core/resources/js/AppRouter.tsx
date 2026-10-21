@@ -1,8 +1,9 @@
-import { App as AntdApp, ConfigProvider, Spin } from 'antd';
+import { App as AntdApp, ConfigProvider } from 'antd';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Suspense } from 'react';
 import { useAdminRoutes, useBareRoutes } from './routes';
 import AdminLayout from './layouts/AdminLayout';
+import SpinComponent from './components/SpinComponent';
 
 export default function AppRouter() {
 	const adminRoutes = useAdminRoutes();
@@ -20,20 +21,7 @@ export default function AppRouter() {
 		>
 			<AntdApp>
 				<BrowserRouter basename={adminPath}>
-					<Suspense
-						fallback={
-							<div
-								style={{
-									display: 'flex',
-									justifyContent: 'center',
-									alignItems: 'center',
-									minHeight: '60vh',
-								}}
-							>
-								<Spin size="large" />
-							</div>
-						}
-					>
+					<Suspense fallback={<SpinComponent />}>
 						<Routes>
 							{/* Routes configured inside AdminLayout */}
 							<Route element={<AdminLayout />}>

@@ -16,16 +16,17 @@ import {
 	Descriptions,
 	Row,
 	Space,
-	Statistic,
-	Tag,
 	Typography,
 } from 'antd';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from '@core/store';
 import { fetchTiktokAccountByID, updateTiktokAccountStatus } from '../store/tiktokAccount/tiktokAccountThunks';
 import DeleteAccount from '../components/DeleteAccount';
 import SpinComponent from '@core/components/SpinComponent';
+import PageHeader from '@core/components/PageHeader';
+import CardKPI from '@core/components/CardKPI';
+import StatusTag from '@core/components/StatusTag';
 import formatCurrency from '@core/utils/formatCurrency';
 import CrawlHistory from '../components/CrawlHistory';
 
@@ -63,58 +64,80 @@ export default function TiktokAccountDetailPage() {
 	// Toggle the visibility of the crawl history section
 	const handleViewCrawlHistory = () => {
 		setShowCrawlHistory((prev) => !prev);
-	}
+	};
 
 	if (error) {
 		return <Alert type="error" title={error} showIcon />;
 	}
 
 	return (
-		<Space orientation="vertical" size={24} style={{ width: '100%' }}>
-			<Space align="center" style={{ justifyContent: 'space-between', width: '100%' }}>
-				<Space orientation="vertical" size={4}>
-					<Title level={3} style={{ margin: 0 }}>Account details</Title>
-					<Text type="secondary">Review profile information and crawl activity.</Text>
-				</Space>
-				<Space orientation="horizontal" size={4}>
-					<Button icon={<EditOutlined />} onClick={() => navigate(`/tiktok-account/${id}/edit`)}>Edit</Button>
-					<Button
-						type={accountData?.status === 'active' ? 'default' : 'primary'}
-						loading={updatingStatus}
-						onClick={handleStatusChange}
-					>
-						{accountData?.status === 'active' ? 'Inactive' : 'Active'}
-					</Button>
-					<DeleteAccount accountId={id} />
-				</Space>
-			</Space>
+		<Space direction="vertical" size={24} style={{ width: '100%' }}>
+			{/* Shared PageHeader */}
+			<PageHeader
+				title={`Account @${accountData?.username || id}`}
+				subtitle="Review profile information and crawl activity."
+				onBack={() => navigate('/tiktok-account')}
+				extra={
+					<Space wrap>
+						<Button icon={<EditOutlined />} onClick={() => navigate(`/tiktok-account/${id}/edit`)}>Edit</Button>
+						<Button
+							type={accountData?.status === 'active' ? 'default' : 'primary'}
+							loading={updatingStatus}
+							onClick={handleStatusChange}
+						>
+							{accountData?.status === 'active' ? 'Inactive' : 'Active'}
+						</Button>
+						<DeleteAccount accountId={id} />
+					</Space>
+				}
+			/>
 
 			<Card>
 				<Space align="start" size={20} wrap>
 					<Avatar size={96} src={accountData?.avatar_path} icon={<UserOutlined />} />
-					<Space orientation="vertical" size={6}>
+					<Space direction="vertical" size={6}>
 						<Space align="center">
 							<Title level={4} style={{ margin: 0 }}>{accountData?.username || '-'}</Title>
-							<Tag color={accountData?.status === 'active' ? 'success' : 'error'}>{accountData?.status || 'Unknown'}</Tag>
+							<StatusTag status={accountData?.status} />
 						</Space>
 						<Text type="secondary">{accountData?.username || '-'} - {accountData?.status || 'Unknown'}</Text>
 						<Space wrap>
-							<Link to={accountData?.profile_url} target="_blank" rel="noopener noreferrer" ><LinkOutlined /> {accountData?.profile_url}</Link>
-							<Text type="secondary"><CalendarOutlined /> Last crawled: {accountData?.last_crawled_at || 'Unknown'}</Text>
+							<Link to={accountData?.profile_url} target="_blank" rel="noopener noreferrer" >
+								<LinkOutlined /> {accountData?.profile_url}
+							</Link>
+							<Text type="secondary">
+								<CalendarOutlined /> Last crawled: {accountData?.last_crawled_at || 'Unknown'}
+							</Text>
 						</Space>
 					</Space>
 				</Space>
 			</Card>
 
+			{/* Reusing CardKPI instead of raw Statistic */}
 			<Row gutter={[16, 16]}>
-				<Col xs={24} sm={12} lg={6}>
-					<Card><Statistic title="Followers" value={formatCurrency(accountData?.followers_count || 0)} prefix={<UserAddOutlined />} /></Card>
+				<Col xs={24} sm={8}>
+					<CardKPI
+						title="Followers"
+						value={formatCurrency(accountData?.followers_count || 0)}
+						icon={<UserAddOutlined />}
+						color="#1677ff"
+					/>
 				</Col>
-				<Col xs={24} sm={12} lg={6}>
-					<Card><Statistic title="Following" value={formatCurrency(accountData?.following_count || 0)} prefix={<UserOutlined />} /></Card>
+				<Col xs={24} sm={8}>
+					<CardKPI
+						title="Following"
+						value={formatCurrency(accountData?.following_count || 0)}
+						icon={<UserOutlined />}
+						color="#52c41a"
+					/>
 				</Col>
-				<Col xs={24} sm={12} lg={6}>
-					<Card><Statistic title="Likes" value={formatCurrency(accountData?.likes_count || 0)} prefix={<HeartOutlined />} /></Card>
+				<Col xs={24} sm={8}>
+					<CardKPI
+						title="Likes"
+						value={formatCurrency(accountData?.likes_count || 0)}
+						icon={<HeartOutlined />}
+						color="#fa8c16"
+					/>
 				</Col>
 			</Row>
 
@@ -122,16 +145,27 @@ export default function TiktokAccountDetailPage() {
 				<Descriptions column={{ xs: 1, sm: 2, lg: 3 }}>
 					<Descriptions.Item label="Account ID">{id || '-'}</Descriptions.Item>
 					<Descriptions.Item label="Username">{accountData?.username || '-'}</Descriptions.Item>
-					<Descriptions.Item label="Status"><Tag color={accountData?.status === 'active' ? 'success' : 'error'}>{accountData?.status || 'Unknown'}</Tag></Descriptions.Item>
+					<Descriptions.Item label="Status">
+						<StatusTag status={accountData?.status} />
+					</Descriptions.Item>
 					<Descriptions.Item label="First crawled">{accountData?.created_at || 'Unknown'}</Descriptions.Item>
 					<Descriptions.Item label="Last crawled">{accountData?.last_crawled_at || 'Unknown'}</Descriptions.Item>
 					<Descriptions.Item label="Profile URL">{accountData?.profile_url || 'Unknown'}</Descriptions.Item>
 				</Descriptions>
 			</Card>
+
 			{loading && <SpinComponent />}
-			<Card title="Crawl History" extra={<Button type="primary" onClick={handleViewCrawlHistory}>{showCrawlHistory ? 'Hide' : 'Show'} Crawl History</Button>}>
+
+			<Card
+				title="Crawl History"
+				extra={
+					<Button type="primary" onClick={handleViewCrawlHistory}>
+						{showCrawlHistory ? 'Hide' : 'Show'} Crawl History
+					</Button>
+				}
+			>
 				{showCrawlHistory && <CrawlHistory accountId={id} />}
 			</Card>
-		</Space >
+		</Space>
 	);
 }

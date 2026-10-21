@@ -20,10 +20,10 @@ import {
 } from '../store/tiktokAccount/tiktokAccountThunks';
 
 import SpinComponent from '@core/components/SpinComponent';
+import PageHeader from '@core/components/PageHeader';
 import AccountFields from '../components/AccountField';
 import AvatarUpload from '../components/AvatarUpload';
 
-const { Text, Title } = Typography;
 
 const initialFormValues = {
 	username: '',
@@ -160,20 +160,12 @@ export default function TiktokAccountEditPage() {
 	};
 
 	return (
-		<div>
-			<Space
-				orientation="vertical"
-				size={4}
-				style={{ marginBottom: 24 }}
-			>
-				<Title level={4} style={{ margin: 0 }}>
-					Edit TikTok Account
-				</Title>
-
-				<Text type="secondary">
-					Chỉnh sửa thông tin thủ công của tài khoản.
-				</Text>
-			</Space>
+		<div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+			<PageHeader
+				title="Edit TikTok Account"
+				subtitle="Chỉnh sửa thông tin thủ công của tài khoản."
+				onBack={() => navigate(`/tiktok-account/${id}`)}
+			/>
 
 			<Card style={{ maxWidth: 680 }}>
 				{error && (

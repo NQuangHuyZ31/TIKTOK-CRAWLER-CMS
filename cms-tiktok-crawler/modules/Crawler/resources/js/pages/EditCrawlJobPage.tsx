@@ -5,8 +5,8 @@ import { useNavigate, useParams } from 'react-router-dom';
 import crawlJobAPI from '../Action/crawlJob';
 import TiktokAccountSelect from '../components/TiktokAccountSelect';
 import SpinComponent from '@core/components/SpinComponent';
+import PageHeader from '@core/components/PageHeader';
 
-const { Text, Title } = Typography;
 
 export default function EditCrawlJobPage() {
 	const { message } = AntdApp.useApp();
@@ -95,11 +95,12 @@ export default function EditCrawlJobPage() {
 	}
 
 	return (
-		<div>
-			<Space direction="vertical" size={4} style={{ marginBottom: 24 }}>
-				<Title level={4} style={{ margin: 0 }}>Chỉnh sửa Crawl Job #{id}</Title>
-				<Text type="secondary">Chỉ crawl job đang pending mới có thể chỉnh sửa.</Text>
-			</Space>
+		<div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+			<PageHeader
+				title={`Chỉnh sửa Crawl Job #${id}`}
+				subtitle="Chỉ crawl job đang pending mới có thể chỉnh sửa."
+				onBack={() => navigate(`/crawler/crawl-job/${id}`)}
+			/>
 
 			<Card style={{ maxWidth: 680 }}>
 				{error && <Alert type="error" title={error} showIcon style={{ marginBottom: 24 }} />}

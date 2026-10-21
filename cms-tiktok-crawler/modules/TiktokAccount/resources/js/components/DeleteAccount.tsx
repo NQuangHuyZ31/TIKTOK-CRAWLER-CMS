@@ -1,8 +1,7 @@
-import { Button } from "antd";
+import { Button, App as AntdApp } from "antd";
 import { useDispatch } from '@core/store';
-import CustomModal from "@core/components/CustomModal";
+import ConfirmDialog from "@core/components/ConfirmDialog";
 import { useState } from "react";
-import { App as AntdApp } from "antd";
 import { deleteTiktokAccount } from "../store/tiktokAccount/tiktokAccountThunks";
 import { useNavigate } from "react-router-dom";
 
@@ -41,18 +40,17 @@ const DeleteAccount = ({ accountId, redirectOnDelete = true, textOnly = false })
 			>
 				Delete
 			</Button>
-			{openModal && <CustomModal
-				title="Delete Account"
+			<ConfirmDialog
 				open={openModal}
-				handleOk={handleDelete}
+				title="Delete Account"
+				content="Are you sure you want to delete this account?"
+				onConfirm={handleDelete}
+				onCancel={() => setOpenModal(false)}
 				confirmLoading={loadingDeleted}
-				onClose={() => setOpenModal(false)}
-			>
-				<p>Are you sure you want to delete this account?</p>
-			</CustomModal>
-			}
+				danger
+			/>
 		</>
-	)
-}
+	);
+};
 
-export default DeleteAccount;
+export default DeleteAccount;

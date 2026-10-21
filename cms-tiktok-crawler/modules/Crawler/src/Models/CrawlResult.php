@@ -2,28 +2,48 @@
 
 namespace Modules\Crawler\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
-use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Notifications\Notifiable;
+use Modules\TiktokAccount\Models\TiktokAccount;
 
-#[Fillable(['crawl_job_id', 'tiktok_account_id', 'username', 'followers_count',
-	'following_count', 'likes_count', 'profile_url', 'avatar_url', 'avatar_path',
-	'status', 'error_message', 'crawled_at'])]
-#[Hidden([''])]
+#[Fillable([
+    'crawl_job_id',
+    'tiktok_account_id',
+    'username',
+    'nickname',
+    'avatar_url',
+    'avatar_path',
+    'profile_url',
+    'followers_count',
+    'following_count',
+    'likes_count',
+    'video_count',
+    'bio',
+    'status',
+    'raw_data',
+    'error_message',
+    'crawled_at',
+])]
+class CrawlResult extends Model
+{
+    use HasFactory, Notifiable;
 
-class CrawlResult extends Model {
+    /**
+     * Relationship to CrawlJob.
+     */
+    public function crawlJob(): BelongsTo
+    {
+        return $this->belongsTo(CrawlJob::class, 'crawl_job_id');
+    }
 
-	use HasFactory, Notifiable;
-
-	public function crawlJob() {
-		return $this->belongsTo(CrawlJob::class, 'crawl_job_id');
-	}
-
-	public function tiktokAccount() {
-		return $this->belongsTo(\Modules\TiktokAccount\Models\TiktokAccount::class, 'tiktok_account_id');
-	}
+    /**
+     * Relationship to TiktokAccount.
+     */
+    public function tiktokAccount(): BelongsTo
+    {
+        return $this->belongsTo(TiktokAccount::class, 'tiktok_account_id');
+    }
 }

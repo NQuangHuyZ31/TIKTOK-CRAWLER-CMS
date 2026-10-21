@@ -32,12 +32,33 @@ class CoreServiceProvider extends ServiceProvider
         $this->loadViewsFrom(dirname(__DIR__, 2) . '/resources/views', 'core');
         $this->registerModuleRoutes();
         $this->registerBladeDirectives();
+        $this->registerModuleMigrations();
+
+        // $router = $this->app->make(\Illuminate\Routing\Router::class);
+        // $router->aliasMiddleware('module.permission', \Modules\Core\Middleware\CheckModulePermission::class);
 
         $this->app->terminating(function () {
             if ($this->app->bound(ModuleRegistry::class)) {
                 $this->app->make(ModuleRegistry::class)->resetDomCache();
             }
         });
+    }
+
+    /**
+     * Auto-discover and register all module migrations.
+     * Each module maintains its own database/migrations directory.
+     */
+    protected function registerModuleMigrations(): void
+    {
+        /** @var ModuleRegistry $registry */
+        $registry = $this->app->make(ModuleRegistry::class);
+
+        foreach ($registry->all() as $name => $moduleDir) {
+            $migrationDir = $registry->path($name, 'database/migrations');
+            if (is_dir($migrationDir)) {
+                $this->loadMigrationsFrom($migrationDir);
+            }
+        }
     }
 
     /**

@@ -37,7 +37,10 @@
 			"Modules\\Core\\": "Modules/Core/src/",
 			"Modules\\Crawler\\": "Modules/Crawler/src/",
 			"Modules\\TiktokAccount\\": "Modules/TiktokAccount/src/",
-			"Modules\\API\\": "Modules/API/src/"
+			"Modules\\API\\": "Modules/API/src/",
+			"Modules\\Core\\Database\\Seeders\\": "modules/Core/database/seeders/",
+			"Modules\\Crawler\\Database\\Seeders\\": "modules/Crawler/database/seeders/",
+			"Modules\\TiktokAccount\\Database\\Seeders\\": "modules/TiktokAccount/database/seeders/"
 		}
 	},
 	"autoload-dev": {
