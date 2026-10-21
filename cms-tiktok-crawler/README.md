@@ -92,6 +92,25 @@ Hệ thống được tái cấu trúc hoàn toàn theo mô hình **Ureka Enterp
     - **`BaseController`**: Cung cấp sẵn 5 hành vi chuẩn RESTful (`index`, `show`, `store`, `update`, `destroy`), tích hợp pipeline tìm kiếm toàn văn (`?search=...`), lọc theo cột động (lọc số `_min`/`_max`/`_gte`/`_lte`/`1000..5000`, lọc ngày `_from`/`_to`, `whereIn`, wildcards), sắp xếp mặc định theo cấu hình `$defaultSort` (ví dụ: `['id', 'desc']` hoặc `['created_at', 'desc']`), phân trang và hỗ trợ tắt phân trang (`pagination=false`). Các tính năng tìm kiếm và lọc chỉ thực thi khi được khai báo tường minh (`$searchableColumns`, `$filterableColumns`).
     - **`CoreController`**: Controller cụ thể kế thừa `BaseController` xử lý các tác vụ hệ thống dùng chung (`ping`, tải lên file `upload`, xóa file `delete-uploaded-file`), đồng thời hỗ trợ truy vấn RESTful CRUD trực tiếp cho bất kỳ Model nào thông qua tham số `?model=...`.
 
+11. **Chuẩn Hóa Phân Tầng Clean Layering: Controller - Service - Repository (`modules/Crawler`)**:
+    - **Nguyên tắc "Nghiệp vụ đơn giản không cần service"**:
+      - Các thao tác CRUD chuẩn (`store`, `update`, `destroy`), tổng hợp số liệu KPI (`statisticsSummary`) và truy vấn kết quả crawl (`results`) được Controller gọi trực tiếp thông qua tầng Repository (`CrawlJobRepository`, `CrawlResultRepository`).
+      - Không lạm dụng tầng Service làm wrapper trung gian chuyển tiếp vô ích.
+    - **Tầng Service (`CrawlJobService`)**: Chỉ phụ trách logic nghiệp vụ phức tạp thực thụ:
+      - `start()`: Kiểm tra trạng thái pending, kiểm tra xung đột chạy đồng thời (`hasRunningJob`), giải mã danh sách tài khoản TikTok qua `TiktokAccountRepository`, đóng gói payload chuẩn, điều phối HTTP request sang Python Crawler Engine, cập nhật `started_at` và rollback sang `failed` kèm `error_message` khi gặp sự cố.
+    - **Tầng Repository (`CrawlJobRepository` & `CrawlResultRepository`)**: Kế thừa `BaseRepository`, đảm nhận mọi truy vấn dữ liệu DB thuần túy:
+      - `CrawlJobRepository`: `getStatisticsSummary()` (tổng hợp KPI dashboard), `hasRunningJob()`, `findByStatus()`, `getResults()`.
+      - `CrawlResultRepository`: `getByJobId()` (chuẩn hóa tên method), `getCrawlResultsByJobId()` (alias tương thích ngược).
+    - **Tầng Controller (`CrawlJobController` & `CrawlResultController`)**:
+      - **Đồng bộ kế thừa `CoreController`**: Tận dụng pipeline RESTful listing (`index`), xem chi tiết (`show`), tìm kiếm từ khóa, bộ lọc động và biến đổi qua API Resource (`CrawlJobResource`, `CrawlResultResource`).
+      - Chuẩn hóa tên hàm theo quy chuẩn RESTful và giữ alias tương thích ngược: `store`, `update`, `destroy`, `start`, `statisticsSummary`, `results`, `byJob`.
+    - **Loại bỏ service trung gian dư thừa**: Xóa hoàn toàn file rỗng `CrawlResultService.php`.
+
+12. **Tiện ích gọi HTTP API Dùng Chung Chuẩn Core (`Modules\Core\Utils\FetchApi`)**:
+    - **Chuẩn hóa tầng Core**: Đưa toàn bộ tiện ích gọi HTTP API dùng chung vào [`modules/Core/src/Utils/FetchApi.php`](modules/Core/src/Utils/FetchApi.php).
+    - **Phương thức hỗ trợ**: `FetchApi::request()`, `get()`, `post()`, `put()`, `patch()`, `delete()`, `fetch()`, `fetchAPI()`.
+    - **Loại bỏ file dư thừa**: Xóa bỏ hoàn toàn `FetchAPIUtil.php` tại module Crawler sau khi chuyển toàn bộ sang `Modules\Core\Utils\FetchApi`. Xóa các file Redux Store/Action chết không sử dụng (`crawlResultSlice.ts`, `crawlResultThunks.ts`, `Action/crawlResult.ts`).
+
 ---
 
 ## 3. Tính năng chính
@@ -381,13 +400,19 @@ python -m uvicorn app.main:app --port 8001 --reload
 
 Dưới đây là tổng hợp các endpoint API chính trong hệ thống:
 
-### Quản lý Crawl Jobs
+### Quản lý Crawl Jobs & Crawl Results
 | Phương thức | Endpoint | Mô tả |
 | :--- | :--- | :--- |
-| `GET` | `/admin/api/crawler/crawl-job/all` | Lấy danh sách crawl jobs (có phân trang & bộ lọc) |
-| `POST` | `/admin/api/crawler/crawl-job/add` | Tạo mới một crawl job |
-| `GET` | `/admin/api/crawler/crawl-job/{id}/details` | Lấy chi tiết thông tin một crawl job |
+| `GET` | `/admin/api/crawler/crawl-job` (hoặc `/all`) | Lấy danh sách crawl jobs (hỗ trợ phân trang, tìm kiếm & bộ lọc) |
+| `GET` | `/admin/api/crawler/crawl-job/{id}` | Lấy chi tiết thông tin một crawl job |
+| `POST` | `/admin/api/crawler/crawl-job` (hoặc `/add`) | Tạo mới một crawl job (tính toán `total_accounts`, lưu trực tiếp qua Repo) |
+| `PUT` | `/admin/api/crawler/crawl-job/{id}` | Cập nhật crawl job (ràng buộc chỉ cho phép sửa khi job `pending`) |
+| `DELETE` | `/admin/api/crawler/crawl-job/{id}` | Xóa crawl job (ràng buộc cấm xóa khi job đang `running`) |
+| `POST` | `/admin/api/crawler/crawl-job/{id}/start` | Khởi chạy crawl job (kiểm tra xung đột running, map account và gọi crawler engine) |
 | `GET` | `/admin/api/crawler/crawl-job/statistics-summary` | Lấy thống kê KPI tổng quan crawl jobs |
+| `GET` | `/admin/api/crawler/crawl-job/{id}/results` | Lấy danh sách kết quả crawl của một job (sub-resource RESTful) |
+| `GET` | `/admin/api/crawler/crawl-result` | Lấy danh sách kết quả crawl qua CoreController (hỗ trợ `?crawl_job_id=...`, `?status=...`) |
+| `GET` | `/admin/api/crawler/crawl-result/by-job/{job_id}` | Lấy kết quả crawl theo job ID qua CrawlResultController |
 
 ### Webhook Callback từ Crawler Service
 | Phương thức | Endpoint | Mô tả |
@@ -446,7 +471,7 @@ Chạy bộ test suite của Laravel (bao gồm Feature Tests cho Dynamic Routes
 ```bash
 php artisan test
 ```
-*(27 tests passed 100%, 110 assertions).*
+*(43 tests passed 100%, 153 assertions).*
 
 ### 4. Kiểm tra danh sách Route
 Xác nhận toàn bộ routes của các module đã được đăng ký chính xác bắt đầu bằng prefix admin:

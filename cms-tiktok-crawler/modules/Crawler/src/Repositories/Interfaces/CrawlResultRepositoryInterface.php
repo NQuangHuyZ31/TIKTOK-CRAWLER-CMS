@@ -2,8 +2,13 @@
 
 namespace Modules\Crawler\Repositories\Interfaces;
 
-interface CrawlResultRepositoryInterface {
+use Illuminate\Pagination\LengthAwarePaginator;
+use Modules\Core\Repositories\Interfaces\BaseRepositoryInterface;
 
-	public function getCrawlResultsByJobId(int $jobId, $per_page, array $params = []);
-	public function createCrawlResult(array $data);
+interface CrawlResultRepositoryInterface extends BaseRepositoryInterface
+{
+    /**
+     * Retrieve paginated crawl results for a specific job with filtering (standardized name: getByJobId).
+     */
+    public function getByJobId(int $jobId, int $perPage = 10, array $params = []): LengthAwarePaginator;
 }

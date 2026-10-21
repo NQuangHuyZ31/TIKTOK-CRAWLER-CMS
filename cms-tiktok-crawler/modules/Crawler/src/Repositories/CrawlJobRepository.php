@@ -2,47 +2,73 @@
 
 namespace Modules\Crawler\Repositories;
 
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Carbon;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Modules\Core\Repositories\BaseRepository;
 use Modules\Crawler\Models\CrawlJob;
+use Modules\Crawler\Models\CrawlResult;
 use Modules\Crawler\Repositories\Interfaces\CrawlJobRepositoryInterface;
 
-class CrawlJobRepository extends BaseRepository implements CrawlJobRepositoryInterface {
-
-    protected function getModel(): Model {
+class CrawlJobRepository extends BaseRepository implements CrawlJobRepositoryInterface
+{
+    protected function getModel(): Model
+    {
         return new CrawlJob();
     }
 
-    public function getStatisticsSummary(): array {
+    /**
+     * Retrieve aggregate KPI dashboard statistics across all crawl jobs.
+     */
+    public function getStatisticsSummary(): array
+    {
         return [
             'total_jobs' => CrawlJob::count(),
-
-            'total_accounts' => CrawlJob::sum('total_accounts'),
-
-            'total_success_accounts' => CrawlJob::sum('success_count'),
-
-            'total_failed_accounts' => CrawlJob::sum('failed_count'),
-
-            'total_completed_jobs' => CrawlJob::where(
-                'status',
-                'completed'
-            )->count(),
-
-            'total_failed_jobs' => CrawlJob::where(
-                'status',
-                'failed'
-            )->count(),
+            'total_accounts' => (int) CrawlJob::sum('total_accounts'),
+            'total_success_accounts' => (int) CrawlJob::sum('success_count'),
+            'total_failed_accounts' => (int) CrawlJob::sum('failed_count'),
+            'total_completed_jobs' => CrawlJob::where('status', 'completed')->count(),
+            'total_failed_jobs' => CrawlJob::where('status', 'failed')->count(),
         ];
     }
 
-    public function getResults(int $id) {
-        $crawlJob = CrawlJob::find($id);
+    /**
+     * Retrieve paginated crawl results for a specific job with optional filtering.
+     */
+    public function getResults(int $jobId, int $perPage = 10, array $params = []): LengthAwarePaginator
+    {
+        $job = $this->findById($jobId);
+        $query = $job ? $job->results() : CrawlResult::where('crawl_job_id', $jobId);
 
-        if (!$crawlJob) {
-            return false;
+        if (!empty($params['username'])) {
+            $query->where('username', 'like', '%' . $params['username'] . '%');
         }
 
-        return $crawlJob->results; // Assuming 'results' is a relationship defined in the CrawlJob model
+        if (!empty($params['status'])) {
+            $query->where('status', $params['status']);
+        }
+
+        return $query->paginate($perPage);
+    }
+
+    /**
+     * Check if another crawl job is currently running.
+     */
+    public function hasRunningJob(int $excludeId = 0): bool
+    {
+        $query = $this->model->where('status', 'running');
+        if ($excludeId > 0) {
+            $query->where('id', '!=', $excludeId);
+        }
+
+        return $query->exists();
+    }
+
+    /**
+     * Retrieve crawl jobs matching a specific status.
+     */
+    public function findByStatus(string $status): Collection
+    {
+        return $this->model->where('status', $status)->get();
     }
 }

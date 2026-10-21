@@ -2,23 +2,34 @@
 
 namespace Modules\Crawler\Repositories;
 
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Modules\Core\Repositories\BaseRepository;
 use Modules\Crawler\Models\CrawlResult;
 use Modules\Crawler\Repositories\Interfaces\CrawlResultRepositoryInterface;
 
-class CrawlResultRepository implements CrawlResultRepositoryInterface {
+class CrawlResultRepository extends BaseRepository implements CrawlResultRepositoryInterface
+{
+    protected function getModel(): Model
+    {
+        return new CrawlResult();
+    }
 
-	public function getCrawlResultsByJobId(int $jobId, $per_page = 5, array $params = []) {
-		// You can add filtering logic based on $params if needed
-		$query = CrawlResult::where('crawl_job_id', $jobId);
-		
-		if (isset($params['username'])) {
-			$query->where('username', 'like', '%' . $params['username'] . '%');
-		}
-		
-		return $query->paginate($per_page);
-	}
+    /**
+     * Retrieve paginated crawl results for a specific job with optional filtering (standardized name).
+     */
+    public function getByJobId(int $jobId, int $perPage = 10, array $params = []): LengthAwarePaginator
+    {
+        $query = $this->model->where('crawl_job_id', $jobId);
 
-	public function createCrawlResult(array $data) {
-		return CrawlResult::create($data);
-	}
+        if (!empty($params['username'])) {
+            $query->where('username', 'like', '%' . $params['username'] . '%');
+        }
+
+        if (!empty($params['status'])) {
+            $query->where('status', $params['status']);
+        }
+
+        return $query->paginate($perPage);
+    }
 }

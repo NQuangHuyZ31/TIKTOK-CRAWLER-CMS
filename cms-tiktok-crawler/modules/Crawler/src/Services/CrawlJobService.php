@@ -2,123 +2,87 @@
 
 namespace Modules\Crawler\Services;
 
+use Modules\Core\Utils\FetchApi;
+use Modules\Crawler\Models\CrawlJob;
 use Modules\Crawler\Repositories\Interfaces\CrawlJobRepositoryInterface;
-use Modules\Crawler\Repositories\Interfaces\CrawlResultRepositoryInterface;
-use Modules\Crawler\Utils\FetchAPIUtil;
 use Modules\TiktokAccount\Repositories\Interfaces\TiktokAccountRepositoryInterface;
 
-class CrawlJobService {
+class CrawlJobService
+{
     public function __construct(
         protected CrawlJobRepositoryInterface $crawlJobRepository,
-        protected CrawlResultRepositoryInterface $crawlResultRepository,
         protected TiktokAccountRepositoryInterface $tiktokAccountRepository
     ) {
     }
 
-    public function getAll(int $per_page, array $params = []) {
-        return $this->crawlJobRepository->getAll($per_page, $params);
-    }
+    /**
+     * Domain logic: Start a crawl job (complex orchestration across DB, TiktokAccount repository, and Python crawler engine).
+     * Rules:
+     * - Only 'pending' jobs can be started.
+     * - Only 1 active running job is allowed system-wide at any given time.
+     * - For 'database' sources: resolves account IDs to actual TikTok usernames via TiktokAccountRepository.
+     * - Dispatches API call to external Python Crawler Engine. Marks job 'failed' with error_message upon exception.
+     */
+    public function start(int $id): ?CrawlJob
+    {
+        $crawlJob = $this->crawlJobRepository->findById($id);
 
-    public function create(array $data) {
-        return $this->crawlJobRepository->create($data);
-    }
-
-    public function update(int $id, array $data) {
-        $crawlJob = $this->crawlJobRepository->getCrawlJobById($id);
-
-        if ($crawlJob === null || $crawlJob->status !== 'pending') {
-            return false;
+        if (!$crawlJob) {
+            return null;
         }
 
-        return $this->crawlJobRepository->update($id, $data);
-    }
-
-    public function getDetails(int $id) {
-        return !$id || $this->crawlJobRepository->getCrawlJobById($id) === null
-        ? false
-        : $this->crawlJobRepository->getCrawlJobById($id);
-    }
-
-    public function delete(int $id) {
-        if (!$id || $this->crawlJobRepository->getCrawlJobById($id) === null) {
-            return false;
+        if ($crawlJob->status !== 'pending') {
+            throw new \DomainException("Crawl job #{$id} is in status '{$crawlJob->status}', only 'pending' jobs can be started.");
         }
 
-        if ($this->crawlJobRepository->getCrawlJobByStatus($id, 'running')->count() > 0) {
-            return false;
-        }
-
-        $this->crawlJobRepository->delete($id);
-        return true;
-    }
-
-    public function getStatisticsSummary(): array {
-        return $this->crawlJobRepository->getStatisticsSummary();
-    }
-
-    // get crawl results by crawl job ID
-    public function getResults(int $id) {
-        if (!$id || $this->crawlJobRepository->getCrawlJobById($id) === null) {
-            return false;
-        }
-
-        return $this->crawlJobRepository->getResults($id);
-    }
-
-    // Start a crawl job by ID
-    public function startCrawlJobById(int $id) {
-        $crawlJob = $this->crawlJobRepository->getCrawlJobById($id);
-
-        if (!$id || $crawlJob === null || in_array($crawlJob->status, ['completed', 'failed', 'running'], true)) {
-            return false;
-        }
-
-        if ($this->crawlJobRepository->getCrawlJobByStatus(0, 'running')->count() > 0) {
-            return false;
+        if ($this->crawlJobRepository->hasRunningJob($id)) {
+            throw new \DomainException('Another crawl job is currently running, please wait for it to complete.');
         }
 
         try {
             $payload = $this->buildCrawlerPayload($id, $crawlJob);
-            $result = $this->crawlJobRepository->update($id, [
+
+            $this->crawlJobRepository->update($id, [
                 'status' => 'running',
                 'started_at' => now(),
             ]);
-
-            if (!$result) {
-                return false;
-            }
 
             $headers = [];
             if ($token = config('services.crawler.token')) {
                 $headers['Authorization'] = "Bearer {$token}";
             }
 
-            FetchAPIUtil::fetchAPI(
-                rtrim(config('services.crawler.url'), '/') . '/api/crawl-jobs/start',
-                'POST',
+            FetchApi::post(
+                rtrim(config('services.crawler.url', 'http://127.0.0.1:8001'), '/') . '/api/crawl-jobs/start',
                 $payload,
                 $headers
             );
 
-            return $result;
+            $startedJob = $this->crawlJobRepository->findById($id);
+            return $startedJob;
         } catch (\Throwable $exception) {
             $this->markCrawlJobAsFailed($id, $exception->getMessage());
-            return false;
+            throw $exception;
         }
     }
 
-    private function buildCrawlerPayload(int $jobId, object $crawlJob): array {
-        $data = json_decode($crawlJob->data_crawls, true, 512, JSON_THROW_ON_ERROR);
+    /**
+     * Prepare standardized payload for Python Crawler Service.
+     */
+    protected function buildCrawlerPayload(int $jobId, CrawlJob $crawlJob): array
+    {
+        $raw = $crawlJob->data_crawls;
+        $data = is_array($raw) ? $raw : json_decode((string) $raw, true);
 
-        if (!is_array($data) || $data === []) {
-            throw new \InvalidArgumentException('Crawl job data must be a non-empty array.');
+        if (!is_array($data) || empty($data)) {
+            throw new \InvalidArgumentException('Crawl job data is empty or invalid.');
         }
 
         if ($crawlJob->source_type === 'database') {
             $usernames = $this->tiktokAccountRepository->getUsernamesByIds($data);
 
-            if (count($usernames) !== count($data)) {
-                throw new \RuntimeException('One or more selected TikTok accounts were not found.');
+            if (empty($usernames)) {
+                throw new \RuntimeException('No matching TikTok accounts found in the database.');
             }
 
             return [
@@ -142,18 +106,18 @@ class CrawlJobService {
             'count' => [
                 'job_id' => $jobId,
                 'source_type' => 'count',
-                'total_accounts' => (int) ($data[0] ?? 0),
+                'total_accounts' => (int) ($data[0] ?? $crawlJob->total_accounts ?? 0),
             ],
-            default => throw new \InvalidArgumentException(
-                "Unsupported crawler source type: {$crawlJob->source_type}"
-            ),
+            default => throw new \InvalidArgumentException("Unsupported crawl source type: {$crawlJob->source_type}"),
         };
     }
 
-    private function markCrawlJobAsFailed(int $id, string $message): void {
+    protected function markCrawlJobAsFailed(int $id, string $message): void
+    {
         $this->crawlJobRepository->update($id, [
             'status' => 'failed',
             'error_message' => $message,
+            'finished_at' => now(),
         ]);
     }
 }

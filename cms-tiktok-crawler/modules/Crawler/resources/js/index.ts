@@ -5,10 +5,9 @@
 import { registerRoutes } from '@core/routes/registry';
 import crawlerRoutes from './routes/route';
 
-// Tự động đăng ký routes vào Core khi file script được load trên DOM
+// Auto register routes into Core Route Registry
 registerRoutes(crawlerRoutes);
 
 export default crawlerRoutes;
 export * from './routes/route';
 export * from './Action/crawlJob';
-export * from './Action/crawlResult';

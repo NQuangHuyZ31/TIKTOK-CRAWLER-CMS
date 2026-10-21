@@ -2,19 +2,33 @@
 
 namespace Modules\Crawler\Controllers;
 
-use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Modules\Core\Controllers\CoreController;
+use Modules\Crawler\Models\CrawlResult;
+use Modules\Crawler\Repositories\Interfaces\CrawlResultRepositoryInterface;
 use Modules\Crawler\Resources\CrawlResultResource;
-use Modules\Crawler\Services\CrawlResultService;
 
-class CrawlResultController extends Controller
+class CrawlResultController extends CoreController
 {
-	public function __construct(protected CrawlResultService $crawlResultService) {}
-	// get crawl result by crawl job ID
-	public function getCrawlResultsByJobId(int $jobId, Request $request) {
-		$params = $request->all(); // Get all query parameters
-		$per_page = $params['per_page'] ?? 5; // Default to
+    protected string $modelClass = CrawlResult::class;
+    protected string $resourceClass = CrawlResultResource::class;
+    protected array $searchableColumns = ['username', 'profile_url', 'status'];
+    protected array $filterableColumns = ['crawl_job_id', 'status', 'tiktok_account_id'];
+    protected array $defaultSort = ['id', 'desc'];
 
-		return CrawlResultResource::collection($this->crawlResultService->getCrawlResultsByJobId($jobId, $per_page, $params));
-	}
+    public function __construct(
+        protected CrawlResultRepositoryInterface $crawlResultRepository
+    ) {
+    }
+
+    /**
+     * REST sub-action: Retrieve paginated crawl results for a specific job.
+     */
+    public function byJob(int $jobId, Request $request)
+    {
+        $perPage = (int) $request->input('per_page', 10);
+        $results = $this->crawlResultRepository->getByJobId($jobId, $perPage, $request->all());
+
+        return $this->respondSuccess(CrawlResultResource::collection($results), 'Crawl results retrieved successfully.');
+    }
 }

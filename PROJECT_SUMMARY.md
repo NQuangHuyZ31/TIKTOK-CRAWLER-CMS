@@ -60,11 +60,12 @@ cms-tiktok-crawler/
 │   │       ├── Providers/               # CoreServiceProvider, ModuleServiceProvider
 │   │       ├── Repositories/            # BaseRepository, BaseRepositoryInterface
 │   │       ├── Support/                 # ModuleRegistry, DynamicRouteResovle
-│   │       └── Traits/                  # ApiResponseTrait
+│   │       ├── Traits/                  # ApiResponseTrait
+│   │       └── Utils/                   # FetchApi, UploadFile, CheckFileUpload
 │   ├── Crawler/                         # Crawler management module
 │   │   ├── resources/
 │   │   │   └── js/
-│   │   │       ├── Action/              # crawlJob.ts, crawlResult.ts
+│   │   │       ├── Action/              # crawlJob.ts
 │   │   │       ├── components/          # CrawlJobListTable, StatisticSummary, etc.
 │   │   │       ├── configs/             # tableConfig.ts
 │   │   │       ├── pages/               # CrawlJobsPage, CrawlJobDetailPage, Create, Edit
@@ -73,7 +74,7 @@ cms-tiktok-crawler/
 │   │   ├── routes/
 │   │   │   └── api.php                  # Crawler job API endpoints (handled by Core dynamic routing)
 │   │   └── src/
-│   │       ├── Controllers/             # CrawlJobController
+│   │       ├── Controllers/             # CrawlJobController, CrawlResultController
 │   │       ├── Models/                  # CrawlJob, CrawlResult
 │   │       ├── Providers/               # CrawlerServiceProvider
 │   │       ├── Repositories/            # CrawlJobRepository, CrawlResultRepository
@@ -286,7 +287,52 @@ Pure generic Table component decoupled from domain-specific UI:
 - **Removed unnecessary intermediate components**: Removed `DeleteCrawlJobButton.tsx`, replaced with inline Ant Design `Popconfirm` calling API directly.
 - **Results**: `crawlJobSlice.ts` and `crawlJobThunks.ts` code reduced by >60%, removing redundant state variables (`loadingDeleted`, `startLoaing`, `StartError`).
 
----
+### I. Clean Layering Refactor: Controller - Service - Repository (`modules/Crawler`)
+
+Tách bạch chuẩn hóa ranh giới phân tầng dựa trên tính chất logic ("nghiệp vụ đơn giản không cần service"):
+- **Tầng Service (`CrawlJobService`)**: Chỉ phụ trách các logic nghiệp vụ phức tạp thực thụ:
+  1. `start()`: Kiểm tra trạng thái pending, kiểm tra xung đột hệ thống (`hasRunningJob`), giải mã danh sách tài khoản TikTok qua `TiktokAccountRepository`, chuẩn bị payload, điều phối HTTP request sang Python Crawler Engine, cập nhật `started_at` và rollback sang `failed` kèm `error_message` nếu gặp sự cố.
+  2. Toàn bộ các thao tác CRUD đơn giản (`create`, `update`, `delete`, `getAll`, `getDetails`) đã được loại bỏ hoàn toàn khỏi Service để tránh tầng trung gian vô ích.
+- **Tầng Repository (`CrawlJobRepository` & `CrawlResultRepository`)**: Đảm nhận toàn bộ truy vấn dữ liệu DB thuần túy:
+  1. Kế thừa `BaseRepository` (`findById`, `create`, `update`, `delete`, `all`, `paginate`).
+  2. `CrawlJobRepository::getStatisticsSummary()`: Truy vấn tổng hợp KPI dashboard (`count`, `sum`).
+  3. `CrawlJobRepository::hasRunningJob()`: Kiểm tra sự tồn tại của job đang chạy.
+  4. `CrawlResultRepository::getByJobId()`: Phân trang và lọc kết quả crawl theo username / status (chuẩn hóa tên method, giữ alias `getCrawlResultsByJobId`).
+- **Tầng Controller (`CrawlJobController` & `CrawlResultController`)**:
+  1. **Đồng bộ kế thừa `CoreController`**:
+     - `CrawlJobController` kế thừa `CoreController`, khai báo `$modelClass = CrawlJob::class`, `$resourceClass = CrawlJobResource::class`.
+     - `CrawlResultController` kế thừa `CoreController`, khai báo `$modelClass = CrawlResult::class`, `$resourceClass = CrawlResultResource::class`, `$searchableColumns`, `$filterableColumns = ['crawl_job_id', 'status', 'tiktok_account_id']`, `$defaultSort = ['id', 'desc']`.
+  2. **Thao tác đơn giản thực thi trực tiếp qua Controller & Repository (Không qua Service)**:
+     - `store(Request $request)`: Validate qua `CreateCrawlJobRequest`, tính toán `total_accounts` theo `source_type`, tạo job pending trực tiếp qua `$this->crawlJobRepository->create(...)`.
+     - `update(Request $request, $id)`: Kiểm tra ràng buộc chỉ cho phép sửa khi job đang `pending`, cập nhật trực tiếp qua `$this->crawlJobRepository->update(...)`.
+     - `destroy($id)`: Kiểm tra ràng buộc không được xóa khi job đang `running`, xóa trực tiếp qua `$this->crawlJobRepository->delete(...)`.
+     - `statisticsSummary()`: Truy vấn trực tiếp qua `$this->crawlJobRepository->getStatisticsSummary()`.
+     - `results(int $id, Request $request)`: Truy vấn danh sách kết quả crawl của job trực tiếp qua `$this->crawlResultRepository->getByJobId(...)`.
+  3. **Chỉ tác vụ phức tạp mới điều phối qua Service**:
+     - `start(int $id)`: Gọi `$this->crawlJobService->start($id)`.
+  4. **Chuẩn hóa RESTful actions và alias tương thích ngược**:
+     - `CrawlJobController`: `store`, `update`, `destroy`, `start` (alias `startCrawlJobById`), `statisticsSummary` (alias `getStatisticsSummary`), `results` (alias `getResults`, `getCrawlResultsByJobId`).
+     - `CrawlResultController`: `index`, `show` (thừa hưởng từ CoreController), `byJob` (alias `getCrawlResultsByJobId`).
+  5. Loại bỏ hoàn toàn service trung gian dư thừa `CrawlResultService`.
+
+### J. Centralized Cross-Module HTTP Client Utility (`Modules\Core\Utils\FetchApi`)
+
+Chuẩn hóa tiện ích gọi API dùng chung đưa về tầng `Core` để tái sử dụng xuyên suốt toàn bộ các module:
+- **Vị trí**: [`modules/Core/src/Utils/FetchApi.php`](file:///e:/Urekamedia/project1/cms-tiktok-crawler/modules/Core/src/Utils/FetchApi.php).
+- **Phương thức hỗ trợ**:
+  - `FetchApi::request(url, method, payload, headers, options)`: Xử lý request tổng quát.
+  - Shortcut methods: `get()`, `post()`, `put()`, `patch()`, `delete()`, `fetch()`, `fetchAPI()`.
+- **Tính năng nổi bật**:
+  1. Tự động gắn header `Accept: application/json`, kết hợp custom headers.
+  2. Hỗ trợ Bearer Token qua `$options['token']` hoặc `$options['bearer_token']`.
+  3. Cấu hình timeout linh hoạt (`timeout`, `connect_timeout`).
+  4. Cơ chế tự động thử lại khi gặp lỗi mạng (`retry`, `retry_delay`).
+  5. Xử lý lỗi tập trung, ném ngoại lệ mô tả chi tiết trạng thái HTTP và nội dung response; cho phép tắt ngoại lệ qua `$options['throw'] = false`.
+- **Loại bỏ các file không cần thiết / mã chết**:
+  - Xóa bỏ hoàn toàn `Modules\Crawler\Utils\FetchAPIUtil.php` và thư mục `modules/Crawler/src/Utils`.
+  - `CrawlJobService` chuyển sang gọi trực tiếp `Modules\Core\Utils\FetchApi::post()`.
+  - Xóa bỏ các file Redux Store/Thunks bị comment out: `modules/Crawler/resources/js/store/crawlResult/` (`crawlResultSlice.ts`, `crawlResultThunks.ts`).
+  - Xóa bỏ file Action chết: `modules/Crawler/resources/js/Action/crawlResult.ts` và export tương ứng trong `modules/Crawler/resources/js/index.ts`.
 
 ## 4. Webpack & Laravel Mix Modular Build System (Ureka Pattern - No Copy)
 
@@ -363,13 +409,15 @@ Frontend build system standardized to Ureka's modular architecture:
 2. **Backend Routing**:
    - All API routes dynamically dispatched via Core; Web catch-all cleanly routes to `core::app`.
 3. **Automated Feature & Unit Tests**:
-   - `php artisan test` executed and **passed 100%** (**27/27 tests passed**, 111 assertions), covering:
+   - `php artisan test` executed and **passed 100%** (**43/43 tests passed**, 153 assertions), covering:
      - `DynamicRouteResovle` method resolution, dynamic route dispatching, FormRequest injection, ID binding, action mapping, 404 error handling.
      - Admin web routing, root redirect, and CORS headers/preflight OPTIONS tests.
      - `CoreController` inheritance, ping endpoint, file upload/deletion.
      - Dynamic model CRUD resolution via `?model=...`.
      - `BaseController` 5 RESTful actions (index, show, store, update, destroy), keyword search, column filtering (`whereIn`), Ant Design sorting, and pagination.
      - `ModuleEntrypointDomTest` (6 tests): manifest caching, Core prioritization (`vendor.js` before `index.js`), DOM cache duplicate prevention, subsequent module isolation, Blade directives, and route-scoped asset serving.
+     - `CrawlerArchitectureTest` (8 tests): `CoreController` inheritance for both `CrawlJobController` and `CrawlResultController`, direct controller-repository creation/calculation, pending enforcement on update, running restriction on delete, `CrawlJobService` start pending & concurrency guards, `CrawlJobRepository` KPI aggregation, `CrawlResultRepository` standardized `getByJobId` and backward-compatible alias, sub-resource `results` endpoint, and filtered `CoreController` crawl-result index.
+     - `FetchApiTest` (8 tests): GET with query params, POST with JSON body and bearer token, PUT/PATCH/DELETE shortcuts, fetch/fetchAPI aliases, URL/method validation exceptions, HTTP failure exceptions, and non-throwing failure handling.
 4. **TypeScript Strict Type Check**:
    - `node ./node_modules/typescript/bin/tsc --noEmit` completed with **0 errors and 0 warnings**.
 5. **Webpack & Laravel Mix Production Build**:

@@ -25,7 +25,7 @@ class CrawlJobResource extends JsonResource
 			'data_crawl' => $this->data_crawls
 				? json_decode($this->data_crawls, true)
 				: [],
-			'total_account' => $this->total_accounts,
+			'total_accounts' => $this->total_accounts,
 			'success_count' => $this->success_count,
 			'failed_count' => $this->failed_count,
 			'error_message' => $this->error_message,
