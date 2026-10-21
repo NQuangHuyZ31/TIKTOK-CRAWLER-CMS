@@ -4,6 +4,7 @@ import { Suspense } from 'react';
 import { useAdminRoutes, useBareRoutes } from './routes';
 import AdminLayout from './layouts/AdminLayout';
 import SpinComponent from './components/SpinComponent';
+import NotFound from './pages/NotFound';
 
 export default function AppRouter() {
 	const adminRoutes = useAdminRoutes();
@@ -58,7 +59,7 @@ export default function AppRouter() {
 							{/* Catch-all Not Found */}
 							<Route
 								path="*"
-								element={<Navigate to="/404" replace />}
+								element={<NotFound />}
 							/>
 						</Routes>
 					</Suspense>

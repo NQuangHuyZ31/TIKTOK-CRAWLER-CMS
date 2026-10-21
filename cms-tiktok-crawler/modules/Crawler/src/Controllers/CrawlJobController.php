@@ -7,7 +7,7 @@ use Modules\Core\Controllers\CoreController;
 use Modules\Crawler\Models\CrawlJob;
 use Modules\Crawler\Repositories\Interfaces\CrawlJobRepositoryInterface;
 use Modules\Crawler\Repositories\Interfaces\CrawlResultRepositoryInterface;
-use Modules\Crawler\Requests\CreateCrawlJobRequest;
+use Modules\Crawler\Requests\StoreCrawlJobRequest;
 use Modules\Crawler\Resources\CrawlJobResource;
 use Modules\Crawler\Resources\CrawlResultResource;
 use Modules\Crawler\Services\CrawlJobService;
@@ -24,8 +24,7 @@ class CrawlJobController extends CoreController
         protected CrawlJobRepositoryInterface $crawlJobRepository,
         protected CrawlResultRepositoryInterface $crawlResultRepository,
         protected CrawlJobService $crawlJobService
-    ) {
-    }
+    ){}
 
     /**
      * REST Action: store (POST /{module}/crawl-job)
@@ -33,7 +32,7 @@ class CrawlJobController extends CoreController
      */
     public function store(Request $request)
     {
-        $validated = app(CreateCrawlJobRequest::class)->validated();
+        $validated = app(StoreCrawlJobRequest::class)->validated();
         $sourceType = $validated['source_type'] ?? 'usernames';
         $dataCrawl = $validated['data_crawl'] ?? [];
 

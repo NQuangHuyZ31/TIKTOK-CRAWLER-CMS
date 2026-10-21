@@ -5,7 +5,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/{any?}', function (Request $request) {
     $path = trim($request->path(), '/');
-    $adminPrefix = trim(config('admin.path', 'admin'), '/');
+    $adminPrefix = trim((string) config('admin.admin_path', config('admin.path', 'admin')), '/');
 
     if ($path === $adminPrefix) {
         $path = '';

@@ -6,16 +6,30 @@ import { Provider } from 'react-redux';
 import store from './store';
 import AppRouter from './AppRouter';
 
-const container = document.getElementById('root') || document.getElementById('app');
-if (container) {
-	const root = createRoot(container);
-	root.render(
-		<React.StrictMode>
-			<Provider store={store}>
-				<AppRouter />
-			</Provider>
-		</React.StrictMode>
-	);
+function mount(): void {
+	const container = document.getElementById('root') || document.getElementById('app');
+	if (container && !(container as any).__reactRoot) {
+		const root = createRoot(container);
+		(container as any).__reactRoot = root;
+		root.render(
+			<React.StrictMode>
+				<Provider store={store}>
+					<AppRouter />
+				</Provider>
+			</React.StrictMode>
+		);
+	}
+}
+
+// In modular architecture, child module scripts (Crawler, TiktokAccount) are loaded right after Core in DOM.
+// Waiting for DOMContentLoaded (or next tick) guarantees all module scripts have executed registerRoutes()
+// before React evaluates the current URL, completely eliminating false 404 redirects on page refresh.
+if (typeof document !== 'undefined') {
+	if (document.readyState === 'loading') {
+		document.addEventListener('DOMContentLoaded', mount);
+	} else {
+		setTimeout(mount, 0);
+	}
 }
 
 export default AppRouter;

@@ -74,7 +74,7 @@ class CrawlerResultController extends Controller
             );
         }
 
-        $result = $this->crawlResultRepository->createCrawlResult([
+        $result = $this->crawlResultRepository->create([
             'crawl_job_id' => $jobId,
             'tiktok_account_id' => $account?->id,
             'username' => $username,

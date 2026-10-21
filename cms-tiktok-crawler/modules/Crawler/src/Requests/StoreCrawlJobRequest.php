@@ -4,9 +4,8 @@ namespace Modules\Crawler\Requests;
 
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
-use Pest\Mutate\Mutators\Logical\TrueToFalse;
 
-class CreateCrawlJobRequest extends FormRequest
+class StoreCrawlJobRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.

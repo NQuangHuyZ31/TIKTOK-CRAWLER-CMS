@@ -117,8 +117,7 @@ class ModuleRegistry {
      *
      * @return array<string, array{name: string, route_prefix: string, js: string[], css: string[]}>
      */
-    public function getEntrypoints(): array
-    {
+    public function getEntrypoints(): array {
         if ($this->entrypointsCache !== null) {
             return $this->entrypointsCache;
         }
@@ -146,8 +145,7 @@ class ModuleRegistry {
      * @param string|null $module Target module passed from blade (defaults to 'Core')
      * @return string
      */
-    public function renderCss(?string $module = null): string
-    {
+    public function renderCss(?string $module = null): string {
         $targetModule = $module ?: 'all';
         $endpoints = $this->getEntrypoints();
 
@@ -200,14 +198,14 @@ class ModuleRegistry {
 
     /**
      * Render HTML <script src="..."> tags for the specified module.
-     * Core JS (vendor.js, index.js) is always loaded first if not already rendered.
+     * Core vendor JS is loaded first, followed by module scripts (which register their routes),
+     * and finally the Core app bootstrap script (which mounts the React application).
      * Already rendered JS files are cached in memory to prevent duplicate DOM tags.
      *
      * @param string|null $module Target module passed from blade (defaults to 'all' for automatic loading)
      * @return string
      */
-    public function renderJs(?string $module = null): string
-    {
+    public function renderJs(?string $module = null): string {
         $targetModule = $module ?: 'all';
         $endpoints = $this->getEntrypoints();
 
@@ -261,8 +259,7 @@ class ModuleRegistry {
     /**
      * Render both CSS and JS tags for the module.
      */
-    public function renderAssets(?string $module = null): string
-    {
+    public function renderAssets(?string $module = null): string {
         $css = $this->renderCss($module);
         $js = $this->renderJs($module);
 
@@ -272,8 +269,7 @@ class ModuleRegistry {
     /**
      * Check if a specific asset file URL has already been DOM-ed.
      */
-    public function isDommed(string $url): bool
-    {
+    public function isDommed(string $url): bool {
         $fullUrl = str_starts_with($url, 'http') ? $url : asset(ltrim($url, '/'));
         return isset($this->dommedCss[$fullUrl]) || isset($this->dommedJs[$fullUrl]);
     }
@@ -283,8 +279,7 @@ class ModuleRegistry {
      *
      * @return array{css: string[], js: string[]}
      */
-    public function getDommedFiles(): array
-    {
+    public function getDommedFiles(): array {
         return [
             'css' => array_keys($this->dommedCss),
             'js' => array_keys($this->dommedJs),
@@ -294,8 +289,7 @@ class ModuleRegistry {
     /**
      * Reset the DOM cache (useful for tests or Octane request recycling).
      */
-    public function resetDomCache(): void
-    {
+    public function resetDomCache(): void {
         $this->dommedCss = [];
         $this->dommedJs = [];
         $this->entrypointsCache = null;
@@ -307,8 +301,7 @@ class ModuleRegistry {
      * @param string|null $explicitModule Optional explicit module name (e.g. 'Crawler')
      * @return array{js: string[], css: string[], activeModule: string|null}
      */
-    public function getAssetsForCurrentRequest(?string $explicitModule = null): array
-    {
+    public function getAssetsForCurrentRequest(?string $explicitModule = null): array {
         $endpoints = $this->getEntrypoints();
         if (empty($endpoints)) {
             return ['js' => [], 'css' => [], 'activeModule' => null];
@@ -340,7 +333,6 @@ class ModuleRegistry {
             'activeModule' => $targetModule,
         ];
     }
-
 
     /**
      * Resolve the base modules directory with fallback for case-sensitivity.

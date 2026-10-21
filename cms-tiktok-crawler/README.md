@@ -541,7 +541,7 @@ Chạy bộ test suite của Laravel (bao gồm Feature Tests cho Dynamic Routes
 ```bash
 php artisan test
 ```
-*(51 tests passed 100%, 228 assertions).*
+*(54 tests passed 100%, 244 assertions).*
 
 ### 4. Kiểm tra danh sách Route
 Xác nhận toàn bộ routes của các module đã được đăng ký chính xác bắt đầu bằng prefix admin:
