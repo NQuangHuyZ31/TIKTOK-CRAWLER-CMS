@@ -43,11 +43,12 @@ abstract class BaseRepository implements BaseRepositoryInterface
         return $this->model->create($attributes);
     }
 
-    public function update(int|string $id, array $attributes): bool
+    public function update(int|string $id, array $attributes): bool|Model
     {
         $record = $this->findById($id);
         if (!$record) return false;
-        return $record->update($attributes);
+        $record->update($attributes);
+        return $record;
     }
 
     public function delete(int|string $id): bool

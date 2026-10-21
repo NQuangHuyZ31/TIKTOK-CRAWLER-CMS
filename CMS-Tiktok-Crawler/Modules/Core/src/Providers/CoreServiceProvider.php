@@ -2,6 +2,7 @@
 
 namespace Modules\Core\Providers;
 
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Modules\Core\Support\ModuleRegistry;
@@ -13,7 +14,7 @@ class CoreServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        $this->app->singleton(ModuleRegistry::class, function () {
+        $this->app->scoped(ModuleRegistry::class, function () {
             return new ModuleRegistry(config('modules.path'), config('modules.disabled', []));
         });
 
@@ -30,6 +31,34 @@ class CoreServiceProvider extends ServiceProvider
         $this->mergeConfigFrom(dirname(__DIR__, 2) . '/configs/modules.php', 'modules');
         $this->loadViewsFrom(dirname(__DIR__, 2) . '/resources/views', 'core');
         $this->registerModuleRoutes();
+        $this->registerBladeDirectives();
+
+        $this->app->terminating(function () {
+            if ($this->app->bound(ModuleRegistry::class)) {
+                $this->app->make(ModuleRegistry::class)->resetDomCache();
+            }
+        });
+    }
+
+    /**
+     * Register modular Blade directives for DOM-ing assets from entrypoints.json.
+     */
+    protected function registerBladeDirectives(): void
+    {
+        Blade::directive('moduleCss', function ($expression) {
+            $expr = $expression ?: 'null';
+            return "<?php echo app(\\Modules\\Core\\Support\\ModuleRegistry::class)->renderCss($expr); ?>";
+        });
+
+        Blade::directive('moduleJs', function ($expression) {
+            $expr = $expression ?: 'null';
+            return "<?php echo app(\\Modules\\Core\\Support\\ModuleRegistry::class)->renderJs($expr); ?>";
+        });
+
+        Blade::directive('moduleAssets', function ($expression) {
+            $expr = $expression ?: 'null';
+            return "<?php echo app(\\Modules\\Core\\Support\\ModuleRegistry::class)->renderAssets($expr); ?>";
+        });
     }
 
     /**

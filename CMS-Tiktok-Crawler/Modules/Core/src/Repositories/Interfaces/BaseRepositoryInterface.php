@@ -13,6 +13,6 @@ interface BaseRepositoryInterface
     public function findById(int|string $id): ?Model;
     public function findOrFail(int|string $id): Model;
     public function create(array $attributes): Model;
-    public function update(int|string $id, array $attributes): bool;
+    public function update(int|string $id, array $attributes): bool|Model;
     public function delete(int|string $id): bool;
 }

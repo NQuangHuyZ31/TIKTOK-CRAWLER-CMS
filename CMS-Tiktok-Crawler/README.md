@@ -305,8 +305,10 @@ Hệ thống cung cấp cơ chế build frontend thông qua **Webpack 5 & Larave
 - **Manifest `entrypoints.json`**:
   - Quản lý cấu trúc file JS/CSS và route prefix của từng module phục vụ cho việc DOM ra web.
 - **Cơ chế Scoped DOM ra Web (`app.blade.php`)**:
-  - Blade tự động phân tích URL request (`request()->path()`) hoặc nhận `$activeModule`:
-    - Tại Dashboard (`/admin/dashboard`): **Chỉ nạp Core** (`Core/app.css`, `Core/vendor.js`, `Core/index.js`), không nạp script của Crawler hay TiktokAccount.
+  - Route (`routes/web.php`) đã phân giải sẵn `$module` từ prefix URL (dựa trên `config('modules.routes')`, mặc định `'Core'`) và truyền trực tiếp vào Blade template.
+  - Template sử dụng Blade directives `@moduleCss($module)` trong `<head>` và `@moduleJs($module)` trong `<body>`.
+  - `ModuleRegistry` nhận `$module` trực tiếp (không cần hàm `resolveModuleName` lặp lại logic URL), luôn ưu tiên nạp Core (`vendor.js`, `index.js`, `app.css`) trước, sau đó nạp file tương ứng của module được yêu cầu và tự động cache tránh render thẻ DOM trùng lặp:
+    - Tại Dashboard (`/admin`): **Chỉ nạp Core** (`Core/app.css`, `Core/vendor.js`, `Core/index.js`), không nạp script của Crawler hay TiktokAccount.
     - Tại Crawler (`/admin/crawler/*`): Chỉ nạp Core + `Crawler/index.js`.
     - Tại TikTok Account (`/admin/tiktok-account/*`): Chỉ nạp Core + `TiktokAccount/index.js`.
 

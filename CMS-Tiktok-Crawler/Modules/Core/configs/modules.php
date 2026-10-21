@@ -5,6 +5,6 @@ return [
 
     'routes' => [
         'crawler' => 'Crawler',
-        'tiktokaccount' => 'TiktokAccount',
+        'tiktok-account' => 'TiktokAccount',
     ],
 ];
