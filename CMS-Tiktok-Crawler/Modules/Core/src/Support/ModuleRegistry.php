@@ -104,44 +104,71 @@ class ModuleRegistry {
     }
 
     /**
-     * Get list of module asset script URLs for modules that have compiled JS in public/.
+     * Get asset files (JS & CSS) for the current request using entrypoints.json.
+     * Always includes Core (vendor.js, index.js, app.css).
+     * Only includes the specific module needed for the current URL / view.
      *
-     * @return array<string, string> moduleName => assetUrl
+     * @param string|null $explicitModule Optional explicit module name (e.g. 'Crawler')
+     * @return array{js: string[], css: string[], activeModule: string|null}
      */
-    public function getModuleScripts(): array {
-        $scripts = [];
-        foreach (array_keys($this->all()) as $name) {
-            if ($name === 'Core') {
-                continue;
-            }
-            $lower = strtolower($name);
-            $relPath = "modules/{$lower}/js/{$lower}.js";
-            if (file_exists(public_path($relPath))) {
-                $scripts[$name] = asset($relPath);
+    public function getAssetsForCurrentRequest(?string $explicitModule = null): array
+    {
+        $manifestPath = public_path('entrypoints.json');
+        if (!file_exists($manifestPath)) {
+            $manifestPath = public_path('entrypoint.json');
+        }
+
+        if (!file_exists($manifestPath)) {
+            return ['js' => [], 'css' => [], 'activeModule' => null];
+        }
+
+        $endpoints = json_decode((string) file_get_contents($manifestPath), true) ?: [];
+
+        // 1. Core assets are always required on every page
+        $core = $endpoints['Core'] ?? [];
+        $js = $core['js'] ?? [];
+        $css = $core['css'] ?? [];
+
+        // 2. Identify target module
+        $targetModule = null;
+        if ($explicitModule && isset($endpoints[$explicitModule])) {
+            $targetModule = $explicitModule;
+        } else {
+            $path = trim(request()->path(), '/'); // e.g. "admin/crawler/crawl-job"
+            foreach ($endpoints as $modName => $info) {
+                if ($modName === 'Core') {
+                    continue;
+                }
+                $prefix = trim($info['route_prefix'] ?? '', '/');
+                if ($prefix !== '' && (str_starts_with($path, $prefix) || str_contains($path, strtolower($modName)))) {
+                    $targetModule = $modName;
+                    break;
+                }
             }
         }
-        return $scripts;
+
+        // 3. Append only the needed module's assets
+        if ($targetModule && isset($endpoints[$targetModule])) {
+            $mod = $endpoints[$targetModule];
+            foreach ($mod['css'] ?? [] as $c) {
+                if (!in_array($c, $css, true)) {
+                    $css[] = $c;
+                }
+            }
+            foreach ($mod['js'] ?? [] as $j) {
+                if (!in_array($j, $js, true)) {
+                    $js[] = $j;
+                }
+            }
+        }
+
+        return [
+            'js' => $js,
+            'css' => $css,
+            'activeModule' => $targetModule,
+        ];
     }
 
-    /**
-     * Get list of module stylesheet URLs for modules that have compiled CSS in public/.
-     *
-     * @return array<string, string> moduleName => assetUrl
-     */
-    public function getModuleStyles(): array {
-        $styles = [];
-        foreach (array_keys($this->all()) as $name) {
-            if ($name === 'Core') {
-                continue;
-            }
-            $lower = strtolower($name);
-            $relPath = "modules/{$lower}/css/{$lower}.css";
-            if (file_exists(public_path($relPath))) {
-                $styles[$name] = asset($relPath);
-            }
-        }
-        return $styles;
-    }
 
     /**
      * Resolve the base modules directory with fallback for case-sensitivity.

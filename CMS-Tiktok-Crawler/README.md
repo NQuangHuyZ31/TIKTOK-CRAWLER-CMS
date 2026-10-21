@@ -297,25 +297,28 @@ Mở **2 cửa sổ dòng lệnh (Terminal)** riêng biệt:
 
 ### Cơ chế Build Webpack & Laravel Mix (Chuẩn Ureka - Không copy file)
 
-Hệ thống cung cấp cơ chế build frontend thông qua **Webpack 5 & Laravel Mix 6** theo kiến trúc module Ureka, tự động trích xuất các thư viện dùng chung (React, ReactDOM, Antd, Redux, Axios,...) vào `public/js/vendor.js` và biên dịch trực tiếp các module ra `public/modules/<module>/` mà **không cần qua bước copy trung gian**:
+Hệ thống cung cấp cơ chế build frontend thông qua **Webpack 5 & Laravel Mix 6** theo chuẩn kiến trúc module của **Ureka**:
+- **Cấu trúc File Output**:
+  - Mỗi module sinh ra đúng **2 file**: `public/modules/<Name>/index.js` và `public/modules/<Name>/app.css`.
+  - Riêng module `Core` sinh thêm **`public/modules/Core/vendor.js`**: Chứa toàn bộ thư viện dùng chung (`react`, `react-dom`, `antd`, `@ant-design/icons`, `axios`, `@reduxjs/toolkit`, `react-redux`, `dayjs`).
+  - Không sinh ra các file chunk `node_modules_*` vụn vặt.
+- **Manifest `entrypoints.json`**:
+  - Quản lý cấu trúc file JS/CSS và route prefix của từng module phục vụ cho việc DOM ra web.
+- **Cơ chế Scoped DOM ra Web (`app.blade.php`)**:
+  - Blade tự động phân tích URL request (`request()->path()`) hoặc nhận `$activeModule`:
+    - Tại Dashboard (`/admin/dashboard`): **Chỉ nạp Core** (`Core/app.css`, `Core/vendor.js`, `Core/index.js`), không nạp script của Crawler hay TiktokAccount.
+    - Tại Crawler (`/admin/crawler/*`): Chỉ nạp Core + `Crawler/index.js`.
+    - Tại TikTok Account (`/admin/tiktok-account/*`): Chỉ nạp Core + `TiktokAccount/index.js`.
 
 | Lệnh npm | Mô tả |
 | :--- | :--- |
-| `npm run mix` hoặc `npm run mix:all` | Quét và **build toàn bộ modules** (`Core`, `Crawler`, `TiktokAccount`,...) kèm gói shared vendor |
-| `npm run mix:core` | **Chỉ build module Core** (`app.js`, `app.css`) và đóng gói vendor |
-| `npm run mix:crawler` | **Chỉ build module Crawler** (`public/modules/crawler/js/crawler.js`) |
-| `npm run mix:tiktokaccount` | **Chỉ build module TiktokAccount** (`public/modules/tiktokaccount/js/tiktokaccount.js`) |
+| `npm run mix` hoặc `npm run mix:all` | Quét và **build toàn bộ modules** (`Core`, `Crawler`, `TiktokAccount`) kèm gói shared vendor |
+| `npm run mix:core` | **Chỉ build module Core** (`vendor.js`, `index.js`, `app.css`) |
+| `npm run mix:crawler` | **Chỉ build module Crawler** (`public/modules/Crawler/index.js`) |
+| `npm run mix:tiktokaccount` | **Chỉ build module TiktokAccount** (`public/modules/TiktokAccount/index.js`) |
 | `npm run mix:module <ModuleName>` | **Build tùy chọn một module bất kỳ** (vd: `npm run mix:module Crawler`) |
 | `npm run mix:prod` | Build toàn bộ cho môi trường Production (minify, cache busting hashing) |
 | `npm run mix:watch` | Theo dõi thay đổi file (file watching) và tự động compile lại |
-
-#### Cơ chế đóng gói Dependency & DOM ra Web:
-1. **Shared Dependencies (`public/js/vendor.js`)**: Tập hợp các thư viện nền tảng (`react`, `react-dom`, `antd`, `@ant-design/icons`, `axios`, `@reduxjs/toolkit`, `react-redux`) được đóng gói 1 lần duy nhất, giúp các file module con rất nhẹ (chỉ ~50-60 KB) và đảm bảo chia sẻ chung 1 React instance trên DOM.
-2. **DOM Injection (`app.blade.php`)**: Khi ứng dụng chạy ở chế độ build (không bật Vite dev server), Blade tự động nạp theo thứ tự:
-   - `public/js/manifest.js` (Webpack chunk runtime)
-   - `public/js/vendor.js` (Shared vendor)
-   - `public/modules/core/js/app.js` (Core CMS frame & AppRouter)
-   - `public/modules/{name}/js/{name}.js` (Tất cả module con có build sẵn được `$moduleRegistry->getModuleScripts()` tự động inject vào DOM)
 
 
 ---

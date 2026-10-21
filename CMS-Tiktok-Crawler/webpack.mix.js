@@ -1,178 +1,148 @@
-const mix = require('laravel-mix');
-const path = require('path');
-const fs = require('fs');
+'use strict';
 
 /**
- * =========================================================================
- * CMS MODULAR WEBPACK & LARAVEL MIX BUILD SYSTEM (CHUẨN UREKA - NO COPY)
- * =========================================================================
- * - Hỗ trợ build toàn bộ modules (all) hoặc từng module đơn lẻ (--env module=...).
- * - Tự động phát hiện tất cả các module trong thư mục modules/.
- * - Đóng gói dependencies dùng chung vào public/js/vendor.js và public/js/manifest.js.
- * - Xuất trực tiếp vào public/modules/{module}/ mà không cần copy hay script trung gian.
+ * Laravel Mix (webpack) configuration for CMS TikTok Crawler (Ureka Modular Architecture)
+ *
+ * Mỗi module trong modules/<Name>/ biên dịch thành đúng 2 file:
+ *     public/modules/<Name>/index.js
+ *     public/modules/<Name>/app.css (nếu có CSS)
+ * Riêng Core biên dịch thêm:
+ *     public/modules/Core/vendor.js (chứa các thư viện dùng chung: react, antd, axios, redux,...)
+ * File public/entrypoints.json chứa cấu trúc file để Blade DOM đúng module cần thiết.
+ *
+ * Lệnh chạy:
+ *     npm run mix                       # Build toàn bộ modules
+ *     npm run mix:crawler               # Chỉ build module Crawler
+ *     npm run mix:tiktokaccount         # Chỉ build module TiktokAccount
+ *     npm run mix:core                  # Chỉ build module Core
+ *     npm run mix:module <Name>         # Build module tùy chọn (vd: npm run mix:module Crawler)
+ *     npm run mix:prod                  # Build production
  */
 
-// 1. Cấu hình thư mục Public gốc
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
+
+const mix = require('laravel-mix');
+const webpack = require('webpack');
+const path = require('path');
+const fs = require('fs');
+const { discoverModules, aliases, root, modulesDir } = require('./build/modules');
+const EntrypointsPlugin = require('./build/EntrypointsPlugin');
+
+// Vô hiệu hóa webpackbar bị lỗi schema trên webpack >= 5.10x
+try {
+    require('webpackbar').prototype.apply = function apply() {};
+} catch {
+    // Không cần xử lý nếu không có webpackbar
+}
+
+// 1. Lọc danh sách module cần build
+const requested = (process.env.MIX_MODULES || '')
+    .split(',')
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean);
+
+const allModules = discoverModules();
+// Core luôn được build vì CSS và React/vendor runtime của Core được dùng chung cho toàn bộ CMS
+const selected = requested.length
+    ? allModules.filter(
+          (m) =>
+              m.name.toLowerCase() === 'core' ||
+              requested.includes(m.name.toLowerCase()) ||
+              requested.includes(m.id.toLowerCase())
+      )
+    : allModules;
+
+console.log(
+    `[Laravel Mix] Build Target: ${
+        requested.length ? requested.join(', ').toUpperCase() : 'ALL MODULES'
+    } | Compiling: [${selected.map((m) => m.name).join(', ')}]`
+);
+
+// 2. Định nghĩa thư viện dùng chung gom vào Core/vendor.js
+const VENDOR_TEST = /[\\/]node_modules[\\/](react|react-dom|scheduler|process|antd|@ant-design|@reduxjs|react-redux|axios|dayjs)[\\/]/;
+const VENDOR_CHUNK = 'modules/Core/vendor';
+
 mix.setPublicPath('public');
+mix.disableNotifications();
+
 mix.options({
-    runtimeChunkPath: 'js',
+    processCssUrls: false,
+    terser: { extractComments: false },
 });
 
-// 2. Danh sách dependencies dùng chung cần đóng gói vào vendor.js
-const sharedVendors = [
-    'react',
-    'react-dom',
-    'react-router-dom',
-    'antd',
-    '@ant-design/icons',
-    'axios',
-    '@reduxjs/toolkit',
-    'react-redux',
-];
+mix.babelConfig({
+    presets: [
+        ['@babel/preset-react', { runtime: 'automatic' }],
+        '@babel/preset-typescript',
+    ],
+});
 
-// 3. Webpack Configuration với Babel loader cho TypeScript + React
+// 3. Đăng ký compile cho từng module: index.js và app.css
+for (const m of selected) {
+    mix.js(m.entry, `${m.outDir}/index.js`);
+
+    // Compile CSS của module nếu file resources/css/app.css tồn tại
+    const cssPath = path.join(m.dir, 'resources/css/app.css');
+    if (fs.existsSync(cssPath)) {
+        mix.postCss(cssPath, `${m.outDir}/app.css`, [
+            require('@tailwindcss/postcss')({ base: modulesDir }),
+        ]);
+    }
+}
+
+// 4. Cấu hình Webpack
 mix.webpackConfig({
-    module: {
-        rules: [
-            {
-                test: /\.tsx?$/,
-                loader: 'babel-loader',
-                options: {
-                    presets: [
-                        '@babel/preset-env',
-                        ['@babel/preset-react', { runtime: 'automatic' }],
-                        '@babel/preset-typescript',
-                    ],
-                },
-                exclude: /node_modules/,
-            },
-        ],
-    },
     resolve: {
-        extensions: ['.ts', '.tsx', '.js', '.jsx', '.json'],
-        alias: {
-            '@': path.resolve(__dirname, 'modules/Core/resources/js'),
-            '@core': path.resolve(__dirname, 'modules/Core/resources/js'),
-            '@modules': path.resolve(__dirname, 'modules'),
+        alias: aliases(),
+        extensions: ['.tsx', '.ts', '.jsx', '.js', '.json'],
+    },
+    output: {
+        publicPath: 'auto',
+        chunkFilename: 'modules/Core/chunks/[name].js',
+    },
+    optimization: {
+        splitChunks: {
+            cacheGroups: {
+                // Tắt các nhóm tự động chia vụn node_modules
+                defaultVendors: false,
+                default: false,
+                // Gom duy nhất các thư viện nền tảng vào modules/Core/vendor.js
+                vendor: {
+                    test: VENDOR_TEST,
+                    name: VENDOR_CHUNK,
+                    chunks: 'all',
+                    enforce: true,
+                    priority: 20,
+                },
+            },
         },
     },
+    plugins: [
+        // Không sinh ra nhiều file chunk vụn vặt: gom toàn bộ code module vào duy nhất file index.js
+        new webpack.optimize.LimitChunkCountPlugin({
+            maxChunks: 1,
+        }),
+        // Tạo file entrypoints.json để Laravel Blade DOM đúng module cần thiết
+        new EntrypointsPlugin({
+            file: path.join(root, 'public', 'entrypoints.json'),
+        }),
+    ],
+    performance: { hints: false },
 });
 
-// 4. Helper phân tích tham số module mục tiêu
-function getTargetModule() {
-    if (process.env.MODULE) return process.env.MODULE.trim();
-    if (process.env.npm_config_module) return process.env.npm_config_module.trim();
-
-    for (let i = 0; i < process.argv.length; i++) {
-        const arg = process.argv[i];
-        if (arg.startsWith('--env.module=')) {
-            return arg.split('=')[1].trim();
+// Đảm bảo tên file CSS xuất ra luôn là app.css thay vì index.css
+mix.override((config) => {
+    for (const plugin of config.plugins) {
+        if (plugin.constructor && plugin.constructor.name === 'MiniCssExtractPlugin') {
+            plugin.options.filename = (pathData) => {
+                const chunkName = (pathData.chunk && pathData.chunk.name) || '';
+                return chunkName.replace(/\/index$/, '/app.css');
+            };
         }
-        if (arg === '--env' && process.argv[i + 1] && process.argv[i + 1].startsWith('module=')) {
-            return process.argv[i + 1].split('=')[1].trim();
-        }
-        if (arg.startsWith('--module=')) {
-            return arg.split('=')[1].trim();
-        }
-        if (arg === '--module' && process.argv[i + 1]) {
-            return process.argv[i + 1].trim();
-        }
-    }
-
-    return 'all';
-}
-
-// 5. Helper tìm entry point JS/TS của module
-function findJsEntry(modulePath) {
-    const candidates = [
-        'resources/js/index.ts',
-        'resources/js/app.tsx',
-        'resources/js/index.tsx',
-        'resources/js/app.ts',
-        'resources/js/index.js',
-        'resources/js/app.js',
-    ];
-
-    for (const rel of candidates) {
-        const full = path.join(modulePath, rel);
-        if (fs.existsSync(full)) {
-            return full;
-        }
-    }
-    return null;
-}
-
-// 6. Helper tìm entry point CSS của module
-function findCssEntry(modulePath, moduleName) {
-    const lower = moduleName.toLowerCase();
-    const candidates = [
-        'resources/css/app.css',
-        `resources/css/${lower}.css`,
-        'resources/css/index.css',
-    ];
-
-    for (const rel of candidates) {
-        const full = path.join(modulePath, rel);
-        if (fs.existsSync(full)) {
-            return full;
-        }
-    }
-    return null;
-}
-
-// 7. Lấy danh sách tất cả các module trong thư mục modules/
-const modulesDir = path.resolve(__dirname, 'modules');
-const targetModule = getTargetModule().toLowerCase();
-
-const allModuleNames = fs.existsSync(modulesDir)
-    ? fs
-          .readdirSync(modulesDir, { withFileTypes: true })
-          .filter((d) => d.isDirectory())
-          .map((d) => d.name)
-    : [];
-
-// Lọc module cần build
-const modulesToBuild = allModuleNames.filter((name) => {
-    if (targetModule === 'all') return true;
-    return name.toLowerCase() === targetModule;
-});
-
-console.log(`[Laravel Mix] Target: ${targetModule.toUpperCase()} | Modules to compile: [${modulesToBuild.join(', ')}]`);
-
-if (modulesToBuild.length === 0 && targetModule !== 'all') {
-    console.warn(`[Laravel Mix] Warning: No matching module found for "${targetModule}". Available: ${allModuleNames.join(', ')}`);
-}
-
-// 8. Đăng ký compile cho từng module
-modulesToBuild.forEach((name) => {
-    const modPath = path.join(modulesDir, name);
-    const lower = name.toLowerCase();
-
-    // 8.1 Compile JS / TS
-    const jsEntry = findJsEntry(modPath);
-    if (jsEntry) {
-        const jsOutput = name === 'Core'
-            ? 'public/modules/core/js/app.js'
-            : `public/modules/${lower}/js/${lower}.js`;
-
-        mix.js(jsEntry, jsOutput);
-    }
-
-    // 8.2 Compile CSS (Tailwind PostCSS)
-    const cssEntry = findCssEntry(modPath, name);
-    if (cssEntry) {
-        const cssOutput = name === 'Core'
-            ? 'public/modules/core/css/app.css'
-            : `public/modules/${lower}/css/${lower}.css`;
-
-        mix.postCss(cssEntry, cssOutput, [require('@tailwindcss/postcss')]);
     }
 });
 
-// 9. Đóng gói dependencies dùng chung vào vendor.js
-mix.extract(sharedVendors, 'public/js/vendor.js');
-
-// 10. Production Versioning (cache busting)
 if (mix.inProduction()) {
     mix.version();
 }

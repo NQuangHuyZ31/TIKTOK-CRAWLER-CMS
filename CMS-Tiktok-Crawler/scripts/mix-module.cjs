@@ -1,19 +1,19 @@
 #!/usr/bin/env node
 const path = require('path');
 
-// Lấy tham số module
 const args = process.argv.slice(2);
 const isProd = args.includes('--production') || args.includes('--prod');
 const nonFlagArgs = args.filter((a) => !a.startsWith('-'));
 const moduleName = nonFlagArgs[0] || 'all';
 
 console.log(`\n======================================================`);
-console.log(` CMS TikTok Crawler - Modular Build Runner`);
+console.log(` CMS TikTok Crawler - Modular Build Runner (Ureka)`);
 console.log(` Target Module : ${moduleName.toUpperCase()}`);
 console.log(` Environment   : ${isProd ? 'PRODUCTION' : 'DEVELOPMENT'}`);
 console.log(`======================================================\n`);
 
-process.env.MODULE = moduleName;
+// Thiết lập MIX_MODULES để webpack.mix.js lọc đúng module cần build
+process.env.MIX_MODULES = moduleName.toLowerCase() === 'all' ? '' : moduleName;
 
 // Đảm bảo node_modules/.bin có trong PATH
 const binDir = path.resolve(__dirname, '../node_modules/.bin');

@@ -14,7 +14,7 @@ class CoreServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(ModuleRegistry::class, function () {
-            return new ModuleRegistry();
+            return new ModuleRegistry(config('modules.path'), config('modules.disabled', []));
         });
 
         // Auto-register any custom module providers if they exist
@@ -27,6 +27,7 @@ class CoreServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->mergeConfigFrom(dirname(__DIR__, 2) . '/configs/admin.php', 'admin');
+        $this->mergeConfigFrom(dirname(__DIR__, 2) . '/configs/modules.php', 'modules');
         $this->loadViewsFrom(dirname(__DIR__, 2) . '/resources/views', 'core');
         $this->registerModuleRoutes();
     }
@@ -60,7 +61,7 @@ class CoreServiceProvider extends ServiceProvider
     {
         /** @var ModuleRegistry $registry */
         $registry = $this->app->make(ModuleRegistry::class);
-        $adminPath = trim((string) config('admin.admin_path', 'admin'), '/');
+        $adminPath = trim((string) config('admin.admin_path', config('admin.path', 'admin')), '/');
         $adminPrefix = $adminPath !== '' ? $adminPath : 'admin';
 
         Route::prefix($adminPrefix)->group(function () use ($registry) {
