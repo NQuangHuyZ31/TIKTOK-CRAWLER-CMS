@@ -1,0 +1,8 @@
+{
+    "/modules/core/js/app.js": "/modules/core/js/app.js",
+    "/modules/crawler/js/crawler.js": "/modules/crawler/js/crawler.js",
+    "/modules/tiktokaccount/js/tiktokaccount.js": "/modules/tiktokaccount/js/tiktokaccount.js",
+    "/js/manifest.js": "/js/manifest.js",
+    "/js/vendor.js": "/js/vendor.js",
+    "/modules/core/css/app.css": "/modules/core/css/app.css"
+}

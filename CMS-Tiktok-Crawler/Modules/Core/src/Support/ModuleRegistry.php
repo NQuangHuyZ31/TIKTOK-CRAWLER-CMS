@@ -104,6 +104,46 @@ class ModuleRegistry {
     }
 
     /**
+     * Get list of module asset script URLs for modules that have compiled JS in public/.
+     *
+     * @return array<string, string> moduleName => assetUrl
+     */
+    public function getModuleScripts(): array {
+        $scripts = [];
+        foreach (array_keys($this->all()) as $name) {
+            if ($name === 'Core') {
+                continue;
+            }
+            $lower = strtolower($name);
+            $relPath = "modules/{$lower}/js/{$lower}.js";
+            if (file_exists(public_path($relPath))) {
+                $scripts[$name] = asset($relPath);
+            }
+        }
+        return $scripts;
+    }
+
+    /**
+     * Get list of module stylesheet URLs for modules that have compiled CSS in public/.
+     *
+     * @return array<string, string> moduleName => assetUrl
+     */
+    public function getModuleStyles(): array {
+        $styles = [];
+        foreach (array_keys($this->all()) as $name) {
+            if ($name === 'Core') {
+                continue;
+            }
+            $lower = strtolower($name);
+            $relPath = "modules/{$lower}/css/{$lower}.css";
+            if (file_exists(public_path($relPath))) {
+                $styles[$name] = asset($relPath);
+            }
+        }
+        return $styles;
+    }
+
+    /**
      * Resolve the base modules directory with fallback for case-sensitivity.
      */
     private function resolveBasePath(): string {

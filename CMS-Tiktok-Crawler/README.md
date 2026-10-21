@@ -70,7 +70,13 @@ Hệ thống được tái cấu trúc hoàn toàn theo mô hình **Ureka Enterp
    - **Cấu hình chuẩn**: Sử dụng column config Ant Design tiêu chuẩn, sạch sẽ và dễ bảo trì.
    - Đã áp dụng tinh giản toàn bộ các bảng `CrawlJobListTable`, `TiktokAccountTableList` và `CrawlResultTable`.
 
-8. **Cơ chế Route Registry & AdminLayout Chuẩn React Router v6**:
+
+9. **Tối Ưu Hóa State Management & Component Module Crawler**:
+   - Phân định rõ ràng phạm vi dữ liệu: Chỉ đưa dữ liệu danh sách (`data`, `pagination`, `params`) và thống kê KPI (`statistics`) vào Redux Store.
+   - Các tác vụ thao tác đơn lẻ (`delete`, `create`, `update`, `start`) chuyển sang gọi API trực tiếp qua Typed Client `crawlJobAPI`.
+   - Xóa bỏ component `DeleteCrawlJobButton`, thay bằng `Popconfirm` gọi API xóa trực quan tại chỗ.
+
+10. **Cơ chế Route Registry & AdminLayout Chuẩn React Router v6**:
    - **`AdminLayout`**: Cấu hình theo mô hình Layout Route chuẩn (`<Route element={<AdminLayout />}>`), các route chức năng con hiển thị qua `<Outlet />` giúp tránh re-mount layout không cần thiết khi chuyển trang.
    - **Điều hướng Sidebar theo Route Registration**: Sidebar loại bỏ cấu hình menu tĩnh (`menuConfig`), tự động đồng bộ danh sách menu từ Route Registry thông qua hook `useMenuRoutes()` dựa trên các trường metadata của route (`label`, `icon`, `order`).
 
@@ -155,7 +161,7 @@ cms-tiktok-crawler/
 │   ├── Crawler/                         # Module Quản lý Crawl Jobs
 │   │   ├── resources/js/
 │   │   │   ├── Action/                  # crawlJob.ts, crawlResult.ts (API calls)
-│   │   │   ├── components/              # CrawlJobListTable, StatisticSummary, DeleteCrawlJobButton...
+│   │   │   ├── components/              # CrawlJobListTable, StatisticSummary, CrawlResultTable, TiktokAccountSelect...
 │   │   │   ├── configs/tableConfig.ts   # Cấu hình bảng dữ liệu
 │   │   │   ├── pages/                   # CrawlJobsPage, CrawlJobDetailPage, Create, Edit
 │   │   │   ├── routes/route.ts          # Route definitions cho Crawler
@@ -286,6 +292,31 @@ Mở **2 cửa sổ dòng lệnh (Terminal)** riêng biệt:
    ```
    http://127.0.0.1:8000
    ```
+
+---
+
+### Cơ chế Build Webpack & Laravel Mix (Chuẩn Ureka - Không copy file)
+
+Hệ thống cung cấp cơ chế build frontend thông qua **Webpack 5 & Laravel Mix 6** theo kiến trúc module Ureka, tự động trích xuất các thư viện dùng chung (React, ReactDOM, Antd, Redux, Axios,...) vào `public/js/vendor.js` và biên dịch trực tiếp các module ra `public/modules/<module>/` mà **không cần qua bước copy trung gian**:
+
+| Lệnh npm | Mô tả |
+| :--- | :--- |
+| `npm run mix` hoặc `npm run mix:all` | Quét và **build toàn bộ modules** (`Core`, `Crawler`, `TiktokAccount`,...) kèm gói shared vendor |
+| `npm run mix:core` | **Chỉ build module Core** (`app.js`, `app.css`) và đóng gói vendor |
+| `npm run mix:crawler` | **Chỉ build module Crawler** (`public/modules/crawler/js/crawler.js`) |
+| `npm run mix:tiktokaccount` | **Chỉ build module TiktokAccount** (`public/modules/tiktokaccount/js/tiktokaccount.js`) |
+| `npm run mix:module <ModuleName>` | **Build tùy chọn một module bất kỳ** (vd: `npm run mix:module Crawler`) |
+| `npm run mix:prod` | Build toàn bộ cho môi trường Production (minify, cache busting hashing) |
+| `npm run mix:watch` | Theo dõi thay đổi file (file watching) và tự động compile lại |
+
+#### Cơ chế đóng gói Dependency & DOM ra Web:
+1. **Shared Dependencies (`public/js/vendor.js`)**: Tập hợp các thư viện nền tảng (`react`, `react-dom`, `antd`, `@ant-design/icons`, `axios`, `@reduxjs/toolkit`, `react-redux`) được đóng gói 1 lần duy nhất, giúp các file module con rất nhẹ (chỉ ~50-60 KB) và đảm bảo chia sẻ chung 1 React instance trên DOM.
+2. **DOM Injection (`app.blade.php`)**: Khi ứng dụng chạy ở chế độ build (không bật Vite dev server), Blade tự động nạp theo thứ tự:
+   - `public/js/manifest.js` (Webpack chunk runtime)
+   - `public/js/vendor.js` (Shared vendor)
+   - `public/modules/core/js/app.js` (Core CMS frame & AppRouter)
+   - `public/modules/{name}/js/{name}.js` (Tất cả module con có build sẵn được `$moduleRegistry->getModuleScripts()` tự động inject vào DOM)
+
 
 ---
 
