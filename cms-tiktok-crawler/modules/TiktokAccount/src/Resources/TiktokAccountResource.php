@@ -4,7 +4,6 @@ namespace Modules\TiktokAccount\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
 
 class TiktokAccountResource extends JsonResource
@@ -26,7 +25,7 @@ class TiktokAccountResource extends JsonResource
 			'avatar_url' => $this->avatar_url,
 			'avatar_path' => $this->avatar_path
 				? Storage::disk('public')->url($this->avatar_path)
-				: null,
+				: $this->avatar_url,
 			'status' => $this->status,
 			'crawled_at' => $this->crawled_at,
 			'last_crawled_at' => $this->last_crawled_at,

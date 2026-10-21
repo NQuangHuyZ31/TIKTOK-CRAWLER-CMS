@@ -2,23 +2,22 @@
 
 namespace Modules\TiktokAccount\Repositories\Interfaces;
 
-interface TiktokAccountRepositoryInterface
+use Illuminate\Pagination\LengthAwarePaginator;
+use Modules\Core\Repositories\Interfaces\BaseRepositoryInterface;
+use Modules\TiktokAccount\Models\TiktokAccount;
+
+interface TiktokAccountRepositoryInterface extends BaseRepositoryInterface
 {
-    public function getAll(array $requests);
+    public function getStatisticSummary(): array;
 
-    public function getTiktokAccountById(int $id);
-
-    public function getAccountByField(string $field, string $value, int $id = null);
-
-    public function updateOrCreateAccount(array $attributes, array $values);
+    public function getCrawlResults(int $accountId, int $perPage = 10, array $params = []): LengthAwarePaginator|false;
 
     public function getUsernamesByIds(array $ids): array;
 
-    public function deleteAccountById(int $id): bool;
+    public function updateStatus(int $id, string $status): ?TiktokAccount;
 
-    public function updateAccountStatus(int $id, string $status);
+    public function getAccountByField(string $field, string $value, ?int $excludeId = null): ?TiktokAccount;
 
-    public function getCrawlResults(int $accountId, $per_page, array $params = []);
-
-    public function getStatisticSummary();
+    public function updateOrCreateAccount(array $attributes, array $values): TiktokAccount;
 }
+

@@ -645,6 +645,38 @@ Toàn bộ văn bản giao diện, nhãn, nút bấm, thông báo toast, validat
   - `php artisan test`: 51/51 tests passed 100% (228 assertions).
   - `npm run mix:prod`: Biên dịch thành công 100% (Core 68.3 KiB, Crawler 79.8 KiB, TiktokAccount 76.5 KiB).
 
+---
+
+## 10. Table Action Columns: Fixed Right & Icon-Only Actions with Tooltips
+
+Chuẩn hóa toàn diện cột Thao tác (Action) trên tất cả các bảng dữ liệu trong hệ thống:
+
+### 1. Cố Định Cột Thao Tác Bên Phải (`fixed: 'right'`)
+- Cấu hình thuộc tính `fixed: 'right'` kèm chiều rộng cố định xác định (`width`) cho cột `action` trên toàn bộ các schema cấu hình bảng:
+  - [`crawlJobColumnConfig`](file:///e:/Urekamedia/project1/cms-tiktok-crawler/modules/Crawler/resources/js/configs/tableConfig.ts): `fixed: 'right'`, `width: 110`.
+  - [`tiktokAccountColumnConfig`](file:///e:/Urekamedia/project1/cms-tiktok-crawler/modules/TiktokAccount/resources/js/configs/columnConfig.ts): `fixed: 'right'`, `width: 110`.
+  - `recentJobColumns` ([`DashboardPage.tsx`](file:///e:/Urekamedia/project1/cms-tiktok-crawler/modules/Core/resources/js/pages/DashboardPage.tsx)): `fixed: 'right'`, `width: 80`.
+- **Hiệu quả**: Khi bảng cuộn ngang trên màn hình vừa hoặc nhỏ (nhờ `scroll={{ x: 'max-content' }}` mặc định của `TableComponent`), cột Action luôn được ghim cố định ở cạnh phải, không bị trôi hay ẩn khuất, giúp người dùng thao tác tức thì.
+
+### 2. Chuyển Đổi Nút Thao Tác Sang Icon Kèm Tooltip Trực Quan
+Thay thế toàn bộ các chữ link đơn điệu ("Detail", "Edit", "Delete") bằng các nút bấm Icon Ant Design tinh gọn kèm hiệu ứng Tooltip chú thích hành động:
+- **Xem chi tiết (Detail / View)**:
+  - Icon: `<EyeOutlined style={{ color: '#1677ff' }} />`
+  - Bọc trong `<Tooltip title="Detail">` và `<Button size="small" type="text" />`.
+- **Chỉnh sửa (Edit)**:
+  - Icon: `<EditOutlined style={{ color: '#52c41a' }} />`
+  - Bọc trong `<Tooltip title="Edit">` và `<Button size="small" type="text" />`.
+  - Chỉ hiển thị trên Crawl Job khi job ở trạng thái `pending`.
+- **Xóa (Delete)**:
+  - Icon: `<DeleteOutlined />`
+  - Bọc trong `<Tooltip title="Delete">` và `<Button size="small" type="text" danger />`.
+  - Tích hợp hộp thoại xác nhận an toàn (`Popconfirm` hoặc `ConfirmDialog`).
+- **Nâng cấp Component [`DeleteAccount`](file:///e:/Urekamedia/project1/cms-tiktok-crawler/modules/TiktokAccount/resources/js/components/DeleteAccount.tsx)**:
+  - Bổ sung prop `iconOnly?: boolean`.
+  - Khi `iconOnly = true`: Tự động render nút icon `DeleteOutlined` gọn gàng kèm Tooltip "Delete", thích hợp hoàn hảo cho cột action trong bảng dữ liệu.
+  - Khi `iconOnly = false`: Render nút bấm đầy đủ kèm text, phù hợp cho thanh tiêu đề trang chi tiết (`PageHeader extra`).
+
+
 
 
 

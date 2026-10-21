@@ -4,38 +4,28 @@ namespace Modules\TiktokAccount\Services;
 
 use Modules\Core\Utils\CheckFileUpload;
 use Modules\Core\Utils\UploadFile;
+use Modules\TiktokAccount\Models\TiktokAccount;
 use Modules\TiktokAccount\Repositories\Interfaces\TiktokAccountRepositoryInterface;
 
-class TiktokAccountService {
+class TiktokAccountService
+{
     private const ACCOUNT_STATUSES = ['active', 'inactive'];
 
-    public function __construct(protected TiktokAccountRepositoryInterface $tiktokAccountRepository) {
+    public function __construct(protected TiktokAccountRepositoryInterface $tiktokAccountRepository)
+    {
     }
 
-    // get all tiktok accounts
-    public function getAll(array $requests) {
-        return $this->tiktokAccountRepository->getAll($requests);
-    }
-
-    // get account by ID
-    public function getDetails(int $id) {
-        $account = $this->tiktokAccountRepository->getTiktokAccountById($id);
-
-        if (!$account) {
-            return false;
-        }
-
-        return $account;
-    }
-
-    // update account by ID
-    public function update(int $id, array $data) {
+    /**
+     * Complex Business Logic: Update account profile with avatar file handling.
+     * Validates avatar image file, stores to disk, deletes old avatar, updates account.
+     */
+    public function update(int $id, array $data): TiktokAccount
+    {
         if (isset($data['status']) && !in_array($data['status'], self::ACCOUNT_STATUSES, true)) {
             throw new \InvalidArgumentException('Status must be active or inactive.');
         }
 
-        $account = $this->tiktokAccountRepository->getTiktokAccountById($id);
-
+        $account = $this->tiktokAccountRepository->findById($id);
         if (!$account) {
             throw new \InvalidArgumentException('TikTok account not found.');
         }
@@ -46,7 +36,6 @@ class TiktokAccountService {
             }
 
             $newAvatarPath = UploadFile::uploadFile($data['avatar'], 'tiktok-accounts/avatars');
-
             if (!$newAvatarPath) {
                 throw new \RuntimeException('Failed to upload avatar.');
             }
@@ -57,33 +46,23 @@ class TiktokAccountService {
 
             $data['avatar_path'] = $newAvatarPath;
 
-            // Do not pass UploadedFile down to repository
+            // Do not pass raw UploadedFile to model update
             unset($data['avatar']);
         }
 
-        return $this->tiktokAccountRepository->updateOrCreateAccount(['id' => $id], $data);
+        $this->tiktokAccountRepository->update($id, $data);
+        return $account->fresh();
     }
 
-    // delete account by ID
-    public function delete(int $id) {
-        return $this->tiktokAccountRepository->deleteAccountById($id);
-    }
-
-    public function updateStatus(int $id, string $status) {
+    /**
+     * Update account status with business validation.
+     */
+    public function updateStatus(int $id, string $status): ?TiktokAccount
+    {
         if (!in_array($status, self::ACCOUNT_STATUSES, true)) {
             throw new \InvalidArgumentException('Status must be active or inactive.');
         }
 
-        return $this->tiktokAccountRepository->updateAccountStatus($id, $status);
+        return $this->tiktokAccountRepository->updateStatus($id, $status);
     }
-
-    // get crawl results by account ID
-    public function getCrawlResults(int $accountId, $per_page, array $params = []) {
-        return $this->tiktokAccountRepository->getCrawlResults($accountId, $per_page, $params);
-    }
-
-    // get statistic summary
-    public function getStatisticSummary() {
-        return $this->tiktokAccountRepository->getStatisticSummary();
-    }
-}
+}

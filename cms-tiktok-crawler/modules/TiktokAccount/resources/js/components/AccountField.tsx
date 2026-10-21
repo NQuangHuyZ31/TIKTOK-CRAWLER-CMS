@@ -1,5 +1,5 @@
-import { Form, Input, InputNumber, Space, Checkbox } from "antd";
-import { useEffect } from "react";
+import { Form, Input, InputNumber, Space, Checkbox } from 'antd';
+import { useEffect } from 'react';
 
 function AccountFields() {
 	const form = Form.useFormInstance();
@@ -39,10 +39,7 @@ function AccountFields() {
 					},
 				]}
 			>
-				<Input
-					placeholder="https://www.tiktok.com/@username"
-					disabled
-				/>
+				<Input placeholder="https://www.tiktok.com/@username" disabled />
 			</Form.Item>
 
 			<Space orientation="horizontal">
@@ -58,10 +55,7 @@ function AccountFields() {
 						},
 					]}
 				>
-					<InputNumber
-						placeholder="Enter following count"
-						min={0}
-					/>
+					<InputNumber placeholder="Enter following count" min={0} />
 				</Form.Item>
 
 				<Form.Item
@@ -76,10 +70,7 @@ function AccountFields() {
 						},
 					]}
 				>
-					<InputNumber
-						placeholder="Enter followers count"
-						min={0}
-					/>
+					<InputNumber placeholder="Enter followers count" min={0} />
 				</Form.Item>
 
 				<Form.Item
@@ -94,18 +85,11 @@ function AccountFields() {
 						},
 					]}
 				>
-					<InputNumber
-						placeholder="Enter likes count"
-						min={0}
-					/>
+					<InputNumber placeholder="Enter likes count" min={0} />
 				</Form.Item>
 			</Space>
 
-			<Form.Item
-				name="status"
-				label="Status"
-				valuePropName="checked"
-			>
+			<Form.Item name="status" label="Status" valuePropName="checked">
 				<Checkbox>Active</Checkbox>
 			</Form.Item>
 		</>

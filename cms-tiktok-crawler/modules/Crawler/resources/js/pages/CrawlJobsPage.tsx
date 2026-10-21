@@ -1,11 +1,14 @@
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Space, Button, Popconfirm, App as AntdApp } from 'antd';
+import { Space, Button, Popconfirm, Tooltip, App as AntdApp } from 'antd';
+import { EyeOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useDispatch, useSelector } from '@core/store';
 import ListLayout from '@/layouts/ListLayout';
 import StatusTag from '@core/components/StatusTag';
+import { formatNumber } from '@core/utils/formatNumber';
+import { formatDateTime } from '@core/utils/formatDate';
 import { fetchCrawlJobs, fetchStatisticsSummary } from '../store/crawlJob/crawlJobThunks';
-import { setParams } from '../store/crawlJob/crawlJobSlice';
+import { setParams, resetParams } from '../store/crawlJob/crawlJobSlice';
 import crawlJobAPI from '../Action/crawlJob';
 import { crawlJobColumnConfig } from '../configs/tableConfig';
 
@@ -55,7 +58,7 @@ export default function CrawlJobsPage() {
 					onChange: (val) => dispatch(setParams({ status: val, page: 1 })),
 				},
 			]}
-			onResetFilters={() => dispatch(setParams({ search: '', status: '', page: 1 }))}
+			onResetFilters={() => dispatch(resetParams())}
 			onRefresh={() => dispatch(fetchCrawlJobs(params))}
 			refreshing={loading}
 			columns={crawlJobColumnConfig}
@@ -64,11 +67,27 @@ export default function CrawlJobsPage() {
 			pagination={pagination}
 			onPageChange={(page, per_page) => dispatch(setParams({ page, per_page }))}
 			renderColumns={{
+				id: (id) => <span style={{ fontWeight: 500, color: '#1677ff' }}>#{id}</span>,
 				status: (status) => <StatusTag status={status} />,
+				total_account: (val) => formatNumber(val),
+				success_count: (val) => <span style={{ color: '#52c41a' }}>{formatNumber(val)}</span>,
+				failed_count: (val) => (Number(val) > 0 ? <span style={{ color: '#ff4d4f' }}>{formatNumber(val)}</span> : '0'),
+				started_at: (val) => formatDateTime(val),
+				finished_at: (val) => formatDateTime(val),
 				action: (_, record) => (
-					<Space>
-						<Link to={`/crawler/crawl-job/${record.id}`}>Detail</Link>
-						{record.status === 'pending' && <Link to={`/crawler/crawl-job/${record.id}/edit`}>Edit</Link>}
+					<Space size={4}>
+						<Tooltip title="Detail">
+							<Link to={`/crawler/crawl-job/${record.id}`}>
+								<Button size="small" type="text" icon={<EyeOutlined style={{ color: '#1677ff' }} />} />
+							</Link>
+						</Tooltip>
+						{record.status === 'pending' && (
+							<Tooltip title="Edit">
+								<Link to={`/crawler/crawl-job/${record.id}/edit`}>
+									<Button size="small" type="text" icon={<EditOutlined style={{ color: '#52c41a' }} />} />
+								</Link>
+							</Tooltip>
+						)}
 						<Popconfirm
 							title="Delete crawl job"
 							description="Are you sure you want to delete this crawl job?"
@@ -77,9 +96,9 @@ export default function CrawlJobsPage() {
 							cancelText="Cancel"
 							okButtonProps={{ danger: true }}
 						>
-							<Button type="link" danger size="small" style={{ padding: 0 }}>
-								Delete
-							</Button>
+							<Tooltip title="Delete">
+								<Button type="text" danger size="small" icon={<DeleteOutlined />} />
+							</Tooltip>
 						</Popconfirm>
 					</Space>
 				),
@@ -87,3 +106,4 @@ export default function CrawlJobsPage() {
 		/>
 	);
 }
+

@@ -1,17 +1,28 @@
-import { Avatar, Space, Typography } from "antd"
-import { UserOutlined } from "@ant-design/icons"
+import React from 'react';
+import { Avatar, Space, Typography } from 'antd';
+import { UserOutlined } from '@ant-design/icons';
 
-const AccountColumn = ({ username, imgPath }) => {
-	const { Text } = Typography;
-	return (
-		<Space size="middle">
-			<Avatar size={40} src={imgPath} icon={<UserOutlined />} />
-			<Space orientation="vertical" size={0}>
-				<Text strong>@{username}</Text>
-				<Text type="secondary">{username}</Text>
-			</Space>
-		</Space>
-	)
+export interface AccountColumnProps {
+	username: string;
+	nickname?: string;
+	imgPath?: string;
 }
 
-export default AccountColumn;
+const AccountColumn: React.FC<AccountColumnProps> = ({ username, nickname, imgPath }) => {
+	const { Text } = Typography;
+	return (
+		<Space size="middle" align="center">
+			<Avatar size={40} src={imgPath} icon={<UserOutlined />} />
+			<Space direction="vertical" size={0}>
+				<Text strong>@{username}</Text>
+				{nickname && nickname !== username ? (
+					<Text type="secondary" style={{ fontSize: 12 }}>
+						{nickname}
+					</Text>
+				) : null}
+			</Space>
+		</Space>
+	);
+};
+
+export default AccountColumn;

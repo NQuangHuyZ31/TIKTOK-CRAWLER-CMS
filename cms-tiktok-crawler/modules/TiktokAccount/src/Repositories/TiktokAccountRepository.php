@@ -2,45 +2,59 @@
 
 namespace Modules\TiktokAccount\Repositories;
 
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Modules\Core\Repositories\BaseRepository;
 use Modules\TiktokAccount\Models\TiktokAccount;
 use Modules\TiktokAccount\Repositories\Interfaces\TiktokAccountRepositoryInterface;
 
-class TiktokAccountRepository implements TiktokAccountRepositoryInterface {
+class TiktokAccountRepository extends BaseRepository implements TiktokAccountRepositoryInterface
+{
+	protected function getModel(): Model
+	{
+		return new TiktokAccount();
+	}
 
-	public function getAll(array $requests) {
-		$query = TiktokAccount::query();
+	/**
+	 * Retrieve aggregate KPI dashboard statistics for TikTok accounts.
+	 */
+	public function getStatisticSummary(): array
+	{
+		return [
+			'total_accounts' => TiktokAccount::count(),
+			'total_followers' => (int) TiktokAccount::sum('followers_count'),
+			'total_following' => (int) TiktokAccount::sum('following_count'),
+			'total_likes' => (int) TiktokAccount::sum('likes_count'),
+			'total_active_accounts' => TiktokAccount::where('status', 'active')->count(),
+			'total_inactive_accounts' => TiktokAccount::where('status', 'inactive')->count(),
+		];
+	}
 
-		if (isset($requests['pagination']) && $requests['pagination'] === 'false') {
-			return $query->get();
+	/**
+	 * Retrieve paginated crawl results for a specific TikTok account.
+	 */
+	public function getCrawlResults(int $accountId, int $perPage = 10, array $params = []): LengthAwarePaginator|false
+	{
+		$account = $this->findById($accountId);
+		if (!$account) {
+			return false;
 		}
 
-		if(isset($requests['username']) && !empty($requests['username'])) {
-			$query->where('username', 'like', '%' . $requests['username'] . '%');
+		$query = $account->crawlResults();
+
+		if (!empty($params['username'])) {
+			$query->where('username', 'like', '%' . $params['username'] . '%');
 		}
 
-		return $query->paginate($requests['per_page'] ?? 5);
-	}
-
-	public function getAccountByField(string $field, string $value, int $id = null) {
-		$query = TiktokAccount::query()
-			->where($field, $value);
-
-		if (!empty($id)){
-			$query->where('id', $id);
+		if (!empty($params['status'])) {
+			$query->where('status', $params['status']);
 		}
 
-		return $query->first();
+		return $query->paginate($perPage);
 	}
 
-	public function getTiktokAccountById(int $id) {
-		return TiktokAccount::find($id);
-	}
-
-	public function updateOrCreateAccount(array $attributes, array $values) {
-		return TiktokAccount::updateOrCreate($attributes, $values);
-	}
-
-	public function getUsernamesByIds(array $ids): array {
+	public function getUsernamesByIds(array $ids): array
+	{
 		return TiktokAccount::query()
 			->whereIn('id', $ids)
 			->pluck('username')
@@ -48,50 +62,28 @@ class TiktokAccountRepository implements TiktokAccountRepositoryInterface {
 			->all();
 	}
 
-	public function deleteAccountById(int $id): bool {
-		$account = TiktokAccount::find($id);
-
-		if ($account) {
-			return $account->delete();
-		}
-		
-		return false;
-	}
-
-	public function updateAccountStatus(int $id, string $status) {
-		$account = TiktokAccount::find($id);
-
+	public function updateStatus(int $id, string $status): ?TiktokAccount
+	{
+		$account = $this->findById($id);
 		if (!$account) {
-			return false;
+			return null;
 		}
 
 		$account->update(['status' => $status]);
-
 		return $account->fresh();
 	}
 
-	public function getCrawlResults(int $accountId, $per_page, array $params = []) {
-		if (empty($accountId) || !$this->getTiktokAccountById($accountId)) {
-			return false;
+	public function getAccountByField(string $field, string $value, ?int $excludeId = null): ?TiktokAccount
+	{
+		$query = TiktokAccount::query()->where($field, $value);
+		if (!empty($excludeId)) {
+			$query->where('id', '!=', $excludeId);
 		}
-
-		$query = $this->getTiktokAccountById($accountId)->crawlResults();
-
-		if (isset($params['username'])) {
-			$query->where('username', 'like', '%' . $params['username'] . '%');
-		}
-
-		return $query->paginate($per_page);
+		return $query->first();
 	}
 
-	public function getStatisticSummary() {
-		return [
-			'total_accounts' => TiktokAccount::count(),
-			'total_followers' => TiktokAccount::sum('followers_count'),
-			'total_following' => TiktokAccount::sum('following_count'),
-			'total_likes' => TiktokAccount::sum('likes_count'),
-			'total_active_accounts' => TiktokAccount::where('status', 'active')->count(),
-			'total_inactive_accounts' => TiktokAccount::where('status', 'inactive')->count(),
-		];
+	public function updateOrCreateAccount(array $attributes, array $values): TiktokAccount
+	{
+		return TiktokAccount::updateOrCreate($attributes, $values);
 	}
 }

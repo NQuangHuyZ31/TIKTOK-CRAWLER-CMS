@@ -17,19 +17,7 @@ export interface CardKPIProps {
 	className?: string;
 }
 
-export default function CardKPI({
-	title,
-	value,
-	icon,
-	color = '#1677ff',
-	prefix,
-	suffix,
-	precision,
-	subtext,
-	loading = false,
-	style,
-	className,
-}: CardKPIProps) {
+export default function CardKPI({ title, value, icon, color = '#1677ff', prefix, suffix, precision, subtext, loading = false, style, className }: CardKPIProps) {
 	return (
 		<Card
 			styles={{ body: { padding: 20 } }}

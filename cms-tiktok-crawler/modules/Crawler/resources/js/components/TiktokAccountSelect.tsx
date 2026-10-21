@@ -1,15 +1,16 @@
 import { Form, Select, App as AntdApp } from "antd";
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from '@core/store';
-import { fechAllTiktokAccounts } from "@modules/TiktokAccount/resources/js/store/tiktokAccount/tiktokAccountThunks";
+import { fetchAllTiktokAccounts } from "@modules/TiktokAccount/resources/js/store/tiktokAccount/tiktokAccountThunks";
 
 const TiktokAccountSelect = ({ onChange }) => {
 	const dispatch = useDispatch();
-	const { data: accounts, loading, error } = useSelector(state => state.tiktokAccount)
+	const { data: accounts, loading, error } = useSelector(state => state.tiktokAccount);
 
 	useEffect(() => {
-		dispatch(fechAllTiktokAccounts({ pagination: false }))
+		dispatch(fetchAllTiktokAccounts({ pagination: false }));
 	}, [dispatch]);
+
 
 	return (
 		<Form.Item

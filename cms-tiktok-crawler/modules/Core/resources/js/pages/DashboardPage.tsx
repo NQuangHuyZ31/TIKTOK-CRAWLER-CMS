@@ -39,7 +39,8 @@ const recentJobColumns: TableColumn<CrawlJobItem>[] = [
 	{
 		title: 'Action',
 		key: 'action',
-		width: 100,
+		width: 80,
+		fixed: 'right',
 	},
 ];
 
@@ -244,11 +245,11 @@ export default function DashboardPage() {
 									}
 								},
 								action: (_, record) => (
-									<Link to={`/crawler/crawl-job/${record.id}`}>
-										<Button size="small" type="link" icon={<EyeOutlined />}>
-											View
-										</Button>
-									</Link>
+									<Tooltip title="View Details">
+										<Link to={`/crawler/crawl-job/${record.id}`}>
+											<Button size="small" type="text" icon={<EyeOutlined style={{ color: '#1677ff' }} />} />
+										</Link>
+									</Tooltip>
 								),
 							}}
 							locale={{

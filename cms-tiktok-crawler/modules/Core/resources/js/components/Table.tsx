@@ -96,10 +96,7 @@ export default function TableComponent<T = any>({
 }: TableComponentProps<T>) {
 	const finalExtra = extraColumns.length > 0 ? extraColumns : appendColumns;
 
-	const tableColumns = useMemo(
-		() => buildColumns<T>(columns, renderColumns, prependColumns, finalExtra),
-		[columns, renderColumns, prependColumns, finalExtra]
-	);
+	const tableColumns = useMemo(() => buildColumns<T>(columns, renderColumns, prependColumns, finalExtra), [columns, renderColumns, prependColumns, finalExtra]);
 
 	const onPage = onPageChange ?? handlePageChange;
 	const paginationConfig = useMemo(() => {
@@ -122,16 +119,5 @@ export default function TableComponent<T = any>({
 		};
 	}, [pagination, onPage]);
 
-	return (
-		<Table<T>
-			columns={tableColumns}
-			dataSource={data}
-			rowKey={rowKey}
-			loading={loading}
-			pagination={paginationConfig}
-			bordered={false}
-			scroll={{ x: 'max-content' }}
-			{...restProps}
-		/>
-	);
+	return <Table<T> columns={tableColumns} dataSource={data} rowKey={rowKey} loading={loading} pagination={paginationConfig} bordered={false} scroll={{ x: 'max-content' }} {...restProps} />;
 }

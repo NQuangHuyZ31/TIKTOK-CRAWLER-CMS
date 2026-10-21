@@ -1,7 +1,10 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import tiktokAccountAPI from "../../Action/tiktokAccount";
 
-export const fechAllTiktokAccounts = createAsyncThunk<any, any>(
+/**
+ * Fetch all TikTok accounts with pagination and filters for the main accounts list table.
+ */
+export const fetchAllTiktokAccounts = createAsyncThunk<any, any>(
 	'tiktokAccount/fetchAllTiktokAccounts',
 	async (params: any, { rejectWithValue }: any) => {
 		try {
@@ -12,28 +15,9 @@ export const fechAllTiktokAccounts = createAsyncThunk<any, any>(
 	}
 );
 
-export const fetchTiktokAccountByID = createAsyncThunk<any, any>(
-	'tiktokAccount/fetchTiktokAccountByID',
-	async (id: any, { rejectWithValue }: any) => {
-		try {
-			return await tiktokAccountAPI.getTiktokAccountByID(id);
-		} catch (error: any) {
-			return rejectWithValue(error.response?.data?.message ?? error.message);
-		}
-	}
-);
-
-export const deleteTiktokAccount = createAsyncThunk<any, any>(
-	'tiktokAccount/deleteTiktokAccount',
-	async (id: any, { rejectWithValue }: any) => {
-		try {
-			return await tiktokAccountAPI.deleteTiktokAccount(id);
-		} catch (error: any) {
-			return rejectWithValue(error.response?.data?.message ?? error.message);
-		}
-	}
-);
-
+/**
+ * Fetch aggregate statistics summary for TikTok accounts KPI cards.
+ */
 export const fetchStatisticSummary = createAsyncThunk<any, void | undefined>(
 	'tiktokAccount/fetchStatisticSummary',
 	async (_: any, { rejectWithValue }: any) => {
@@ -45,35 +29,3 @@ export const fetchStatisticSummary = createAsyncThunk<any, void | undefined>(
 	}
 );
 
-export const updateTiktokAccountStatus = createAsyncThunk<any, { id: any; status: any }>(
-	'tiktokAccount/updateTiktokAccountStatus',
-	async ({ id, status }: any, { rejectWithValue }: any) => {
-		try {
-			return await tiktokAccountAPI.updateTiktokAccountStatus(id, status);
-		} catch (error: any) {
-			return rejectWithValue(error.response?.data?.message ?? error.message);
-		}
-	}
-);
-
-export const updateTiktokAccount = createAsyncThunk<any, { id: any; data: any }>(
-	'tiktokAccount/updateTiktokAccount',
-	async ({ id, data }: any, { rejectWithValue }: any) => {
-		try {
-			return await tiktokAccountAPI.updateTiktokAccount(id, data);
-		} catch (error: any) {
-			return rejectWithValue(error.response?.data?.message ?? error.message);
-		}
-	}
-);
-
-export const fetchResultsByAccountID = createAsyncThunk<any, { id: any; params?: any }>(
-	'tiktokAccount/fetchResultsByAccountID',
-	async ({ id, params }: any, { rejectWithValue }: any) => {
-		try {
-			return await tiktokAccountAPI.getResults(id, params);
-		} catch (error: any) {
-			return rejectWithValue(error.response?.data?.message ?? error.message);
-		}
-	}
-);

@@ -19,13 +19,12 @@ export const getTiktokAccountByID = (id: string | number) =>
     api(`${baseURL}/${id}`);
 
 /**
- * Update TikTok account details (supports FormData / multipart).
+ * Update TikTok account details (supports JSON or multipart FormData for avatar uploads).
  * API: POST or PUT /tiktok-account/tiktok-account/{id}
  * Example: updateTiktokAccount(1, formData)
  */
-export const updateTiktokAccount = (id: string | number, data: any) => {
-    return api(`${baseURL}/${id}`, { method: 'PUT', data });
-};
+export const updateTiktokAccount = (id: string | number, data: any) =>
+    api(`${baseURL}/${id}`, { method: 'PUT', data });
 
 /**
  * Delete TikTok account by ID.

@@ -2,6 +2,8 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import TableComponent from '@core/components/Table';
 import StatusTag from '@core/components/StatusTag';
+import { formatNumber } from '@core/utils/formatNumber';
+import { formatDateTime } from '@core/utils/formatDate';
 import { crawlResultColumnConfig } from '../configs/tableConfig';
 
 interface CrawlResultTableProps {
@@ -16,14 +18,7 @@ interface CrawlResultTableProps {
 	[key: string]: any;
 }
 
-const CrawlResultTable: React.FC<CrawlResultTableProps> = ({
-	data,
-	loading,
-	pagination,
-	onPageChange,
-	setParams,
-	error,
-}) => {
+const CrawlResultTable: React.FC<CrawlResultTableProps> = ({ data, loading, pagination, onPageChange, setParams, error }) => {
 	if (error) {
 		return <div className="text-red-500 py-2">Error: {error}</div>;
 	}
@@ -45,6 +40,10 @@ const CrawlResultTable: React.FC<CrawlResultTableProps> = ({
 			loading={loading}
 			renderColumns={{
 				status: (status) => <StatusTag status={status} />,
+				followers_count: (val) => formatNumber(val),
+				following_count: (val) => formatNumber(val),
+				likes_count: (val) => formatNumber(val),
+				crawled_at: (val) => formatDateTime(val),
 				profile_url: (text: string) => (
 					<Link to={text} target="_blank" rel="noopener noreferrer">
 						{text}

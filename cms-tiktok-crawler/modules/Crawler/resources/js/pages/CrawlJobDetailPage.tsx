@@ -8,7 +8,6 @@ import SpinComponent from '@core/components/SpinComponent';
 import PageHeader from '@core/components/PageHeader';
 import CrawlResultTable from '../components/CrawlResultTable';
 
-
 export default function CrawlJobDetailPage() {
 	const { message } = AntdApp.useApp();
 	const { id } = useParams();
@@ -40,23 +39,26 @@ export default function CrawlJobDetailPage() {
 	}, [id]);
 
 	// 2. Fetch Crawl Results
-	const loadResults = useCallback(async (page = 1, perPage = 10) => {
-		if (!id) return;
-		setResultsLoading(true);
-		try {
-			const res: any = await crawlJobAPI.getResults(id, { page, per_page: perPage });
-			setResults(res?.data ?? []);
-			setPagination({
-				page: res?.meta?.current_page ?? page,
-				per_page: res?.meta?.per_page ?? perPage,
-				total: res?.meta?.total ?? 0,
-			});
-		} catch {
-			// Error loading results silently handled
-		} finally {
-			setResultsLoading(false);
-		}
-	}, [id]);
+	const loadResults = useCallback(
+		async (page = 1, perPage = 10) => {
+			if (!id) return;
+			setResultsLoading(true);
+			try {
+				const res: any = await crawlJobAPI.getResults(id, { page, per_page: perPage });
+				setResults(res?.data ?? []);
+				setPagination({
+					page: res?.meta?.current_page ?? page,
+					per_page: res?.meta?.per_page ?? perPage,
+					total: res?.meta?.total ?? 0,
+				});
+			} catch {
+				// Error loading results silently handled
+			} finally {
+				setResultsLoading(false);
+			}
+		},
+		[id],
+	);
 
 	useEffect(() => {
 		loadJobDetail();
@@ -97,7 +99,7 @@ export default function CrawlJobDetailPage() {
 	}
 
 	if (error) {
-		return <Alert type="error" title={error} showIcon />;
+		return <Alert type="error" message={error} showIcon />;
 	}
 
 	return (
@@ -113,12 +115,7 @@ export default function CrawlJobDetailPage() {
 								<Button icon={<EditOutlined />} onClick={() => navigate(`/crawler/crawl-job/${id}/edit`)}>
 									Edit
 								</Button>
-								<Button
-									type="primary"
-									icon={<PlayCircleOutlined />}
-									loading={starting}
-									onClick={handleStartCrawlJob}
-								>
+								<Button type="primary" icon={<PlayCircleOutlined />} loading={starting} onClick={handleStartCrawlJob}>
 									Start
 								</Button>
 							</>
@@ -144,24 +141,21 @@ export default function CrawlJobDetailPage() {
 
 			<Card style={{ marginBottom: 20 }}>
 				<Descriptions bordered column={{ xs: 1, sm: 2, lg: 4 }}>
-					<Descriptions.Item label="Status"><StatusTag status={job?.status} /></Descriptions.Item>
-					<Descriptions.Item label="Total account">{job?.total_account ?? 0}</Descriptions.Item>
+					<Descriptions.Item label="Status">
+						<StatusTag status={job?.status} />
+					</Descriptions.Item>
+					<Descriptions.Item label="Total Accounts">{job?.total_account ?? 0}</Descriptions.Item>
 					<Descriptions.Item label="Success">{job?.success_count ?? 0}</Descriptions.Item>
 					<Descriptions.Item label="Failed">{job?.failed_count ?? 0}</Descriptions.Item>
-					<Descriptions.Item label="Started at">{job?.started_at || '-'}</Descriptions.Item>
-					<Descriptions.Item label="Finished at">{job?.finished_at || '-'}</Descriptions.Item>
+					<Descriptions.Item label="Started At">{job?.started_at || '-'}</Descriptions.Item>
+					<Descriptions.Item label="Finished At">{job?.finished_at || '-'}</Descriptions.Item>
 					<Descriptions.Item label="Duration">{job?.duration ? `${job?.duration}s` : '-'}</Descriptions.Item>
-					<Descriptions.Item label="Error">{job?.error_message || '-'}</Descriptions.Item>
+					<Descriptions.Item label="Error Message">{job?.error_message || '-'}</Descriptions.Item>
 				</Descriptions>
 			</Card>
 
 			<Card title="Crawl Results">
-				<CrawlResultTable
-					data={results}
-					loading={resultsLoading}
-					pagination={pagination}
-					setParams={(p: any) => loadResults(p.page, p.per_page)}
-				/>
+				<CrawlResultTable data={results} loading={resultsLoading} pagination={pagination} setParams={(p: any) => loadResults(p.page, p.per_page)} />
 			</Card>
 		</div>
 	);

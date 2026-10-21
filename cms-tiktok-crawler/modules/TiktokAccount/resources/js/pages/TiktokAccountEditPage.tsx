@@ -6,24 +6,17 @@ import {
 	Card,
 	Form,
 	Space,
-	Typography,
 } from 'antd';
 import {
 	SaveOutlined,
+	ArrowLeftOutlined,
 } from '@ant-design/icons';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useDispatch, useSelector } from '@core/store';
-
-import {
-	fetchTiktokAccountByID,
-	updateTiktokAccount,
-} from '../store/tiktokAccount/tiktokAccountThunks';
-
+import tiktokAccountAPI from '../Action/tiktokAccount';
 import SpinComponent from '@core/components/SpinComponent';
 import PageHeader from '@core/components/PageHeader';
 import AccountFields from '../components/AccountField';
 import AvatarUpload from '../components/AvatarUpload';
-
 
 const initialFormValues = {
 	username: '',
@@ -37,69 +30,65 @@ const initialFormValues = {
 export default function TiktokAccountEditPage() {
 	const { message } = AntdApp.useApp();
 	const navigate = useNavigate();
-	const dispatch = useDispatch();
 	const { id } = useParams();
 
 	const [form] = Form.useForm();
-
-	const {
-		currentAccount,
-		loading,
-		error,
-	} = useSelector((state) => state.tiktokAccount);
-
-	const [avatarPreview, setAvatarPreview] = useState(null);
-	const [avatarFile, setAvatarFile] = useState(null);
+	const [loading, setLoading] = useState(true);
+	const [error, setError] = useState<string | null>(null);
+	const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+	const [avatarFile, setAvatarFile] = useState<File | null>(null);
 	const [updateLoading, setUpdateLoading] = useState(false);
 
 	/**
-	 * Fetch account
+	 * Fetch account details directly via API
 	 */
 	useEffect(() => {
-		if (id) {
-			dispatch(fetchTiktokAccountByID(id));
-		}
-	}, [dispatch, id]);
+		if (!id) return;
+		let mounted = true;
+		setLoading(true);
 
-	/**
-	 * Sync account data -> form
-	 */
-	useEffect(() => {
-		if (!currentAccount || String(currentAccount.id) !== String(id)) {
-			return;
-		}
+		tiktokAccountAPI.getTiktokAccountByID(id)
+			.then((res: any) => {
+				if (!mounted) return;
+				const currentAccount = res?.data ?? res;
+				form.setFieldsValue({
+					username: currentAccount.username ?? '',
+					profile_url: currentAccount.profile_url ?? '',
+					following_count: currentAccount.following_count ?? 0,
+					followers_count: currentAccount.followers_count ?? 0,
+					likes_count: currentAccount.likes_count ?? 0,
+					status: currentAccount.status === 'active',
+				});
 
-		form.setFieldsValue({
-			username: currentAccount.username ?? '',
-			profile_url: currentAccount.profile_url ?? '',
-			following_count: currentAccount.following_count ?? 0,
-			followers_count: currentAccount.followers_count ?? 0,
-			likes_count: currentAccount.likes_count ?? 0,
-			status: currentAccount.status === 'active',
-		});
+				setAvatarPreview(
+					currentAccount.avatar_url ??
+					currentAccount.avatar_path ??
+					null
+				);
+			})
+			.catch((err: any) => {
+				if (!mounted) return;
+				setError(err?.response?.data?.message ?? err?.message ?? 'Failed to load TikTok account');
+			})
+			.finally(() => {
+				if (mounted) setLoading(false);
+			});
 
-		setAvatarPreview(
-			currentAccount.avatar_url ??
-			currentAccount.avatar_path ??
-			null
-		);
-
-		// Reset avatar file when new account is loaded
-		setAvatarFile(null);
-	}, [currentAccount, form, id]);
+		return () => {
+			mounted = false;
+		};
+	}, [id, form]);
 
 	/**
 	 * Handle avatar selection
 	 */
-	const handleAvatarChange = (file) => {
+	const handleAvatarChange = (file: any) => {
 		setAvatarFile(file);
 
 		const reader = new FileReader();
-
-		reader.onload = (event) => {
+		reader.onload = (event: any) => {
 			setAvatarPreview(event.target.result);
 		};
-
 		reader.readAsDataURL(file);
 
 		return false;
@@ -108,7 +97,7 @@ export default function TiktokAccountEditPage() {
 	/**
 	 * Build multipart form data
 	 */
-	const buildFormData = (values) => {
+	const buildFormData = (values: any) => {
 		const formData = new FormData();
 
 		Object.entries(values).forEach(([key, value]) => {
@@ -128,36 +117,27 @@ export default function TiktokAccountEditPage() {
 	};
 
 	/**
-	 * Submit
+	 * Submit form directly via API
 	 */
-	const handleSubmit = async (values) => {
+	const handleSubmit = async (values: any) => {
+		if (!id) return;
 		try {
 			setUpdateLoading(true);
-
 			const formData = buildFormData(values);
+			const result: any = await tiktokAccountAPI.updateTiktokAccount(id, formData);
 
-			const result = await dispatch(
-				updateTiktokAccount({
-					id,
-					data: formData,
-				})
-			).unwrap();
-
-			message.success(
-				result?.message ?? 'Update completed'
-			);
-
+			message.success(result?.message || 'TikTok account updated successfully');
 			navigate(`/tiktok-account/${id}`);
-		} catch (error) {
-			message.error(
-				error?.message ??
-				error ??
-				'Update failed'
-			);
+		} catch (err: any) {
+			message.error(err?.response?.data?.message ?? err?.message ?? 'Update failed');
 		} finally {
 			setUpdateLoading(false);
 		}
 	};
+
+	if (loading) {
+		return <SpinComponent />;
+	}
 
 	return (
 		<div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -171,7 +151,7 @@ export default function TiktokAccountEditPage() {
 				{error && (
 					<Alert
 						type="error"
-						title={error}
+						message={error}
 						showIcon
 						style={{ marginBottom: 24 }}
 					/>
@@ -190,21 +170,21 @@ export default function TiktokAccountEditPage() {
 						onChange={handleAvatarChange}
 					/>
 
-					<Space>
+					<Space style={{ marginTop: 16 }}>
+						<Button onClick={() => navigate(`/tiktok-account/${id}`)}>
+							Cancel
+						</Button>
 						<Button
 							type="primary"
 							htmlType="submit"
 							icon={<SaveOutlined />}
 							loading={updateLoading}
-							disabled={loading}
 						>
 							Save Changes
 						</Button>
 					</Space>
 				</Form>
 			</Card>
-
-			{loading && <SpinComponent />}
 		</div>
 	);
-}
+}

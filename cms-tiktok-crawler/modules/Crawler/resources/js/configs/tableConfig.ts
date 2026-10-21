@@ -12,9 +12,10 @@ export const crawlJobColumnConfig: TableColumn[] = [
 		title: 'Status',
 		dataIndex: 'status',
 		key: 'status',
+		width: 120,
 	},
 	{
-		title: 'Total account',
+		title: 'Total Accounts',
 		dataIndex: 'total_account',
 		key: 'total_account',
 		sorter: (a: any, b: any) => (a.total_account ?? 0) - (b.total_account ?? 0),
@@ -23,11 +24,13 @@ export const crawlJobColumnConfig: TableColumn[] = [
 		title: 'Success',
 		dataIndex: 'success_count',
 		key: 'success_count',
+		sorter: (a: any, b: any) => (a.success_count ?? 0) - (b.success_count ?? 0),
 	},
 	{
 		title: 'Failed',
 		dataIndex: 'failed_count',
 		key: 'failed_count',
+		sorter: (a: any, b: any) => (a.failed_count ?? 0) - (b.failed_count ?? 0),
 	},
 	{
 		title: 'Started',
@@ -40,14 +43,16 @@ export const crawlJobColumnConfig: TableColumn[] = [
 		key: 'finished_at',
 	},
 	{
-		title: 'Error message',
+		title: 'Error Message',
 		dataIndex: 'error_message',
 		key: 'error_message',
 		width: 150,
 	},
 	{
-		title: 'Action',
 		key: 'action',
+		title: '',
+		width: 120,
+		fixed: 'right',
 	},
 ];
 
@@ -61,6 +66,7 @@ export const crawlResultColumnConfig: TableColumn[] = [
 		title: 'Status',
 		dataIndex: 'status',
 		key: 'status',
+		width: 110,
 	},
 	{
 		title: 'Followers',
@@ -81,7 +87,7 @@ export const crawlResultColumnConfig: TableColumn[] = [
 		sorter: (a: any, b: any) => (a.likes_count ?? 0) - (b.likes_count ?? 0),
 	},
 	{
-		title: 'Error message',
+		title: 'Error Message',
 		dataIndex: 'error_message',
 		key: 'error_message',
 		width: 150,

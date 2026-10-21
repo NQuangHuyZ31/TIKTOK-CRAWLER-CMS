@@ -566,7 +566,10 @@ php artisan route:list
      - `ConfirmDialog`: Hộp thoại xác nhận thao tác quan trọng/nguy hiểm.
      - `SpinComponent`: Trạng thái đang tải dữ liệu / Suspense fallback.
      - `EmptyState`: Trạng thái danh sách rỗng kèm nút hành động.
+   - **Cột Thao Tác Bảng (Action Column)**: Luôn ghim cố định bên phải (`fixed: 'right'`, kèm chiều rộng chuẩn `width: 120`, `title: ''`). Các thao tác hiển thị dưới dạng nút Icon Ant Design kèm Tooltip (`EyeOutlined` xem chi tiết, `EditOutlined` chỉnh sửa, `DeleteOutlined` xóa an toàn với `Popconfirm`) thay vì dùng chữ link thô.
+   - **Đồng Bộ Dữ Liệu & Giao Diện Các Module**: Các trang quản lý danh sách (`CrawlJobsPage`, `TiktokAccountPage`) phải duy trì sự đồng bộ tuyệt đối về cấu trúc `ListLayout` (`cardTitle`, `onAdd`, `onResetFilters`, `filters`), cột `ID` (sorter, `width: 80`), định dạng số (`formatNumber`) và thời gian (`formatDateTime`), cùng quy ước phân trang mặc định `per_page: 10`.
    - Mọi lời gọi HTTP API phải đi qua các hàm định kiểu trong thư mục `Action/` của module tương ứng.
+
    - Luôn sử dụng typed hooks từ `@core/store`: `useDispatch`, `useSelector`, `useAppDispatch`, `useAppSelector`.
 2. **Backend**:
    - Tất cả class PHP của module phải nằm trong thư mục `modules/<ModuleName>/src/`.

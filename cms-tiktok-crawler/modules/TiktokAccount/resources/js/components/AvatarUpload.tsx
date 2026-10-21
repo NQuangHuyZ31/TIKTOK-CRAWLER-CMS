@@ -1,16 +1,10 @@
-import { Form, Image, Upload } from "antd";
-import { PlusOutlined } from "@ant-design/icons";
+import { Form, Image, Upload } from 'antd';
+import { PlusOutlined } from '@ant-design/icons';
 
 function AvatarUpload({ preview, onChange }) {
 	return (
 		<Form.Item label="Avatar">
-			<Upload
-				accept="image/*"
-				listType="picture-card"
-				maxCount={1}
-				beforeUpload={onChange}
-				showUploadList={false}
-			>
+			<Upload accept="image/*" listType="picture-card" maxCount={1} beforeUpload={onChange} showUploadList={false}>
 				{preview ? (
 					<Image
 						preview={false}
@@ -27,9 +21,7 @@ function AvatarUpload({ preview, onChange }) {
 					<div>
 						<PlusOutlined />
 
-						<div style={{ marginTop: 8 }}>
-							Upload
-						</div>
+						<div style={{ marginTop: 8 }}>Upload</div>
 					</div>
 				)}
 			</Upload>

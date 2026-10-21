@@ -15,7 +15,6 @@ const SpinComponent = () => {
 			<Spin size="large" />
 		</div>
 	);
-}
+};
 
 export default React.memo(SpinComponent);
-
