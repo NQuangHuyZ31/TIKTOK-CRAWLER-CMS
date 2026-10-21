@@ -59,8 +59,8 @@ console.log(
     } | Compiling: [${selected.map((m) => m.name).join(', ')}]`
 );
 
-// 2. Định nghĩa thư viện dùng chung gom vào Core/vendor.js
-const VENDOR_TEST = /[\\/]node_modules[\\/](react|react-dom|scheduler|process|antd|@ant-design|@reduxjs|react-redux|axios|dayjs)[\\/]/;
+// 2. Định nghĩa thư viện dùng chung gom vào Core/vendor.js (toàn bộ node_modules nền tảng)
+const VENDOR_TEST = /[\\/]node_modules[\\/]/;
 const VENDOR_CHUNK = 'modules/Core/vendor';
 
 mix.setPublicPath('public');
@@ -119,10 +119,6 @@ mix.webpackConfig({
         },
     },
     plugins: [
-        // Không sinh ra nhiều file chunk vụn vặt: gom toàn bộ code module vào duy nhất file index.js
-        new webpack.optimize.LimitChunkCountPlugin({
-            maxChunks: 1,
-        }),
         // Tạo file entrypoints.json để Laravel Blade DOM đúng module cần thiết
         new EntrypointsPlugin({
             file: path.join(root, 'public', 'entrypoints.json'),
@@ -131,13 +127,15 @@ mix.webpackConfig({
     performance: { hints: false },
 });
 
-// Đảm bảo tên file CSS xuất ra luôn là app.css thay vì index.css
+// Đảm bảo tên file CSS xuất ra luôn là app.css thay vì index hoặc thiếu đuôi .css
 mix.override((config) => {
     for (const plugin of config.plugins) {
         if (plugin.constructor && plugin.constructor.name === 'MiniCssExtractPlugin') {
             plugin.options.filename = (pathData) => {
                 const chunkName = (pathData.chunk && pathData.chunk.name) || '';
-                return chunkName.replace(/\/index$/, '/app.css');
+                if (chunkName.endsWith('.css')) return chunkName;
+                const base = chunkName.replace(/\/(index|app)$/, '');
+                return `${base}/app.css`;
             };
         }
     }

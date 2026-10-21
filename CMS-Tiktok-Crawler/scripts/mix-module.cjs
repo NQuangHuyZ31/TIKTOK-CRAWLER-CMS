@@ -2,14 +2,17 @@
 const path = require('path');
 
 const args = process.argv.slice(2);
-const isProd = args.includes('--production') || args.includes('--prod');
+const isDev = args.includes('--dev') || args.includes('--development');
+const isProd = !isDev; // Mặc định chạy PRODUCTION để file được tối ưu hóa, minify và nhẹ nhất
 const nonFlagArgs = args.filter((a) => !a.startsWith('-'));
 const moduleName = nonFlagArgs[0] || 'all';
+
+process.env.NODE_ENV = isProd ? 'production' : 'development';
 
 console.log(`\n======================================================`);
 console.log(` CMS TikTok Crawler - Modular Build Runner (Ureka)`);
 console.log(` Target Module : ${moduleName.toUpperCase()}`);
-console.log(` Environment   : ${isProd ? 'PRODUCTION' : 'DEVELOPMENT'}`);
+console.log(` Environment   : ${isProd ? 'PRODUCTION (Optimized & Minified)' : 'DEVELOPMENT'}`);
 console.log(`======================================================\n`);
 
 // Thiết lập MIX_MODULES để webpack.mix.js lọc đúng module cần build

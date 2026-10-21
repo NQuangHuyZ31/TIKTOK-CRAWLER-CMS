@@ -1,11 +1,9 @@
-import { lazy } from 'react';
 import { RobotOutlined } from '@ant-design/icons';
 import type { RouteDef } from '@core/routes/registry';
-
-const CrawlJobsPage = lazy(() => import('../pages/CrawlJobsPage'));
-const CreateCrawlJobPage = lazy(() => import('../pages/CreateCrawlJobPage'));
-const CrawlJobDetailPage = lazy(() => import('../pages/CrawlJobDetailPage'));
-const EditCrawlJobPage = lazy(() => import('../pages/EditCrawlJobPage'));
+import CrawlJobsPage from '../pages/CrawlJobsPage';
+import CreateCrawlJobPage from '../pages/CreateCrawlJobPage';
+import CrawlJobDetailPage from '../pages/CrawlJobDetailPage';
+import EditCrawlJobPage from '../pages/EditCrawlJobPage';
 
 const crawlerRoutes: RouteDef[] = [
     {

@@ -9,21 +9,5 @@
     "css": [
       "/modules/Core/app.css"
     ]
-  },
-  "Crawler": {
-    "name": "Crawler",
-    "route_prefix": "admin/crawler",
-    "js": [
-      "/modules/Crawler/index.js"
-    ],
-    "css": []
-  },
-  "TiktokAccount": {
-    "name": "TiktokAccount",
-    "route_prefix": "admin/tiktok-account",
-    "js": [
-      "/modules/TiktokAccount/index.js"
-    ],
-    "css": []
   }
 }

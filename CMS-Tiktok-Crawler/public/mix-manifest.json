@@ -1,7 +1,5 @@
 {
-    "/modules/Core/app.css": "/modules/Core/app.css",
-    "/modules/Core/index.js": "/modules/Core/index.js",
-    "/modules/Crawler/index.js": "/modules/Crawler/index.js",
-    "/modules/TiktokAccount/index.js": "/modules/TiktokAccount/index.js",
-    "/modules/Core/vendor.js": "/modules/Core/vendor.js"
+    "/modules/Core/index.js": "/modules/Core/index.js?id=a6951eee02e8c5601954e5f58bcddf19",
+    "/modules/Core/vendor.js": "/modules/Core/vendor.js?id=9e0b40ec390efa5c7d6a695a77a90fb2",
+    "/modules/Core/app.css": "/modules/Core/app.css?id=ac0a3a38b1357794c5415d6fadef8b5d"
 }

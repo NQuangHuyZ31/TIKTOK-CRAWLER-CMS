@@ -34,3 +34,6 @@ jsconfig.json
 PROJECT_SUMMARY.md
 /dist
 tests/
+public/modules
+public/*.json
+

@@ -13,7 +13,10 @@
 		"laravel/framework": "^13.17",
 		"laravel/sanctum": "^4.0",
 		"laravel/tinker": "^3.0",
-		"cms-tiktok-crawler/module-core": "1.0.0"
+		"cms-tiktok-crawler/module-core": "1.0.0",
+		"cms-tiktok-crawler/module-crawler": "1.0.0",
+		"cms-tiktok-crawler/module-tiktok-account": "1.0.0",
+		"cms-tiktok-crawler/module-public-api": "1.0.0"
 	},
 	"require-dev": {
 		"fakerphp/faker": "^1.23",

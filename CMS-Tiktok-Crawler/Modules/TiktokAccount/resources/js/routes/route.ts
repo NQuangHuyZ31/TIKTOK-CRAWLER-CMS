@@ -1,10 +1,8 @@
-import { lazy } from 'react';
 import { UserOutlined } from '@ant-design/icons';
 import type { RouteDef } from '@core/routes/registry';
-
-const TiktokAccountPage = lazy(() => import('../pages/TiktokAccountPage'));
-const TiktokAccountDetailPage = lazy(() => import('../pages/TiktokAccountDetailPage'));
-const TiktokAccountEditPage = lazy(() => import('../pages/TiktokAccountEditPage'));
+import TiktokAccountPage from '../pages/TiktokAccountPage';
+import TiktokAccountDetailPage from '../pages/TiktokAccountDetailPage';
+import TiktokAccountEditPage from '../pages/TiktokAccountEditPage';
 
 const tiktokAccountRoutes: RouteDef[] = [
     {

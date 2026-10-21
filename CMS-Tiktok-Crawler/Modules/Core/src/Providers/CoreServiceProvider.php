@@ -61,8 +61,7 @@ class CoreServiceProvider extends ServiceProvider
     {
         /** @var ModuleRegistry $registry */
         $registry = $this->app->make(ModuleRegistry::class);
-        $adminPath = trim((string) config('admin.admin_path', config('admin.path', 'admin')), '/');
-        $adminPrefix = $adminPath !== '' ? $adminPath : 'admin';
+        $adminPrefix = trim((string) config('admin.admin_path', config('admin.path', 'admin')), '/');
 
         Route::prefix($adminPrefix)->group(function () use ($registry) {
             // 1. Register API routes for all modules under /{admin_path}/api
@@ -78,27 +77,14 @@ class CoreServiceProvider extends ServiceProvider
                     }
                 }
 
-                // Load Core dynamic route dispatcher at the end as fallback
-                $coreApiRoutes = $registry->path('Core', 'routes/api.php');
-                if (is_file($coreApiRoutes)) {
-                    $this->loadRoutesFrom($coreApiRoutes);
+                $apiRoute = $registry->path('Core', 'routes/api.php');
+                if (is_file($apiRoute)) {
+                    $this->loadRoutesFrom($apiRoute);
                 }
             });
 
             // 2. Register Web routes for modules under /{admin_path}
             Route::middleware('web')->group(function () use ($registry) {
-                foreach ($registry->all() as $name => $moduleDir) {
-                    if ($name === 'Core') {
-                        continue;
-                    }
-
-                    $webRoutes = $registry->path($name, 'routes/web.php');
-                    if (is_file($webRoutes)) {
-                        $this->loadRoutesFrom($webRoutes);
-                    }
-                }
-
-                // Load Core web routes (e.g. SPA fallback)
                 $coreWebRoutes = $registry->path('Core', 'routes/web.php');
                 if (is_file($coreWebRoutes)) {
                     $this->loadRoutesFrom($coreWebRoutes);
@@ -106,7 +92,6 @@ class CoreServiceProvider extends ServiceProvider
             });
         });
 
-        // 3. Web root redirect to admin path
         Route::middleware('web')->get('/', function () use ($adminPrefix) {
             return redirect('/' . $adminPrefix);
         });
