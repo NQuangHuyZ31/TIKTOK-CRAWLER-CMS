@@ -24,7 +24,7 @@ const CustomModal = ({
     handleOk,
     confirmLoading = false,
     okText = 'OK',
-    cancelText = 'Hủy',
+    cancelText = 'Cancel',
     okType = 'primary',
     danger = false,
     width = 520,

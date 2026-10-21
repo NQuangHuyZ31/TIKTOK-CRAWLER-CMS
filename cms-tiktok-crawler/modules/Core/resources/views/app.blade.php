@@ -19,7 +19,7 @@
     @viteReactRefresh
     @vite(['modules/Core/resources/css/app.css', 'modules/Core/resources/js/app.tsx'])
     @else
-    {{-- Tự động nạp CSS của Core và toàn bộ modules từ entrypoints.json --}}
+    {{-- Automatically load CSS for Core and all modules from entrypoints.json --}}
     @moduleCss('all')
     @endif
 </head>
@@ -28,7 +28,7 @@
     <div id="root"></div>
 
     @if (!file_exists(public_path('hot')) && !file_exists(public_path('build/manifest.json')))
-    {{-- Tự động nạp JS của Core vendor + index và toàn bộ modules từ entrypoints.json theo chuẩn Ureka --}}
+    {{-- Automatically load JS for Core vendor + index and all modules from entrypoints.json --}}
     @moduleJs('all')
     @endif
 </body>

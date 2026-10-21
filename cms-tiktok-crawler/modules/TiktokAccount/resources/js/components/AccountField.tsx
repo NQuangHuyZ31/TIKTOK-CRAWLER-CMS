@@ -22,11 +22,11 @@ function AccountFields() {
 				rules={[
 					{
 						required: true,
-						message: 'Vui lòng nhập username',
+						message: 'Please enter username',
 					},
 				]}
 			>
-				<Input placeholder="Nhập username TikTok" />
+				<Input placeholder="Enter TikTok username" />
 			</Form.Item>
 
 			<Form.Item
@@ -35,7 +35,7 @@ function AccountFields() {
 				rules={[
 					{
 						type: 'url',
-						message: 'URL không hợp lệ',
+						message: 'Invalid URL format',
 					},
 				]}
 			>
@@ -54,13 +54,12 @@ function AccountFields() {
 							required: true,
 							type: 'number',
 							min: 0,
-							message:
-								'Vui lòng nhập số lượng đang theo dõi',
+							message: 'Please enter following count',
 						},
 					]}
 				>
 					<InputNumber
-						placeholder="Nhập số lượng đang theo dõi"
+						placeholder="Enter following count"
 						min={0}
 					/>
 				</Form.Item>
@@ -73,13 +72,12 @@ function AccountFields() {
 							required: true,
 							type: 'number',
 							min: 0,
-							message:
-								'Vui lòng nhập số lượng người theo dõi',
+							message: 'Please enter followers count',
 						},
 					]}
 				>
 					<InputNumber
-						placeholder="Nhập số lượng người theo dõi"
+						placeholder="Enter followers count"
 						min={0}
 					/>
 				</Form.Item>
@@ -92,13 +90,12 @@ function AccountFields() {
 							required: true,
 							type: 'number',
 							min: 0,
-							message:
-								'Vui lòng nhập số lượng like',
+							message: 'Please enter likes count',
 						},
 					]}
 				>
 					<InputNumber
-						placeholder="Nhập số lượng like"
+						placeholder="Enter likes count"
 						min={0}
 					/>
 				</Form.Item>

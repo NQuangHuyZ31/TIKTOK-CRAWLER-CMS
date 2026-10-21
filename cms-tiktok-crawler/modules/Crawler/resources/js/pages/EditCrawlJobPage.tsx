@@ -21,7 +21,7 @@ export default function EditCrawlJobPage() {
 	const [form] = Form.useForm();
 	const sourceType = Form.useWatch('source_type', form);
 
-	// Fetch chi tiết job trực tiếp qua API
+	// Fetch job details directly via API
 	useEffect(() => {
 		if (!id) return;
 		let mounted = true;
@@ -43,7 +43,7 @@ export default function EditCrawlJobPage() {
 			})
 			.catch((err: any) => {
 				if (!mounted) return;
-				setError(err?.response?.data?.message ?? err?.message ?? 'Không thể tải thông tin crawl job');
+				setError(err?.response?.data?.message ?? err?.message ?? 'Failed to load crawl job details');
 			})
 			.finally(() => {
 				if (mounted) setLoading(false);
@@ -81,10 +81,10 @@ export default function EditCrawlJobPage() {
 				source_type: values.source_type,
 				data_crawl: dataCrawl,
 			});
-			message.success(result?.message || 'Cập nhật crawl job thành công');
+			message.success(result?.message || 'Crawl job updated successfully');
 			navigate(`/crawler/crawl-job/${id}`);
 		} catch (err: any) {
-			message.error(err?.response?.data?.message ?? err?.message ?? 'Cập nhật crawl job thất bại');
+			message.error(err?.response?.data?.message ?? err?.message ?? 'Failed to update crawl job');
 		} finally {
 			setSaving(false);
 		}
@@ -97,31 +97,31 @@ export default function EditCrawlJobPage() {
 	return (
 		<div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 			<PageHeader
-				title={`Chỉnh sửa Crawl Job #${id}`}
-				subtitle="Chỉ crawl job đang pending mới có thể chỉnh sửa."
+				title={`Edit Crawl Job #${id}`}
+				subtitle="Only pending crawl jobs can be modified."
 				onBack={() => navigate(`/crawler/crawl-job/${id}`)}
 			/>
 
 			<Card style={{ maxWidth: 680 }}>
 				{error && <Alert type="error" title={error} showIcon style={{ marginBottom: 24 }} />}
 				{job?.status !== 'pending' ? (
-					<Alert type="warning" title="Crawl job này không còn ở trạng thái pending." showIcon />
+					<Alert type="warning" title="This crawl job is no longer pending." showIcon />
 				) : (
 					<Form form={form} layout="vertical" onFinish={handleSubmit}>
-						<Form.Item name="source_type" label="Nguồn tài khoản">
+						<Form.Item name="source_type" label="Account Source">
 							<Radio.Group optionType="button" buttonStyle="solid" onChange={handleSourceChange}>
 								<Radio.Button value="usernames"><UserOutlined /> Username</Radio.Button>
 								<Radio.Button value="urls"><LinkOutlined /> URL</Radio.Button>
-								<Radio.Button value="database"><DatabaseOutlined /> Từ database</Radio.Button>
-								<Radio.Button value="count"><NumberOutlined /> Số lượng</Radio.Button>
+								<Radio.Button value="database"><DatabaseOutlined /> From Database</Radio.Button>
+								<Radio.Button value="count"><NumberOutlined /> Count</Radio.Button>
 							</Radio.Group>
 						</Form.Item>
 
 						{sourceType === 'usernames' && (
 							<Form.Item
 								name="usernames"
-								label="Danh sách username"
-								rules={[{ required: true, message: 'Vui lòng nhập username' }]}
+								label="Username List"
+								rules={[{ required: true, message: 'Please enter username' }]}
 							>
 								<Input.TextArea rows={6} />
 							</Form.Item>
@@ -130,8 +130,8 @@ export default function EditCrawlJobPage() {
 						{sourceType === 'urls' && (
 							<Form.Item
 								name="urls"
-								label="Danh sách URL TikTok"
-								rules={[{ required: true, message: 'Vui lòng nhập URL' }]}
+								label="TikTok URL List"
+								rules={[{ required: true, message: 'Please enter URL' }]}
 							>
 								<Input.TextArea rows={6} />
 							</Form.Item>
@@ -144,8 +144,8 @@ export default function EditCrawlJobPage() {
 						{sourceType === 'count' && (
 							<Form.Item
 								name="total_accounts"
-								label="Số lượng account"
-								rules={[{ required: true, message: 'Vui lòng nhập số lượng account' }]}
+								label="Account Count"
+								rules={[{ required: true, message: 'Please enter account count' }]}
 							>
 								<InputNumber min={1} precision={0} style={{ width: '100%' }} />
 							</Form.Item>
@@ -153,10 +153,10 @@ export default function EditCrawlJobPage() {
 
 						<Space>
 							<Button icon={<ArrowLeftOutlined />} onClick={() => navigate(`/crawler/crawl-job/${id}`)}>
-								Hủy
+								Cancel
 							</Button>
 							<Button type="primary" htmlType="submit" icon={<SaveOutlined />} loading={saving}>
-								Lưu thay đổi
+								Save Changes
 							</Button>
 						</Space>
 					</Form>

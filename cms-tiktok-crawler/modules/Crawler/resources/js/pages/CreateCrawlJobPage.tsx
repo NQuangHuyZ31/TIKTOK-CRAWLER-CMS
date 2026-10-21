@@ -44,14 +44,14 @@ export default function CreateCrawlJobPage() {
 			const job = result?.data ?? result;
 			const jobId = job?.id;
 
-			message.success(result?.message || 'Tạo crawl job thành công');
+			message.success(result?.message || 'Crawl job created successfully');
 			if (jobId) {
 				navigate(`/crawler/crawl-job/${jobId}`);
 			} else {
 				navigate('/crawler/crawl-job');
 			}
 		} catch (err: any) {
-			message.error(err?.response?.data?.message ?? err?.message ?? 'Tạo crawl job thất bại');
+			message.error(err?.response?.data?.message ?? err?.message ?? 'Failed to create crawl job');
 		} finally {
 			setLoading(false);
 		}
@@ -60,8 +60,8 @@ export default function CreateCrawlJobPage() {
 	return (
 		<div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 			<PageHeader
-				title="Tạo Crawl Job"
-				subtitle="Thiết lập thông tin cho phiên crawl mới."
+				title="Create Crawl Job"
+				subtitle="Configure settings for a new crawl session."
 				onBack={() => navigate('/crawler/crawl-job')}
 			/>
 
@@ -72,12 +72,12 @@ export default function CreateCrawlJobPage() {
 					initialValues={{ source_type: 'usernames', account_ids: [] }}
 					onFinish={handleSubmit}
 				>
-					<Form.Item name="source_type" label="Nguồn tài khoản">
+					<Form.Item name="source_type" label="Account Source">
 						<Radio.Group optionType="button" buttonStyle="solid" onChange={handleSourceChange}>
 							<Radio.Button value="usernames"><UserOutlined /> Username</Radio.Button>
 							<Radio.Button value="urls"><LinkOutlined /> URL</Radio.Button>
-							<Radio.Button value="database"><DatabaseOutlined /> Từ database</Radio.Button>
-							<Radio.Button value="count"><NumberOutlined /> Số lượng</Radio.Button>
+							<Radio.Button value="database"><DatabaseOutlined /> From Database</Radio.Button>
+							<Radio.Button value="count"><NumberOutlined /> Count</Radio.Button>
 						</Radio.Group>
 					</Form.Item>
 
@@ -85,9 +85,9 @@ export default function CreateCrawlJobPage() {
 						<Form.Item
 							preserve={false}
 							name="usernames"
-							label="Danh sách username"
-							extra="Mỗi username một dòng, không cần ký tự @."
-							rules={[{ required: true, message: 'Vui lòng nhập ít nhất một username' }]}
+							label="Username List"
+							extra="One username per line, without '@' symbol."
+							rules={[{ required: true, message: 'Please enter at least one username' }]}
 						>
 							<Input.TextArea rows={6} placeholder={'huyak\nmegjs_finds'} />
 						</Form.Item>
@@ -97,9 +97,9 @@ export default function CreateCrawlJobPage() {
 						<Form.Item
 							preserve={false}
 							name="urls"
-							label="Danh sách URL TikTok"
-							extra="Mỗi URL một dòng."
-							rules={[{ required: true, message: 'Vui lòng nhập ít nhất một URL' }]}
+							label="TikTok URL List"
+							extra="One URL per line."
+							rules={[{ required: true, message: 'Please enter at least one URL' }]}
 						>
 							<Input.TextArea rows={6} placeholder={'https://www.tiktok.com/@huyak\nhttps://www.tiktok.com/@megjs_finds'} />
 						</Form.Item>
@@ -114,21 +114,21 @@ export default function CreateCrawlJobPage() {
 							<Divider style={{ margin: '8px 0 20px' }} />
 							<Form.Item
 								name="total_accounts"
-								label="Số lượng account"
-								extra="Nhập số lượng account cần crawl."
-								rules={[{ required: true, message: 'Vui lòng nhập số lượng account' }]}
+								label="Account Count"
+								extra="Enter the number of accounts to crawl."
+								rules={[{ required: true, message: 'Please enter account count' }]}
 							>
-								<InputNumber min={1} precision={0} style={{ width: '100%' }} placeholder="Nhập số lượng account" />
+								<InputNumber min={1} precision={0} style={{ width: '100%' }} placeholder="Enter account count" />
 							</Form.Item>
 						</>
 					)}
 
 					<Space>
 						<Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/crawler/crawl-job')}>
-							Hủy
+							Cancel
 						</Button>
 						<Button type="primary" htmlType="submit" icon={<SaveOutlined />} loading={loading}>
-							Tạo job
+							Create Job
 						</Button>
 					</Space>
 				</Form>

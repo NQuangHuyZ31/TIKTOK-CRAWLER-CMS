@@ -1,57 +1,43 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Alert, Row, Col, Card, Space, Flex, Tag, Button, Tooltip, Badge } from 'antd';
-import {
-	ReloadOutlined,
-	PlusOutlined,
-	HistoryOutlined,
-	ArrowRightOutlined,
-	EyeOutlined,
-} from '@ant-design/icons';
+import { ReloadOutlined, PlusOutlined, HistoryOutlined, ArrowRightOutlined, EyeOutlined } from '@ant-design/icons';
 import { useNavigate, Link } from 'react-router-dom';
 import { api } from '../Action/api';
 import PageHeader from '../components/PageHeader';
 import TableComponent, { TableColumn } from '../components/Table';
 import StatusTag from '../components/StatusTag';
 import EmptyState from '../components/EmptyState';
-import {
-	CrawlerStatistics,
-	TiktokStatistics,
-	CrawlJobItem,
-	DashboardKpiCards,
-	CrawlEngineOverview,
-	TiktokEcosystemOverview,
-	DashboardQuickShortcuts,
-} from './ui';
+import { CrawlerStatistics, TiktokStatistics, CrawlJobItem, DashboardKpiCards, CrawlEngineOverview, TiktokEcosystemOverview, DashboardQuickShortcuts } from './ui';
 
 const recentJobColumns: TableColumn<CrawlJobItem>[] = [
 	{
-		title: 'Mã Job',
+		title: 'Job ID',
 		dataIndex: 'id',
 		key: 'id',
 		width: 100,
 	},
 	{
-		title: 'Nguồn thu thập',
+		title: 'Source Type',
 		dataIndex: 'source_type',
 		key: 'source_type',
 	},
 	{
-		title: 'Tiến độ tài khoản',
+		title: 'Progress',
 		key: 'progress',
 	},
 	{
-		title: 'Trạng thái',
+		title: 'Status',
 		dataIndex: 'status',
 		key: 'status',
 		width: 130,
 	},
 	{
-		title: 'Thời gian tạo',
+		title: 'Created At',
 		dataIndex: 'created_at',
 		key: 'created_at',
 	},
 	{
-		title: 'Thao tác',
+		title: 'Action',
 		key: 'action',
 		width: 100,
 	},
@@ -121,9 +107,9 @@ export default function DashboardPage() {
 				setRecentJobs(Array.isArray(jData) ? jData : []);
 			}
 
-			setLastUpdated(new Date().toLocaleTimeString('vi-VN'));
+			setLastUpdated(new Date().toLocaleTimeString('en-US'));
 		} catch (err: any) {
-			setError(err?.message || 'Không thể nạp dữ liệu thống kê bảng điều khiển.');
+			setError(err?.message || 'Failed to load dashboard statistics.');
 		} finally {
 			setLoading(false);
 			setRefreshing(false);
@@ -148,40 +134,32 @@ export default function DashboardPage() {
 			<PageHeader
 				title={
 					<Space align="center" size={10}>
-						<span>Bảng Điều Khiển Tổng Quan</span>
+						<span>System Dashboard</span>
 						<Badge status="processing" text={<span style={{ color: '#52c41a', fontSize: 13, fontWeight: 500 }}>Online</span>} />
 					</Space>
 				}
-				description="Giám sát tập trung toàn bộ tiến trình cào dữ liệu, tài khoản TikTok và các chỉ số tương tác thời gian thực."
+				description="Centralized monitoring of crawl jobs, TikTok accounts, and real-time engagement metrics."
 				extra={
 					<Space wrap size={12}>
 						{lastUpdated && (
-							<Tooltip title="Thời điểm lấy dữ liệu gần nhất">
-								<Tag>Cập nhật: {lastUpdated}</Tag>
+							<Tooltip title="Last fetched timestamp">
+								<Tag>Updated: {lastUpdated}</Tag>
 							</Tooltip>
 						)}
 
-						<Button
-							icon={<ReloadOutlined spin={refreshing} />}
-							onClick={() => loadDashboardData(true)}
-							loading={refreshing}
-						>
-							Làm mới
+						<Button icon={<ReloadOutlined spin={refreshing} />} onClick={() => loadDashboardData(true)} loading={refreshing}>
+							Refresh
 						</Button>
 
-						<Button
-							type="primary"
-							icon={<PlusOutlined />}
-							onClick={() => navigate('/crawler/crawl-job/create')}
-						>
-							Tạo Crawl Job
+						<Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/crawler/crawl-job/create')}>
+							Create Crawl Job
 						</Button>
 					</Space>
 				}
 			/>
 
 			{/* Error Alert */}
-			{error && <Alert type="error" message="Lỗi nạp dữ liệu" description={error} showIcon closable onClose={() => setError('')} />}
+			{error && <Alert type="error" message="Data Loading Error" description={error} showIcon closable onClose={() => setError('')} />}
 
 			{/* Primary High-Level KPI Summary Cards */}
 			<DashboardKpiCards crawlerStats={crawlerStats} tiktokStats={tiktokStats} loading={loading} />
@@ -207,12 +185,12 @@ export default function DashboardPage() {
 						title={
 							<Space align="center">
 								<HistoryOutlined style={{ color: '#1677ff', fontSize: 18 }} />
-								<span style={{ fontWeight: 600, fontSize: 16 }}>Hoạt Động Crawl Gần Nhất</span>
+								<span style={{ fontWeight: 600, fontSize: 16 }}>Recent Crawl Activities</span>
 							</Space>
 						}
 						extra={
 							<Link to="/crawler/crawl-job" style={{ fontSize: 13, color: '#1677ff' }}>
-								Xem tất cả ({crawlerStats?.total_jobs ?? 0}) <ArrowRightOutlined />
+								View all ({crawlerStats?.total_jobs ?? 0}) <ArrowRightOutlined />
 							</Link>
 						}
 						style={{
@@ -238,28 +216,24 @@ export default function DashboardPage() {
 								source_type: (sourceType) => {
 									const type = String(sourceType || 'usernames').toLowerCase();
 									const color = type.includes('url') ? 'geekblue' : type.includes('tag') ? 'purple' : 'blue';
-									return <Tag color={color} style={{ borderRadius: 4, textTransform: 'uppercase', fontSize: 11 }}>{type}</Tag>;
+									return (
+										<Tag color={color} style={{ borderRadius: 4, textTransform: 'uppercase', fontSize: 11 }}>
+											{type}
+										</Tag>
+									);
 								},
 								progress: (_, record) => (
 									<Flex align="center" gap={6}>
-										<span style={{ fontSize: 13, fontWeight: 500 }}>
-											{record.total_accounts ?? 0} mục
-										</span>
-										<span style={{ fontSize: 12, color: '#52c41a' }}>
-											({record.success_count ?? 0} ✓)
-										</span>
-										{Number(record.failed_count || 0) > 0 && (
-											<span style={{ fontSize: 12, color: '#ff4d4f' }}>
-												({record.failed_count} ✗)
-											</span>
-										)}
+										<span style={{ fontSize: 13, fontWeight: 500 }}>{record.total_accounts ?? 0} items</span>
+										<span style={{ fontSize: 12, color: '#52c41a' }}>({record.success_count ?? 0} ✓)</span>
+										{Number(record.failed_count || 0) > 0 && <span style={{ fontSize: 12, color: '#ff4d4f' }}>({record.failed_count} ✗)</span>}
 									</Flex>
 								),
 								status: (status) => <StatusTag status={status} />,
 								created_at: (dateStr) => {
 									if (!dateStr) return '-';
 									try {
-										return new Date(dateStr).toLocaleString('vi-VN', {
+										return new Date(dateStr).toLocaleString('en-US', {
 											hour: '2-digit',
 											minute: '2-digit',
 											day: '2-digit',
@@ -272,19 +246,13 @@ export default function DashboardPage() {
 								action: (_, record) => (
 									<Link to={`/crawler/crawl-job/${record.id}`}>
 										<Button size="small" type="link" icon={<EyeOutlined />}>
-											Xem
+											View
 										</Button>
 									</Link>
 								),
 							}}
 							locale={{
-								emptyText: (
-									<EmptyState
-										description="Chưa có crawl job nào được tạo"
-										actionText="Tạo job đầu tiên"
-										onAction={() => navigate('/crawler/crawl-job/create')}
-									/>
-								),
+								emptyText: <EmptyState description="No crawl jobs created yet" actionText="Create First Job" onAction={() => navigate('/crawler/crawl-job/create')} />,
 							}}
 						/>
 					</Card>

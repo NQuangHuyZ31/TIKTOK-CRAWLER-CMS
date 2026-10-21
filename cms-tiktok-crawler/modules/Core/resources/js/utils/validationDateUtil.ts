@@ -3,14 +3,14 @@ const validateDateUtil = (
 	compareValue,
 	operator
 ) => {
-	// Không có giá trị hiện tại → hợp lệ
+	// No current value -> valid
 	if (!value) {
 		return {
 			isValid: true,
 		};
 	}
 
-	// Field dùng để so sánh chưa có → bỏ qua validation
+	// Comparison field missing -> skip validation
 	if (!compareValue) {
 		return {
 			isValid: true,

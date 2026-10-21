@@ -1,12 +1,6 @@
 import React from 'react';
 import { Card, Space, Flex, Typography, Tag, Badge } from 'antd';
-import {
-	ThunderboltOutlined,
-	PlusOutlined,
-	ArrowRightOutlined,
-	RobotOutlined,
-	UserOutlined,
-} from '@ant-design/icons';
+import { ThunderboltOutlined, PlusOutlined, ArrowRightOutlined, RobotOutlined, UserOutlined } from '@ant-design/icons';
 
 const { Text } = Typography;
 
@@ -25,24 +19,24 @@ interface ShortcutItem {
 
 const shortcuts: ShortcutItem[] = [
 	{
-		title: 'Tạo Crawl Job mới',
-		description: 'Thu thập theo username hoặc link profile',
+		title: 'Create New Crawl Job',
+		description: 'Collect by username or profile link',
 		icon: <PlusOutlined />,
 		color: '#1677ff',
 		bgHover: '#e6f4ff',
 		path: '/crawler/crawl-job/create',
 	},
 	{
-		title: 'Quản lý Crawl Jobs',
-		description: 'Xem danh sách, chạy lại hoặc xóa job',
+		title: 'Manage Crawl Jobs',
+		description: 'View list, restart or delete jobs',
 		icon: <RobotOutlined />,
 		color: '#722ed1',
 		bgHover: '#f9f0ff',
 		path: '/crawler/crawl-job',
 	},
 	{
-		title: 'Khám phá Hồ Sơ TikTok',
-		description: 'Tra cứu chi tiết follower, like, avatar',
+		title: 'Explore TikTok Profiles',
+		description: 'Lookup followers, likes, and avatars',
 		icon: <UserOutlined />,
 		color: '#13c2c2',
 		bgHover: '#e6fffb',
@@ -54,9 +48,7 @@ const shortcuts: ShortcutItem[] = [
  * Right sidebar panel featuring interactive quick action shortcuts
  * and CMS system status indicators.
  */
-export default function DashboardQuickShortcuts({
-	onNavigate,
-}: DashboardQuickShortcutsProps) {
+export default function DashboardQuickShortcuts({ onNavigate }: DashboardQuickShortcutsProps) {
 	return (
 		<Space direction="vertical" size={16} style={{ width: '100%' }}>
 			{/* Quick Action Shortcuts Card */}
@@ -64,7 +56,7 @@ export default function DashboardQuickShortcuts({
 				title={
 					<Space align="center">
 						<ThunderboltOutlined style={{ color: '#fa8c16', fontSize: 18 }} />
-						<span style={{ fontWeight: 600, fontSize: 16 }}>Lối Tắt Tác Vụ</span>
+						<span style={{ fontWeight: 600, fontSize: 16 }}>Quick Actions</span>
 					</Space>
 				}
 				style={{
@@ -109,9 +101,7 @@ export default function DashboardQuickShortcuts({
 									{item.icon}
 								</div>
 								<div>
-									<div style={{ fontWeight: 600, fontSize: 14, color: '#172033' }}>
-										{item.title}
-									</div>
+									<div style={{ fontWeight: 600, fontSize: 14, color: '#172033' }}>{item.title}</div>
 									<Text type="secondary" style={{ fontSize: 12 }}>
 										{item.description}
 									</Text>
@@ -134,16 +124,26 @@ export default function DashboardQuickShortcuts({
 			>
 				<Space direction="vertical" size={10} style={{ width: '100%' }}>
 					<Flex justify="space-between" align="center">
-						<Text type="secondary" style={{ fontSize: 13 }}>Kiến trúc CMS:</Text>
-						<Tag color="cyan" style={{ margin: 0, borderRadius: 4 }}>Ureka Modular</Tag>
+						<Text type="secondary" style={{ fontSize: 13 }}>
+							CMS Architecture:
+						</Text>
+						<Tag color="cyan" style={{ margin: 0, borderRadius: 4 }}>
+							Ureka Modular
+						</Tag>
 					</Flex>
 					<Flex justify="space-between" align="center">
-						<Text type="secondary" style={{ fontSize: 13 }}>Crawl Pipeline:</Text>
-						<Tag color="blue" style={{ margin: 0, borderRadius: 4 }}>Async Queue</Tag>
+						<Text type="secondary" style={{ fontSize: 13 }}>
+							Crawl Pipeline:
+						</Text>
+						<Tag color="blue" style={{ margin: 0, borderRadius: 4 }}>
+							Async Queue
+						</Tag>
 					</Flex>
 					<Flex justify="space-between" align="center">
-						<Text type="secondary" style={{ fontSize: 13 }}>Tình trạng Engine:</Text>
-						<Badge status="success" text={<span style={{ fontSize: 13, color: '#52c41a', fontWeight: 500 }}>Sẵn sàng</span>} />
+						<Text type="secondary" style={{ fontSize: 13 }}>
+							Engine Status:
+						</Text>
+						<Badge status="success" text={<span style={{ fontSize: 13, color: '#52c41a', fontWeight: 500 }}>Ready</span>} />
 					</Flex>
 				</Space>
 			</Card>

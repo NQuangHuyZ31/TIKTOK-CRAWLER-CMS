@@ -2,7 +2,7 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 import crawlJobAPI from "../../Action/crawlJob";
 
 /**
- * Thunk lấy danh sách crawl jobs theo params (phân trang, filter, search).
+ * Thunk to fetch crawl jobs with params (pagination, filter, search).
  */
 export const fetchCrawlJobs = createAsyncThunk<any, any>(
 	'crawlJob/fetchAll',
@@ -16,7 +16,7 @@ export const fetchCrawlJobs = createAsyncThunk<any, any>(
 );
 
 /**
- * Thunk lấy dữ liệu thống kê tổng hợp (KPI cards).
+ * Thunk to fetch statistics summary (KPI cards).
  */
 export const fetchStatisticsSummary = createAsyncThunk<any, void | undefined>(
 	'crawlJob/fetchStatisticsSummary',

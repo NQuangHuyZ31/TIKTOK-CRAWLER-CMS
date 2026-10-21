@@ -46,6 +46,7 @@ cms-tiktok-crawler/
 │   │   │   │   ├── components/          # Reusable UI widgets (Table, CardKPI, Modal, etc.)
 │   │   │   │   ├── layouts/             # AdminLayout, Header, Sidebar
 │   │   │   │   ├── pages/               # DashboardPage, NotFoundPage
+│   │   │   │   │   └── ui/              # Dashboard UI subcomponents (Header, KpiCards, Overview, Table, Shortcuts)
 │   │   │   │   ├── routes/              # Route registry, autoRegister
 │   │   │   │   ├── store/               # Redux store with typed hooks
 │   │   │   │   └── utils/
@@ -66,7 +67,7 @@ cms-tiktok-crawler/
 │   │   ├── resources/
 │   │   │   └── js/
 │   │   │       ├── Action/              # crawlJob.ts
-│   │   │       ├── components/          # CrawlJobListTable, StatisticSummary, etc.
+│   │   │       ├── components/          # CrawlJobListTable, CrawlResultTable, etc.
 │   │   │       ├── configs/             # tableConfig.ts
 │   │   │       ├── pages/               # CrawlJobsPage, CrawlJobDetailPage, Create, Edit
 │   │   │       ├── routes/              # route.ts
@@ -334,6 +335,26 @@ Chuẩn hóa tiện ích gọi API dùng chung đưa về tầng `Core` để t�
   - Xóa bỏ các file Redux Store/Thunks bị comment out: `modules/Crawler/resources/js/store/crawlResult/` (`crawlResultSlice.ts`, `crawlResultThunks.ts`).
   - Xóa bỏ file Action chết: `modules/Crawler/resources/js/Action/crawlResult.ts` và export tương ứng trong `modules/Crawler/resources/js/index.ts`.
 
+### K. Tập Trung Hóa Bảng Điều Khiển Dashboard & Tinh Giản Summary Các Trang
+
+- **Trang Dashboard Tổng Quan ([`modules/Core/resources/js/pages/DashboardPage.tsx`](file:///e:/Urekamedia/project1/cms-tiktok-crawler/modules/Core/resources/js/pages/DashboardPage.tsx))**:
+  - Tái thiết kế toàn diện theo phong cách giao diện hiện đại, cao cấp: Banner chào mừng Gradient (`#091a2f` $\rightarrow$ `#17375e`), huy hiệu Online trạng thái thời gian thực, hiển thị timestamp lấy dữ liệu gần nhất, nút làm mới dữ liệu với hiệu ứng loading quay và phím tắt tạo Crawl Job nhanh.
+  - **Tách module hóa toàn diện & Tối đa hóa tái sử dụng Component lõi (`pages/ui/`)**: Tối ưu hóa file chính `DashboardPage.tsx` còn ~170 dòng, tái sử dụng 100% các thành phần nền tảng có sẵn trong `@core/components`:
+    1. [`DashboardHeader.tsx`](file:///e:/Urekamedia/project1/cms-tiktok-crawler/modules/Core/resources/js/pages/ui/DashboardHeader.tsx): Tái sử dụng [`PageHeader.tsx`](file:///e:/Urekamedia/project1/cms-tiktok-crawler/modules/Core/resources/js/components/PageHeader.tsx) với `title`, `description`, `extra` (nút reload, tạo job, badge online).
+    2. [`DashboardKpiCards.tsx`](file:///e:/Urekamedia/project1/cms-tiktok-crawler/modules/Core/resources/js/pages/ui/DashboardKpiCards.tsx): Tái sử dụng [`CardKPI.tsx`](file:///e:/Urekamedia/project1/cms-tiktok-crawler/modules/Core/resources/js/components/CardKPI.tsx) và [`formatCurrency.ts`](file:///e:/Urekamedia/project1/cms-tiktok-crawler/modules/Core/resources/js/utils/formatCurrency.ts) cho 4 thẻ KPI hàng đầu.
+    3. [`CrawlEngineOverview.tsx`](file:///e:/Urekamedia/project1/cms-tiktok-crawler/modules/Core/resources/js/pages/ui/CrawlEngineOverview.tsx): Tái sử dụng [`CardKPI.tsx`](file:///e:/Urekamedia/project1/cms-tiktok-crawler/modules/Core/resources/js/components/CardKPI.tsx) cho 4 ô chỉ số chi tiết (Jobs hoàn tất/lỗi, Accounts hoàn tất/lỗi) thay thế hoàn toàn các thẻ HTML div inline thô sơ.
+    4. [`TiktokEcosystemOverview.tsx`](file:///e:/Urekamedia/project1/cms-tiktok-crawler/modules/Core/resources/js/pages/ui/TiktokEcosystemOverview.tsx): Tái sử dụng [`CardKPI.tsx`](file:///e:/Urekamedia/project1/cms-tiktok-crawler/modules/Core/resources/js/components/CardKPI.tsx) cho 4 ô dữ liệu TikTok (Followers, Likes, Following, Active).
+    5. [`RecentCrawlJobsTable.tsx`](file:///e:/Urekamedia/project1/cms-tiktok-crawler/modules/Core/resources/js/pages/ui/RecentCrawlJobsTable.tsx): Tái sử dụng [`TableComponent`](file:///e:/Urekamedia/project1/cms-tiktok-crawler/modules/Core/resources/js/components/Table.tsx) thay vì gọi trực tiếp Antd Table, kết hợp [`StatusTag.tsx`](file:///e:/Urekamedia/project1/cms-tiktok-crawler/modules/Core/resources/js/components/StatusTag.tsx) cho trạng thái và [`EmptyState.tsx`](file:///e:/Urekamedia/project1/cms-tiktok-crawler/modules/Core/resources/js/components/EmptyState.tsx) cho trường hợp chưa có dữ liệu.
+    6. [`DashboardQuickShortcuts.tsx`](file:///e:/Urekamedia/project1/cms-tiktok-crawler/modules/Core/resources/js/pages/ui/DashboardQuickShortcuts.tsx): Khối phím tắt nhanh được chuẩn hóa qua cấu trúc mảng lặp DRY, loại bỏ trùng lặp mã.
+    7. [`types.ts`](file:///e:/Urekamedia/project1/cms-tiktok-crawler/modules/Core/resources/js/pages/ui/types.ts) & [`index.ts`](file:///e:/Urekamedia/project1/cms-tiktok-crawler/modules/Core/resources/js/pages/ui/index.ts): Định nghĩa kiểu dữ liệu thống nhất và barrel export.
+- **Loại Bỏ Summary Tại Các Trang Con**:
+  - [`modules/Crawler/resources/js/pages/CrawlJobsPage.tsx`](file:///e:/Urekamedia/project1/cms-tiktok-crawler/modules/Crawler/resources/js/pages/CrawlJobsPage.tsx): Loại bỏ `<StatisticSummary />`, giữ layout trang quản lý danh sách jobs tập trung, thanh thoát và gọn gàng.
+  - [`modules/TiktokAccount/resources/js/pages/TiktokAccountPage.tsx`](file:///e:/Urekamedia/project1/cms-tiktok-crawler/modules/TiktokAccount/resources/js/pages/TiktokAccountPage.tsx): Loại bỏ `<StatisticSummary />`, giải phóng không gian phía trên bảng danh sách tài khoản TikTok.
+  - Xóa bỏ hoàn toàn 2 component trung gian dư thừa:
+    - `modules/Crawler/resources/js/components/StatisticSummary.tsx`
+    - `modules/TiktokAccount/resources/js/components/StatisticSummary.tsx`
+  - Giảm kích thước bundle biên dịch: Crawler bundle giảm xuống 68.7 KiB, TiktokAccount bundle giảm xuống 63.4 KiB.
+
 ## 4. Webpack & Laravel Mix Modular Build System (Ureka Pattern - No Copy)
 
 Frontend build system standardized to Ureka's modular architecture:
@@ -422,3 +443,208 @@ Frontend build system standardized to Ureka's modular architecture:
    - `node ./node_modules/typescript/bin/tsc --noEmit` completed with **0 errors and 0 warnings**.
 5. **Webpack & Laravel Mix Production Build**:
    - `node scripts/mix-module.cjs all` compiled successfully with **0 errors, 0 warnings** in ~13.5s.
+
+---
+
+## 6. Modular Database Architecture & Module-Based RBAC Authorization (View/Edit)
+
+Tái cấu trúc và chuẩn hóa toàn diện hệ thống cơ sở dữ liệu và phân quyền theo mô hình Modular độc lập:
+
+### 1. Phân vùng Database Migrations theo từng Module (No Root Pollution)
+- **Nguyên tắc**: Toàn bộ các file migration và seeder thuộc về module nào sẽ nằm trong thư mục `database/` tương ứng của module đó, **hoàn toàn không gom ở thư mục `database/` ngoài cùng của Laravel**.
+  - `modules/Core/database/`:
+    - `migrations/2026_01_01_000001_create_users_table.php` (Bảng `users`, `password_reset_tokens`, `sessions`).
+    - `migrations/2026_01_01_000002_create_roles_and_permissions_tables.php` (Bảng `roles`, `permissions`, `role_permissions`, `user_roles`, `user_permissions`).
+    - `migrations/2026_01_01_000003_create_personal_access_tokens_table.php` (Bảng `personal_access_tokens` cho Sanctum API).
+    - `seeders/RolePermissionSeeder.php`, `UserSeeder.php`, `CoreDatabaseSeeder.php`.
+  - `modules/TiktokAccount/database/`:
+    - `migrations/2026_01_01_000010_create_tiktok_accounts_table.php` (Hợp nhất đầy đủ các trường: `username`, `sec_uid`, `nickname`, `avatar_url`, `avatar_path`, `profile_url`, `bio`, `followers_count`, `following_count`, `likes_count`, `video_count`, `is_verified`, `status`, `crawled_at`, `last_crawled_at`).
+    - `seeders/TiktokAccountSeeder.php`.
+  - `modules/Crawler/database/`:
+    - `migrations/2026_01_01_000020_create_crawl_jobs_table.php` (Bảng `crawl_jobs` gồm `code`, `name`, `source_type`, `status`, `data_crawls`, `total_accounts`, `success_count`, `failed_count`, `error_message`, `started_at`, `finished_at`, `created_by`).
+    - `migrations/2026_01_01_000021_create_crawl_results_table.php` (Bảng `crawl_results` gồm `crawl_job_id`, `tiktok_account_id`, `username`, `nickname`, `avatar_url`, `avatar_path`, `profile_url`, `followers_count`, `following_count`, `likes_count`, `video_count`, `bio`, `status`, `raw_data`, `error_message`, `crawled_at`).
+    - `seeders/CrawlJobSeeder.php`.
+  - **Root `database/migrations/`**: Chỉ giữ lại các bảng hạ tầng mặc định của Laravel Framework (`cache`, `jobs`). Toàn bộ migration nghiệp vụ cũ được dọn sạch.
+- **Tự động khám phá Migrations (`CoreServiceProvider::registerModuleMigrations`)**:
+  - `CoreServiceProvider` tự động duyệt danh sách tất cả các module đang kích hoạt trong `ModuleRegistry` và gọi `$this->loadMigrationsFrom($migrationDir)`.
+  - `php artisan migrate`, `php artisan migrate:fresh --seed` và test suite (`RefreshDatabase`) tự động nhận diện và thực thi toàn bộ migration của module một cách chính xác theo thứ tự timestamp.
+- **Tự động tải Seeders qua Composer PSR-4**:
+  - `composer.json` khai báo autoload PSR-4 cho seeders từng module: `Modules\Core\Database\Seeders\`, `Modules\Crawler\Database\Seeders\`, `Modules\TiktokAccount\Database\Seeders\`.
+
+### 2. Hệ thống Authentication & Phân Quyền View/Edit theo Module
+- **Phân chia Quyền hạn theo Module (View & Edit)**:
+  - Phân vùng quyền theo từng module: `crawler`, `tiktok_account`, `core`, `user`.
+  - Mỗi module cung cấp 2 cấp độ phân quyền rõ ràng:
+    - `*.view`: Quyền xem danh sách, chi tiết, thống kê, báo cáo của module.
+    - `*.edit`: Quyền tạo mới, chỉnh sửa, xóa, chạy tác vụ cào dữ liệu của module.
+  - Slug permissions:
+    - `crawler.view`, `crawler.edit`
+    - `tiktok_account.view`, `tiktok_account.edit`
+    - `core.view`, `core.edit`
+    - `user.view`, `user.edit`
+- **Vai trò người dùng (Roles)**:
+  - `admin` (Super Administrator): Toàn quyền View & Edit trên mọi module (tự động bypass mọi kiểm tra).
+  - `manager` (Operations Manager): Quyền View & Edit cho `crawler`, `tiktok_account`, `core`; quyền View cho `user`.
+  - `editor` (Crawler Specialist): Quyền View & Edit cho `crawler`, `tiktok_account`; quyền View cho `core`.
+  - `viewer` (Data Viewer / Guest Auditor): Chỉ có quyền View cho `crawler`, `tiktok_account`, `core`; tuyệt đối không có quyền Edit.
+- **Logic kiểm tra phân quyền (`HasRolesAndPermissions`)**:
+  - `canAccessModule(string $module, string $action = 'view'): bool`:
+    - Nếu là `admin` -> luôn cho phép (`true`).
+    - Nếu kiểm tra quyền `view`: Cho phép nếu người dùng có quyền `{$module}.view` **HOẶC** có quyền `{$module}.edit` (vì ai có quyền sửa thì mặc nhiên có quyền xem).
+    - Nếu kiểm tra quyền `edit`: Bắt buộc phải có quyền `{$module}.edit`.
+  - `getModulePermissions()`: Trả về ma trận quyền Boolean theo từng module (`['crawler' => ['view' => true, 'edit' => true], ...]`) để giao diện frontend dễ dàng ẩn/hiện các nút bấm (Tạo, Sửa, Xóa, Chạy) hoặc điều hướng.
+- **Middleware Phân Quyền (`CheckModulePermission` / `module.permission`)**:
+  - Sử dụng trong route: `->middleware('module.permission:crawler,view')` hoặc `->middleware('module.permission:crawler,edit')`.
+  - Tự động trả về HTTP 401 khi chưa xác thực và HTTP 403 Forbidden kèm JSON thông báo rõ ràng khi không đủ quyền.
+- **Auth Controller API (`Modules\Core\Controllers\AuthController`)**:
+  - `POST /{admin_path}/api/core/auth/login`: Xác thực email/password, cấp Sanctum Bearer Token, trả về user profile kèm roles, permissions và `module_permissions` matrix.
+  - `POST /{admin_path}/api/core/auth/logout`: Thu hồi token hiện tại và đăng xuất session.
+  - `GET /{admin_path}/api/core/auth/me`: Lấy thông tin user hiện tại kèm token status và ma trận phân quyền module.
+  - `GET /{admin_path}/api/core/auth/permissions`: Trả về danh mục toàn bộ permissions trong hệ thống nhóm theo module.
+- **Tài khoản Demo mặc định (Mật khẩu: `password`)**:
+  - Admin: `admin@cms.com` (Role: `admin`)
+  - Manager: `manager@cms.com` (Role: `manager`)
+  - Editor: `editor@cms.com` (Role: `editor`)
+  - Viewer: `viewer@cms.com` (Role: `viewer`)
+- **Kết quả Kiểm thử Tự động**:
+  - 51/51 tests passed 100% (228 assertions), bao gồm bộ test feature toàn diện `AuthAndModulePermissionTest`.
+
+---
+
+## 7. Component Reuse Standardization & Elimination of Redundant Wrappers
+
+Tối ưu hóa và chuẩn hóa việc tái sử dụng toàn bộ hệ thống UI components cốt lõi từ `@core/components/`, loại bỏ triệt để các component bọc trung gian (wrappers) và định nghĩa trùng lặp:
+
+1. **Tái sử dụng trực tiếp `TableComponent` (`@core/components/Table`)**:
+   - Loại bỏ component bọc thừa `RecentCrawlJobsTable.tsx` trên Dashboard (trước đây định nghĩa lại toàn bộ schema cột bảng crawl job).
+   - `DashboardPage` trực tiếp sử dụng `<TableComponent<CrawlJobItem> ... />` cùng các thành phần chuẩn hóa `StatusTag` và `EmptyState`.
+2. **Chuẩn hóa `PageHeader` (`@core/components/PageHeader`) toàn hệ thống**:
+   - Nâng cấp `PageHeader` hỗ trợ `onBack`, `subtitle` (alias với `description`), `breadcrumbs`, `extra`.
+   - Thay thế toàn bộ các header dựng thủ công (bằng `<Space><Title><Text>`) và loại bỏ wrapper trung gian `DashboardHeader.tsx`:
+     - `DashboardPage` (Bảng Điều Khiển Tổng Quan)
+     - `CrawlJobsPage` (Danh sách Crawl Jobs)
+     - `CrawlJobDetailPage` (Chi tiết Crawl Job #ID kèm nút Quay lại và Thao tác)
+     - `CreateCrawlJobPage` (Tạo Crawl Job kèm nút Quay lại)
+     - `EditCrawlJobPage` (Chỉnh sửa Crawl Job #ID kèm nút Quay lại)
+     - `TiktokAccountPage` (TikTok Accounts)
+     - `TiktokAccountDetailPage` (Chi tiết tài khoản TikTok kèm nút Quay lại và Thao tác)
+     - `TiktokAccountEditPage` (Chỉnh sửa thông tin tài khoản kèm nút Quay lại)
+3. **Chuẩn hóa `CardKPI` (`@core/components/CardKPI`)**:
+   - Tái sử dụng trên Dashboard và `TiktokAccountDetailPage` (Followers, Following, Likes) thay thế thẻ `<Statistic>` thô.
+4. **Chuẩn hóa `StatusTag` (`@core/components/StatusTag`)**:
+   - Sử dụng nhất quán cho toàn bộ các trạng thái: active/inactive, pending/running/completed/failed, loại bỏ các thẻ `<Tag color=...>` tự định nghĩa rời rạc.
+5. **Chuẩn hóa `ConfirmDialog` (`@core/components/ConfirmDialog`)**:
+   - Tái cấu trúc `DeleteAccount.tsx` tái sử dụng `ConfirmDialog` thay cho `CustomModal` tự tạo.
+6. **Chuẩn hóa `SpinComponent` (`@core/components/SpinComponent`)**:
+   - Sử dụng cho Suspense fallback tại `AppRouter.tsx` thay thế `<div><Spin size="large" /></div>` thủ công.
+
+---
+
+## 8. Unified Modular List Layout (`ListLayout` Component)
+
+Xây dựng thành phần layout danh sách chuẩn hóa dùng chung toàn diện cho mọi module: [`modules/Core/resources/js/components/ListLayout.tsx`](file:///e:/Urekamedia/project1/cms-tiktok-crawler/modules/Core/resources/js/components/ListLayout.tsx), khai thác tối đa các component có sẵn của Ant Design:
+
+### 1. Cấu trúc và Tính năng
+- **Tích hợp `PageHeader`**:
+  - Tiêu đề danh sách (`title`), mô tả phụ (`subtitle` / `description`), `breadcrumbs`, nút quay lại (`onBack`).
+  - Nút thêm mới tự động (`onAdd`, `addText`, `addIcon`): hỗ trợ truyền callback function hoặc đường dẫn route dạng string để tự động chuyển trang.
+  - Vùng thao tác bổ sung (`headerExtra`) cho các hành vi như Xuất file (Export), Nhập file (Import).
+- **Render Động Search (Ant Design `Input.Search` + `Select`)**:
+  - Thanh tìm kiếm từ khóa với icon kính lúp, `allowClear`, hỗ trợ chọn trường tìm kiếm mục tiêu qua `searchFields` (render `addonBefore` bằng `<Select>`).
+- **Render Động Filter (Ant Design `Form` + `Form.Item`)**:
+  - Quản trị form lọc động thông qua Ant Design Form instance (`Form.useForm()`), hỗ trợ tự động trigger `onValuesChange` và `onFilterChange`.
+  - Hỗ trợ đa dạng các field component có sẵn của Ant Design:
+    - `select`: `<Select allowClear showSearch options={...} />`
+    - `dateRange`: `<DatePicker.RangePicker allowClear />`
+    - `date`: `<DatePicker allowClear />`
+    - `number`: `<InputNumber />`
+    - `radio`: `<Radio.Group optionType="button" buttonStyle="solid" />`
+    - `custom`: `filter.render(form)`
+  - Tự động gom nhóm bộ lọc nâng cao (Collapsible advanced filters) khi có > 3 trường lọc.
+  - Nút Đặt lại bộ lọc (`form.resetFields()`) và nút Làm mới dữ liệu (`onRefresh`, `refreshing`).
+- **Render Động Cột Bảng (Dynamic Columns Rendering)**:
+  - Cho phép cấu hình và truyền mảng cột `columns: TableColumn<T>[]` động vào `ListLayout`, tự động truyền trực tiếp xuống `TableComponent`.
+  - Hỗ trợ đầy đủ `renderColumns`, `prependColumns`, `extraColumns` để linh hoạt tùy biến hiển thị tại từng trang mà không can thiệp vào logic lõi.
+  - Loại bỏ hoàn toàn popover cài đặt cột và dropdown mật độ hiển thị để giao diện tối giản, tập trung và sạch sẽ.
+  - Trong `TableComponent`: Loại bỏ logic search trong column để giữ component bảng hoàn toàn thuần túy và dễ tái sử dụng.
+- **Áp dụng thực tế**:
+  - [`CrawlJobsPage.tsx`](file:///e:/Urekamedia/project1/cms-tiktok-crawler/modules/Crawler/resources/js/pages/CrawlJobsPage.tsx): Tích hợp trực tiếp `ListLayout` với `crawlJobColumnConfig`, tìm kiếm từ khóa và lọc trạng thái.
+  - [`TiktokAccountPage.tsx`](file:///e:/Urekamedia/project1/cms-tiktok-crawler/modules/TiktokAccount/resources/js/pages/TiktokAccountPage.tsx): Tích hợp trực tiếp `ListLayout` với `columnConfig`, tìm kiếm theo username/nickname và lọc trạng thái hoạt động.
+
+---
+
+## 9. Component Audit, Complete Redundant Removal & 100% English Web Localization
+
+Rà soát toàn diện hệ thống frontend component, loại bỏ dứt điểm các component thừa/trùng lặp, tối đa hóa khả năng dùng chung và chuẩn hóa 100% ngôn ngữ giao diện web và chú thích code sang tiếng Anh:
+
+### 1. Loại Bỏ Triệt Để Các Component Dư Thừa & Trùng Lặp
+- **`modules/Core/resources/js/components/SearchColumnTable.tsx`**:
+  - Đã xóa hoàn toàn. Tính năng tìm kiếm theo cột cũ được thay thế bằng thanh tìm kiếm động và bộ lọc tại thanh công cụ của `ListLayout`.
+- **`modules/Crawler/resources/js/components/CrawlJobListTable.tsx`**:
+  - Đã xóa hoàn toàn. `CrawlJobsPage.tsx` chuyển sang render trực tiếp `ListLayout` với cấu hình cột `crawlJobColumnConfig`.
+- **`modules/TiktokAccount/resources/js/components/TiktokAccountTableList.tsx`**:
+  - Đã xóa hoàn toàn. `TiktokAccountPage.tsx` chuyển sang render trực tiếp `ListLayout` với cấu hình cột `tiktokAccountColumnConfig`.
+- **Xóa bỏ các export và import mồ côi**:
+  - `modules/Core/resources/js/components/index.ts` chỉ export các component dùng chung thực thụ (`CardKPI`, `CustomModal`, `ConfirmDialog`, `PageHeader`, `EmptyState`, `StatusTag`, `TableComponent`, `SpinComponent`, `ListLayout`).
+
+### 2. Tinh Chỉnh & Tái Sử Dụng Component Dùng Chung
+- **`TableComponent` ([`Table.tsx`](file:///e:/Urekamedia/project1/cms-tiktok-crawler/modules/Core/resources/js/components/Table.tsx))**:
+  - Loại bỏ logic dropdown search trong từng cột, giữ component bảng thuần túy và ổn định.
+  - Chuyển đổi định dạng tổng số mục phân trang sang tiếng Anh: `Total ${t} items (${range[0]}-${range[1]})`.
+  - Toàn bộ chú thích trong code được viết bằng tiếng Anh.
+- **`ListLayout` ([`ListLayout.tsx`](file:///e:/Urekamedia/project1/cms-tiktok-crawler/modules/Core/resources/js/components/ListLayout.tsx))**:
+  - Chuyển đổi toàn bộ nút bấm và badge trên thanh công cụ sang tiếng Anh: "Reset", "Collapse", "Advanced", "selected", "Refresh data".
+- **`ConfirmDialog` ([`ConfirmDialog.tsx`](file:///e:/Urekamedia/project1/cms-tiktok-crawler/modules/Core/resources/js/components/ConfirmDialog.tsx))**:
+  - Nút bấm mặc định chuyển sang tiếng Anh: `okText = 'Confirm'`, `cancelText = 'Cancel'`.
+- **`CustomModal` ([`CustomModal.tsx`](file:///e:/Urekamedia/project1/cms-tiktok-crawler/modules/Core/resources/js/components/CustomModal.tsx))**:
+  - Nút hủy mặc định chuyển sang tiếng Anh: `cancelText = 'Cancel'`.
+- **`EmptyState` ([`EmptyState.tsx`](file:///e:/Urekamedia/project1/cms-tiktok-crawler/modules/Core/resources/js/components/EmptyState.tsx))**:
+  - Dòng thông báo mặc định chuyển sang tiếng Anh: `description = 'No data available'`.
+- **`CrawlResultTable` ([`CrawlResultTable.tsx`](file:///e:/Urekamedia/project1/cms-tiktok-crawler/modules/Crawler/resources/js/components/CrawlResultTable.tsx))**:
+  - Thành phần bảng hiển thị kết quả cào tài khoản TikTok được tái sử dụng xuyên suốt tại cả 2 module: `CrawlJobDetailPage` (Crawler) và `CrawlHistory` (TiktokAccount).
+
+### 3. Chuẩn Hóa 100% Tiếng Anh Trên Giao Diện Web (Rule 9)
+Toàn bộ văn bản giao diện, nhãn, nút bấm, thông báo toast, validate form và chú thích mã nguồn đã được chuyển sang tiếng Anh:
+- **Trang Dashboard & Thư mục UI (`DashboardPage.tsx`, `pages/ui/*.tsx`)**:
+  - Header: "System Dashboard", "Centralized monitoring of crawl jobs, TikTok accounts, and real-time engagement metrics.", "Refresh", "Create Crawl Job", "Updated: ...", "Last fetched timestamp".
+  - Hero KPI Cards: "Total Crawl Jobs" (completed / failed), "Target Accounts" (success / failed), "Stored Profiles" (active / inactive), "Total Crawled Likes" (followers / following).
+  - Analytical Panels: "Crawl Engine Performance", "TikTok Profile Ecosystem", "Completed Jobs", "Failed Jobs", "Successful Accounts", "Failed / Skipped Accounts", "Pending / Running Jobs", "Active profile rate", "Total Followers", "Total Likes", "Total Following", "Active Profiles", "Inactive / Paused Accounts".
+  - Quick Shortcuts & System Status: "Quick Actions", "Create New Crawl Job", "Manage Crawl Jobs", "Explore TikTok Profiles", "CMS Architecture: Ureka Modular", "Crawl Pipeline: Async Queue", "Engine Status: Ready".
+  - Bảng hoạt động gần nhất: "Recent Crawl Activities", "View all", các cột (`Job ID`, `Source Type`, `Progress`, `Status`, `Created At`, `Action`), "View", `EmptyState` ("No crawl jobs created yet", "Create First Job").
+- **Trang & Thành phần Module Crawler**:
+  - `CrawlJobsPage.tsx`: "Crawl Jobs List", "Create Job", subtitle, filters ("All statuses"), Popconfirm ("Delete crawl job", "Are you sure you want to delete this crawl job?", "Delete", "Cancel"), toast messages ("Crawl job deleted successfully", "Failed to delete crawl job").
+  - `CreateCrawlJobPage.tsx`: "Create Crawl Job", subtitle, radio options ("Username", "URL", "From Database", "Count"), labels ("Account Source", "Username List", "TikTok URL List", "Account Count"), placeholders, hint extras, validation rules ("Please enter at least one username", "Please enter at least one URL", "Please enter account count"), buttons ("Cancel", "Create Job").
+  - `EditCrawlJobPage.tsx`: "Edit Crawl Job #ID", subtitle, alerts ("This crawl job is no longer pending."), labels, placeholders, buttons ("Cancel", "Save Changes"), toast messages.
+  - `CrawlJobDetailPage.tsx`: "Crawl Job Detail #ID", subtitle, Popconfirm, "Crawl Results", toast messages.
+  - `TiktokAccountSelect.tsx`: label ("Saved Accounts"), validation message ("Please select at least one account"), placeholders ("Select accounts", "No accounts available", "Loading accounts...").
+- **Trang & Thành phần Module TikTok Account**:
+  - `TiktokAccountPage.tsx`: "TikTok Accounts", "Account list", search and filter placeholders.
+  - `TiktokAccountDetailPage.tsx`: "Account @username", KPI cards, Descriptions, "Profile information", "Crawl History".
+  - `TiktokAccountEditPage.tsx`: "Edit TikTok Account", subtitle ("Manually update TikTok account profile details."), button ("Save Changes").
+  - `AccountField.tsx`: validation messages ("Please enter username", "Invalid URL format", "Please enter following count", "Please enter followers count", "Please enter likes count"), placeholders ("Enter TikTok username", "Enter following count", "Enter followers count", "Enter likes count").
+- **Đặc tả Chú Thích API (Rule 9)**:
+  - Cả 2 service gọi API frontend [`crawlJob.ts`](file:///e:/Urekamedia/project1/cms-tiktok-crawler/modules/Crawler/resources/js/Action/crawlJob.ts) và [`tiktokAccount.ts`](file:///e:/Urekamedia/project1/cms-tiktok-crawler/modules/TiktokAccount/resources/js/Action/tiktokAccount.ts) được chú thích rõ ràng cú pháp và phương thức gọi endpoint theo chuẩn:
+    - `API: GET /crawler/crawl-job`
+    - `API: POST /crawler/crawl-job`
+    - `API: GET /crawler/crawl-job/{id}`
+    - `API: PUT /crawler/crawl-job/{id}`
+    - `API: DELETE /crawler/crawl-job/{id}`
+    - `API: POST /crawler/crawl-job/{id}/start`
+    - `API: GET /crawler/crawl-job/{id}/results`
+    - `API: GET /crawler/crawl-job/statistics-summary`
+    - `API: GET /tiktok-account/tiktok-account`
+    - `API: GET /tiktok-account/tiktok-account/{id}`
+    - `API: PUT /tiktok-account/tiktok-account/{id}`
+    - `API: DELETE /tiktok-account/tiktok-account/{id}`
+    - `API: PATCH /tiktok-account/tiktok-account/{id}/status`
+    - `API: GET /tiktok-account/tiktok-account/{id}/results`
+    - `API: GET /tiktok-account/tiktok-account/statistic-summary`
+- **Kết quả Kiểm tra Tuyệt đối**:
+  - Tìm kiếm ký tự tiếng Việt (`[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđĐ]`) trên toàn bộ thư mục `modules/`: **0 kết quả** (hoàn toàn 100% tiếng Anh).
+  - `tsc --noEmit`: 0 lỗi.
+  - `php artisan test`: 51/51 tests passed 100% (228 assertions).
+  - `npm run mix:prod`: Biên dịch thành công 100% (Core 68.3 KiB, Crawler 79.8 KiB, TiktokAccount 76.5 KiB).
+
+
+
+

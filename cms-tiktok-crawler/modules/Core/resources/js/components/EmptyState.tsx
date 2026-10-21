@@ -10,7 +10,7 @@ export interface EmptyStateProps {
 }
 
 export default function EmptyState({
-    description = 'Không có dữ liệu',
+    description = 'No data available',
     actionText,
     onAction,
     image = Empty.PRESENTED_IMAGE_SIMPLE,

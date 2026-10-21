@@ -5,7 +5,7 @@
 import { registerRoutes } from '@core/routes/registry';
 import tiktokAccountRoutes from './routes/route';
 
-// Tự động đăng ký routes vào Core khi file script được load trên DOM
+// Automatically register routes into Core when the script is loaded in DOM
 registerRoutes(tiktokAccountRoutes);
 
 export default tiktokAccountRoutes;

@@ -84,7 +84,7 @@ export default function TiktokAccountEditPage() {
 			null
 		);
 
-		// Reset file khi load account mới
+		// Reset avatar file when new account is loaded
 		setAvatarFile(null);
 	}, [currentAccount, form, id]);
 
@@ -163,7 +163,7 @@ export default function TiktokAccountEditPage() {
 		<div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 			<PageHeader
 				title="Edit TikTok Account"
-				subtitle="Chỉnh sửa thông tin thủ công của tài khoản."
+				subtitle="Manually update TikTok account profile details."
 				onBack={() => navigate(`/tiktok-account/${id}`)}
 			/>
 
@@ -198,7 +198,7 @@ export default function TiktokAccountEditPage() {
 							loading={updateLoading}
 							disabled={loading}
 						>
-							Lưu thay đổi
+							Save Changes
 						</Button>
 					</Space>
 				</Form>

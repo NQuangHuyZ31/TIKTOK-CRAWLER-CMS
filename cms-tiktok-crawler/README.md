@@ -555,8 +555,11 @@ php artisan route:list
 
 1. **Frontend**:
    - Mọi file logic hoặc UI đều phải dùng TypeScript (`.ts`, `.tsx`). Tuyệt đối không dùng `.js` hay `.jsx` trong thư mục `modules/*/resources/js/`.
+   - **Ngôn ngữ Web & Chú thích (Rule 9)**: Toàn bộ văn bản hiển thị trên giao diện web (tiêu đề, nhãn, nút bấm, thông báo, placeholder, validate form) và chú thích trong code đều phải sử dụng **tiếng Anh 100%**.
+   - **Chú thích Endpoint API (Rule 9)**: Mọi hàm gọi API trong `Action/` phải được viết comment mô tả cú pháp endpoint rõ ràng, ví dụ: `API: GET /crawler/crawl-job/{id}`.
+   - **Layout Danh Sách Chuẩn Hóa (`ListLayout`)**: Sử dụng `<ListLayout>` từ `@core/components/ListLayout` cho toàn bộ các trang danh sách (tích hợp PageHeader, thanh tìm kiếm từ khóa, bộ lọc đa trường, thao tác hàng loạt và TableComponent).
    - **Tái sử dụng Component dùng chung (`@core/components`)**: Tuyệt đối không tạo mới hoặc bọc thêm wrapper không cần thiết nếu đã có component dùng chung:
-     - `TableComponent`: Bảng dữ liệu chính, tùy biến cột qua `renderColumns`. Không tạo thêm component bọc bảng nếu chỉ để bọc `<TableComponent>`.
+     - `TableComponent`: Bảng dữ liệu chính, tùy biến cột qua `renderColumns`. Không tạo thêm component bọc bảng thừa (`CrawlJobListTable`, `TiktokAccountTableList` đã được xóa bỏ để gọi trực tiếp `ListLayout`).
      - `PageHeader`: Tiêu đề trang chuẩn hóa kèm `onBack`, `subtitle`, `breadcrumbs`, `extra`. Không tự dựng tiêu đề bằng `<Space><Title><Text>`.
      - `CardKPI`: Hiển thị chỉ số thống kê, tiến độ và icon trực quan.
      - `StatusTag`: Hiển thị nhãn trạng thái thống nhất cho toàn bộ modules.

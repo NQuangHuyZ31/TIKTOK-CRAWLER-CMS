@@ -57,7 +57,7 @@ class TiktokAccountService {
 
             $data['avatar_path'] = $newAvatarPath;
 
-            // Không đưa UploadedFile xuống repository
+            // Do not pass UploadedFile down to repository
             unset($data['avatar']);
         }
 

@@ -7,22 +7,22 @@ use Illuminate\Support\Str;
 
 class UploadFile {
     public static function uploadFile($file, $destinationPath, $filename = null, $deleteOldFile = false, $oldFilePath = null, $disk = 'public') {
-        // Không có file
+        // File does not exist or is invalid
         if (!$file || !$file->isValid()) {
             return false;
         }
 
-        // Xóa file cũ nếu được yêu cầu
+        // Delete old file if requested
         if ($deleteOldFile && $oldFilePath) {
             self::deleteFile($oldFilePath, $disk);
         }
 
-        // Tạo filename nếu không truyền vào
+        // Generate unique filename if not provided
         if (!$filename) {
             $filename = Str::uuid() . '.' . $file->getClientOriginalExtension();
         }
 
-        // Upload file
+        // Upload and store file
         return $file->storeAs($destinationPath, $filename, $disk);
     }
 

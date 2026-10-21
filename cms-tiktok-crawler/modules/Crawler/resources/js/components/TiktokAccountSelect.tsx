@@ -15,8 +15,8 @@ const TiktokAccountSelect = ({ onChange }) => {
 		<Form.Item
 			preserve={false}
 			name="account_ids"
-			label="Tài khoản đã lưu"
-			rules={[{ required: true, message: 'Vui lòng chọn ít nhất một tài khoản' }]}
+			label="Saved Accounts"
+			rules={[{ required: true, message: 'Please select at least one account' }]}
 		>
 			<Select
 				mode="multiple"
@@ -27,8 +27,8 @@ const TiktokAccountSelect = ({ onChange }) => {
 					value: account.id,
 				}))}
 				loading={loading}
-				placeholder={accounts.length ? "Chọn tài khoản" : "Không có tài khoản"}
-				notFoundContent={error ? <span style={{ color: 'red' }}>{error}</span> : "Đang tải danh sách tài khoản..."}
+				placeholder={accounts.length ? "Select accounts" : "No accounts available"}
+				notFoundContent={error ? <span style={{ color: 'red' }}>{error}</span> : "Loading accounts..."}
 			/>
 		</Form.Item>
 	)

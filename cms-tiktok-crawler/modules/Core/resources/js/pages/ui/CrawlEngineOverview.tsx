@@ -1,13 +1,6 @@
 import React from 'react';
 import { Card, Progress, Row, Col, Flex, Space, Tag, Typography } from 'antd';
-import {
-	ControlOutlined,
-	ArrowRightOutlined,
-	CheckCircleFilled,
-	CloseCircleFilled,
-	UserSwitchOutlined,
-	UserDeleteOutlined,
-} from '@ant-design/icons';
+import { ControlOutlined, ArrowRightOutlined, CheckCircleFilled, CloseCircleFilled, UserSwitchOutlined, UserDeleteOutlined } from '@ant-design/icons';
 import { Link } from 'react-router-dom';
 import CardKPI from '../../components/CardKPI';
 import formatCurrency from '../../utils/formatCurrency';
@@ -23,29 +16,23 @@ export interface CrawlEngineOverviewProps {
 /**
  * Left panel showing Crawl Engine Performance, reusing CardKPI for consistent metric cards.
  */
-export default function CrawlEngineOverview({
-	crawlerStats,
-	successRate,
-}: CrawlEngineOverviewProps) {
-	const pendingOrRunningCount = Math.max(
-		0,
-		(crawlerStats?.total_jobs ?? 0) -
-		(crawlerStats?.total_completed_jobs ?? 0) -
-		(crawlerStats?.total_failed_jobs ?? 0)
-	);
+export default function CrawlEngineOverview({ crawlerStats, successRate }: CrawlEngineOverviewProps) {
+	const pendingOrRunningCount = Math.max(0, (crawlerStats?.total_jobs ?? 0) - (crawlerStats?.total_completed_jobs ?? 0) - (crawlerStats?.total_failed_jobs ?? 0));
 
 	return (
 		<Card
 			title={
 				<Space align="center">
 					<ControlOutlined style={{ color: '#1677ff', fontSize: 18 }} />
-					<span style={{ fontWeight: 600, fontSize: 16 }}>Hiệu Năng Bộ Cào Dữ Liệu</span>
-					<Tag color="blue" style={{ borderRadius: 12, marginLeft: 6 }}>Crawl Engine</Tag>
+					<span style={{ fontWeight: 600, fontSize: 16 }}>Crawl Engine Performance</span>
+					<Tag color="blue" style={{ borderRadius: 12, marginLeft: 6 }}>
+						Crawl Engine
+					</Tag>
 				</Space>
 			}
 			extra={
 				<Link to="/crawler/crawl-job" style={{ fontSize: 13, color: '#1677ff' }}>
-					Xem tất cả jobs <ArrowRightOutlined />
+					View all jobs <ArrowRightOutlined />
 				</Link>
 			}
 			style={{
@@ -59,7 +46,9 @@ export default function CrawlEngineOverview({
 			{/* Progress Bar Rate */}
 			<div style={{ marginBottom: 20 }}>
 				<Flex justify="space-between" align="center" style={{ marginBottom: 6 }}>
-					<Text type="secondary" style={{ fontSize: 13 }}>Tỷ lệ cào tài khoản thành công</Text>
+					<Text type="secondary" style={{ fontSize: 13 }}>
+						Account crawl success rate
+					</Text>
 					<Text strong style={{ color: successRate >= 80 ? '#52c41a' : '#1677ff', fontSize: 14 }}>
 						{successRate}%
 					</Text>
@@ -79,7 +68,7 @@ export default function CrawlEngineOverview({
 			<Row gutter={[12, 12]}>
 				<Col span={12}>
 					<CardKPI
-						title="Jobs Hoàn tất"
+						title="Completed Jobs"
 						value={crawlerStats?.total_completed_jobs ?? 0}
 						icon={<CheckCircleFilled />}
 						color="#52c41a"
@@ -89,7 +78,7 @@ export default function CrawlEngineOverview({
 
 				<Col span={12}>
 					<CardKPI
-						title="Jobs Thất bại"
+						title="Failed Jobs"
 						value={crawlerStats?.total_failed_jobs ?? 0}
 						icon={<CloseCircleFilled />}
 						color="#ff4d4f"
@@ -99,7 +88,7 @@ export default function CrawlEngineOverview({
 
 				<Col span={12}>
 					<CardKPI
-						title="Tài khoản Thành công"
+						title="Successful Accounts"
 						value={formatCurrency(crawlerStats?.total_success_accounts ?? 0)}
 						icon={<UserSwitchOutlined />}
 						color="#13c2c2"
@@ -109,7 +98,7 @@ export default function CrawlEngineOverview({
 
 				<Col span={12}>
 					<CardKPI
-						title="Tài khoản Lỗi / Bỏ qua"
+						title="Failed / Skipped Accounts"
 						value={formatCurrency(crawlerStats?.total_failed_accounts ?? 0)}
 						icon={<UserDeleteOutlined />}
 						color="#fa541c"
@@ -121,10 +110,10 @@ export default function CrawlEngineOverview({
 			<div style={{ marginTop: 18, paddingTop: 14, borderTop: '1px solid #f0f0f0' }}>
 				<Flex justify="space-between" align="center">
 					<Text type="secondary" style={{ fontSize: 12 }}>
-						Tổng số tác vụ đang chờ / chạy:
+						Pending / Running Jobs:
 					</Text>
 					<Tag color="cyan" style={{ borderRadius: 10, fontWeight: 600 }}>
-						{pendingOrRunningCount} job đang xử lý
+						{pendingOrRunningCount} active jobs
 					</Tag>
 				</Flex>
 			</div>

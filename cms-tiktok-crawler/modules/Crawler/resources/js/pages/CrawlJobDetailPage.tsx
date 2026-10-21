@@ -26,20 +26,20 @@ export default function CrawlJobDetailPage() {
 	const [resultsLoading, setResultsLoading] = useState(false);
 	const [pagination, setPagination] = useState({ page: 1, per_page: 10, total: 0 });
 
-	// 1. Fetch chi tiết Crawl Job
+	// 1. Fetch Crawl Job details
 	const loadJobDetail = useCallback(async () => {
 		if (!id) return;
 		try {
 			const res: any = await crawlJobAPI.getCrawlJobByID(id);
 			setJob(res?.data ?? res);
 		} catch (err: any) {
-			setError(err?.response?.data?.message ?? err?.message ?? 'Không thể tải thông tin crawl job');
+			setError(err?.response?.data?.message ?? err?.message ?? 'Failed to load crawl job details');
 		} finally {
 			setLoading(false);
 		}
 	}, [id]);
 
-	// 2. Fetch danh sách kết quả Crawl
+	// 2. Fetch Crawl Results
 	const loadResults = useCallback(async (page = 1, perPage = 10) => {
 		if (!id) return;
 		setResultsLoading(true);
@@ -63,31 +63,31 @@ export default function CrawlJobDetailPage() {
 		loadResults(1, 10);
 	}, [loadJobDetail, loadResults]);
 
-	// 3. Khởi chạy Crawl Job trực tiếp qua API
+	// 3. Start Crawl Job directly via API
 	const handleStartCrawlJob = async () => {
 		if (!id) return;
 		setStarting(true);
 		try {
 			const res: any = await crawlJobAPI.startCrawlJobByID(id);
-			message.success(res?.message || 'Khởi chạy crawl job thành công');
+			message.success(res?.message || 'Crawl job started successfully');
 			loadJobDetail();
 		} catch (err: any) {
-			message.error(err?.response?.data?.message ?? err?.message ?? 'Khởi chạy thất bại');
+			message.error(err?.response?.data?.message ?? err?.message ?? 'Failed to start crawl job');
 		} finally {
 			setStarting(false);
 		}
 	};
 
-	// 4. Xóa Crawl Job trực tiếp qua API (không cần component trung gian)
+	// 4. Delete Crawl Job directly via API
 	const handleDelete = async () => {
 		if (!id) return;
 		setDeleting(true);
 		try {
 			const res: any = await crawlJobAPI.deleteCrawlJobByID(id);
-			message.success(res?.message || 'Xóa crawl job thành công');
+			message.success(res?.message || 'Crawl job deleted successfully');
 			navigate('/crawler/crawl-job');
 		} catch (err: any) {
-			message.error(err?.response?.data?.message ?? err?.message ?? 'Xóa crawl job thất bại');
+			message.error(err?.response?.data?.message ?? err?.message ?? 'Failed to delete crawl job');
 			setDeleting(false);
 		}
 	};
@@ -103,8 +103,8 @@ export default function CrawlJobDetailPage() {
 	return (
 		<div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 			<PageHeader
-				title={`Chi tiết Crawl Job #${job?.id ?? id}`}
-				subtitle="Theo dõi tiến độ và kết quả của tác vụ cào dữ liệu."
+				title={`Crawl Job Detail #${job?.id ?? id}`}
+				subtitle="Track progress and results of the crawl session."
 				onBack={() => navigate('/crawler/crawl-job')}
 				extra={
 					<Space align="center" style={{ gap: 8 }}>
@@ -127,11 +127,11 @@ export default function CrawlJobDetailPage() {
 						)}
 
 						<Popconfirm
-							title="Xóa crawl job"
-							description="Bạn có chắc chắn muốn xóa crawl job này?"
+							title="Delete crawl job"
+							description="Are you sure you want to delete this crawl job?"
 							onConfirm={handleDelete}
-							okText="Xóa"
-							cancelText="Hủy"
+							okText="Delete"
+							cancelText="Cancel"
 							okButtonProps={{ danger: true, loading: deleting }}
 						>
 							<Button danger icon={<DeleteOutlined />} loading={deleting}>
@@ -155,7 +155,7 @@ export default function CrawlJobDetailPage() {
 				</Descriptions>
 			</Card>
 
-			<Card title="Danh sách kết quả crawl">
+			<Card title="Crawl Results">
 				<CrawlResultTable
 					data={results}
 					loading={resultsLoading}

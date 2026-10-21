@@ -23,8 +23,8 @@ export default function ConfirmDialog({
     onConfirm,
     onCancel,
     confirmLoading = false,
-    okText = 'Xác nhận',
-    cancelText = 'Hủy bỏ',
+    okText = 'Confirm',
+    cancelText = 'Cancel',
     danger = true,
 }: ConfirmDialogProps) {
     return (

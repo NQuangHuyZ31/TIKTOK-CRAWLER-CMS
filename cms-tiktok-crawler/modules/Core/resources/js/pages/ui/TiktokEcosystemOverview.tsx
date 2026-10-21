@@ -1,13 +1,6 @@
 import React from 'react';
 import { Card, Progress, Row, Col, Flex, Space, Tag, Typography } from 'antd';
-import {
-	DatabaseOutlined,
-	ArrowRightOutlined,
-	UsergroupAddOutlined,
-	HeartFilled,
-	UserAddOutlined,
-	UserOutlined,
-} from '@ant-design/icons';
+import { DatabaseOutlined, ArrowRightOutlined, UsergroupAddOutlined, HeartFilled, UserAddOutlined, UserOutlined } from '@ant-design/icons';
 import { Link } from 'react-router-dom';
 import CardKPI from '../../components/CardKPI';
 import formatCurrency from '../../utils/formatCurrency';
@@ -23,22 +16,21 @@ export interface TiktokEcosystemOverviewProps {
 /**
  * Right panel showing TikTok Social Ecosystem, reusing CardKPI for consistent metric cards.
  */
-export default function TiktokEcosystemOverview({
-	tiktokStats,
-	activeRate,
-}: TiktokEcosystemOverviewProps) {
+export default function TiktokEcosystemOverview({ tiktokStats, activeRate }: TiktokEcosystemOverviewProps) {
 	return (
 		<Card
 			title={
 				<Space align="center">
 					<DatabaseOutlined style={{ color: '#722ed1', fontSize: 18 }} />
-					<span style={{ fontWeight: 600, fontSize: 16 }}>Hệ Sinh Thái Hồ Sơ TikTok</span>
-					<Tag color="purple" style={{ borderRadius: 12, marginLeft: 6 }}>Social Database</Tag>
+					<span style={{ fontWeight: 600, fontSize: 16 }}>TikTok Profile Ecosystem</span>
+					<Tag color="purple" style={{ borderRadius: 12, marginLeft: 6 }}>
+						Social Database
+					</Tag>
 				</Space>
 			}
 			extra={
 				<Link to="/tiktok-account" style={{ fontSize: 13, color: '#722ed1' }}>
-					Xem danh sách hồ sơ <ArrowRightOutlined />
+					View all profiles <ArrowRightOutlined />
 				</Link>
 			}
 			style={{
@@ -52,7 +44,9 @@ export default function TiktokEcosystemOverview({
 			{/* Progress Bar Rate */}
 			<div style={{ marginBottom: 20 }}>
 				<Flex justify="space-between" align="center" style={{ marginBottom: 6 }}>
-					<Text type="secondary" style={{ fontSize: 13 }}>Tỷ lệ hồ sơ hoạt động (Active)</Text>
+					<Text type="secondary" style={{ fontSize: 13 }}>
+						Active profile rate
+					</Text>
 					<Text strong style={{ color: activeRate >= 80 ? '#52c41a' : '#722ed1', fontSize: 14 }}>
 						{activeRate}%
 					</Text>
@@ -72,7 +66,7 @@ export default function TiktokEcosystemOverview({
 			<Row gutter={[12, 12]}>
 				<Col span={12}>
 					<CardKPI
-						title="Tổng Followers"
+						title="Total Followers"
 						value={formatCurrency(tiktokStats?.total_followers ?? 0)}
 						icon={<UsergroupAddOutlined />}
 						color="#722ed1"
@@ -82,7 +76,7 @@ export default function TiktokEcosystemOverview({
 
 				<Col span={12}>
 					<CardKPI
-						title="Tổng Lượt Thích"
+						title="Total Likes"
 						value={formatCurrency(tiktokStats?.total_likes ?? 0)}
 						icon={<HeartFilled />}
 						color="#eb2f96"
@@ -92,7 +86,7 @@ export default function TiktokEcosystemOverview({
 
 				<Col span={12}>
 					<CardKPI
-						title="Tổng Following"
+						title="Total Following"
 						value={formatCurrency(tiktokStats?.total_following ?? 0)}
 						icon={<UserAddOutlined />}
 						color="#7cb305"
@@ -102,7 +96,7 @@ export default function TiktokEcosystemOverview({
 
 				<Col span={12}>
 					<CardKPI
-						title="Hồ Sơ Đang Hoạt Động"
+						title="Active Profiles"
 						value={formatCurrency(tiktokStats?.total_active_accounts ?? 0)}
 						icon={<UserOutlined />}
 						color="#1677ff"
@@ -114,10 +108,10 @@ export default function TiktokEcosystemOverview({
 			<div style={{ marginTop: 18, paddingTop: 14, borderTop: '1px solid #f0f0f0' }}>
 				<Flex justify="space-between" align="center">
 					<Text type="secondary" style={{ fontSize: 12 }}>
-						Tài khoản tạm dừng / ngừng theo dõi:
+						Inactive / Paused Accounts:
 					</Text>
 					<Tag color="default" style={{ borderRadius: 10, fontWeight: 500 }}>
-						{formatCurrency(tiktokStats?.total_inactive_accounts ?? 0)} tài khoản
+						{formatCurrency(tiktokStats?.total_inactive_accounts ?? 0)} accounts
 					</Tag>
 				</Flex>
 			</div>
