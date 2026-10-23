@@ -56,7 +56,7 @@ export default function CrawlJobsPage() {
 						{ label: 'Completed', value: 'completed' },
 						{ label: 'Failed', value: 'failed' },
 					],
-					initialValue: params.status,
+					initialValue: params.status ?? undefined,
 					onChange: (val) => dispatch(setParams({ status: val, page: 1 })),
 				},
 				{
