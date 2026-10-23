@@ -2,8 +2,9 @@
 
 namespace Modules\Crawler\Controllers;
 
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Modules\Core\Controllers\CoreController;
+use Modules\Core\Controllers\BaseController;
 use Modules\Crawler\Models\CrawlJob;
 use Modules\Crawler\Repositories\Interfaces\CrawlJobRepositoryInterface;
 use Modules\Crawler\Repositories\Interfaces\CrawlResultRepositoryInterface;
@@ -12,12 +13,12 @@ use Modules\Crawler\Resources\CrawlJobResource;
 use Modules\Crawler\Resources\CrawlResultResource;
 use Modules\Crawler\Services\CrawlJobService;
 
-class CrawlJobController extends CoreController
+class CrawlJobController extends BaseController
 {
     protected string $modelClass = CrawlJob::class;
-    protected string $resourceClass = CrawlJobResource::class;
+    protected ?string $resourceClass = CrawlJobResource::class;
     protected array $searchableColumns = ['source_type', 'status', 'error_message'];
-    protected array $filterableColumns = ['status', 'source_type'];
+    protected array $filterableColumns = ['status', 'source_type','started_at', 'finished_at'];
     protected array $defaultSort = ['id', 'desc'];
 
     public function __construct(
@@ -30,7 +31,7 @@ class CrawlJobController extends CoreController
      * REST Action: store (POST /{module}/crawl-job)
      * Simple business logic: validates payload, calculates total accounts, creates record directly via repository.
      */
-    public function store(Request $request)
+    public function store(Request $request) :JsonResponse
     {
         $validated = app(StoreCrawlJobRequest::class)->validated();
         $sourceType = $validated['source_type'] ?? 'usernames';
@@ -63,7 +64,7 @@ class CrawlJobController extends CoreController
      * REST Action: update (PUT/PATCH /{module}/crawl-job/{id})
      * Simple business logic: ensures job is pending, updates attributes directly via repository.
      */
-    public function update(Request $request, $id)
+    public function update(Request $request, int|string $id): JsonResponse
     {
         $job = $this->crawlJobRepository->findById((int) $id);
         if (!$job) {
@@ -109,7 +110,7 @@ class CrawlJobController extends CoreController
      * REST Action: destroy (DELETE /{module}/crawl-job/{id})
      * Simple business logic: ensures job is not running, deletes record directly via repository.
      */
-    public function destroy($id)
+    public function destroy(int|string $id): JsonResponse
     {
         $job = $this->crawlJobRepository->findById((int) $id);
         if (!$job) {

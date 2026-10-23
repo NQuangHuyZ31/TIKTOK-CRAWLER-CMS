@@ -3,12 +3,12 @@
 namespace Modules\Crawler\Controllers;
 
 use Illuminate\Http\Request;
-use Modules\Core\Controllers\CoreController;
+use Modules\Core\Controllers\BaseController;
 use Modules\Crawler\Models\CrawlResult;
 use Modules\Crawler\Repositories\Interfaces\CrawlResultRepositoryInterface;
 use Modules\Crawler\Resources\CrawlResultResource;
 
-class CrawlResultController extends CoreController
+class CrawlResultController extends BaseController
 {
     protected string $modelClass = CrawlResult::class;
     protected string $resourceClass = CrawlResultResource::class;

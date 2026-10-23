@@ -1,9 +1,8 @@
 import { RobotOutlined } from '@ant-design/icons';
 import type { RouteDef } from '@core/routes/registry';
 import CrawlJobsPage from '../pages/CrawlJobsPage';
-import CreateCrawlJobPage from '../pages/CreateCrawlJobPage';
 import CrawlJobDetailPage from '../pages/CrawlJobDetailPage';
-import EditCrawlJobPage from '../pages/EditCrawlJobPage';
+import CrawlJobFormPage from '../pages/CrawlJobFormPage';
 
 const crawlerRoutes: RouteDef[] = [
     {
@@ -12,26 +11,34 @@ const crawlerRoutes: RouteDef[] = [
         layout: 'admin',
         title: 'Crawl Jobs',
         label: 'Crawl Jobs',
+        module: 'crawler',
+        action: 'view',
         icon: RobotOutlined,
         order: 10,
     },
     {
         path: '/crawler/crawl-job/create',
-        component: CreateCrawlJobPage,
+        component: CrawlJobFormPage,
         layout: 'admin',
+        module: 'crawler',
+        action: 'create',
         title: 'Create Crawl Job',
-    },
-    {
-        path: '/crawler/crawl-job/:id/edit',
-        component: EditCrawlJobPage,
-        layout: 'admin',
-        title: 'Edit Crawl Job',
     },
     {
         path: '/crawler/crawl-job/:id',
         component: CrawlJobDetailPage,
         layout: 'admin',
+        module: 'crawler',
+        action: 'view',
         title: 'Crawl Job Details',
+    },
+    {
+        path: '/crawler/crawl-job/:id/edit',
+        component: CrawlJobFormPage,
+        layout: 'admin',
+        module: 'crawler',
+        action: 'edit',
+        title: 'Edit Crawl Job',
     },
 ];
 

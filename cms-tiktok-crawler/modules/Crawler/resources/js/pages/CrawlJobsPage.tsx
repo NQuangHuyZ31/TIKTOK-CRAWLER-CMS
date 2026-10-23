@@ -1,10 +1,12 @@
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import dayjs from 'dayjs';
 import { Space, Button, Popconfirm, Tooltip, App as AntdApp } from 'antd';
 import { EyeOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useDispatch, useSelector } from '@core/store';
-import ListLayout from '@/layouts/ListLayout';
+import ListLayout from '@/components/ListLayout';
 import StatusTag from '@core/components/StatusTag';
+import { PermissionGate } from '@core/components';
 import { formatNumber } from '@core/utils/formatNumber';
 import { formatDateTime } from '@core/utils/formatDate';
 import { fetchCrawlJobs, fetchStatisticsSummary } from '../store/crawlJob/crawlJobThunks';
@@ -57,6 +59,30 @@ export default function CrawlJobsPage() {
 					initialValue: params.status,
 					onChange: (val) => dispatch(setParams({ status: val, page: 1 })),
 				},
+				{
+					key: 'started_at',
+					type: 'date',
+					initialValue: params.started_at_from ? dayjs(params.started_at_from) : undefined,
+					onChange: (val) =>
+						dispatch(
+							setParams({
+								started_at_from: val && dayjs(val).isValid() ? dayjs(val).format('YYYY-MM-DD HH:mm:ss') : undefined,
+								page: 1,
+							}),
+						),
+				},
+				{
+					key: 'finished_at',
+					type: 'date',
+					initialValue: params.finished_at_to ? dayjs(params.finished_at_to) : undefined,
+					onChange: (val) =>
+						dispatch(
+							setParams({
+								finished_at_to: val && dayjs(val).isValid() ? dayjs(val).format('YYYY-MM-DD HH:mm:ss') : undefined,
+								page: 1,
+							}),
+						),
+				},
 			]}
 			onResetFilters={() => dispatch(resetParams())}
 			onRefresh={() => dispatch(fetchCrawlJobs(params))}
@@ -76,34 +102,39 @@ export default function CrawlJobsPage() {
 				finished_at: (val) => formatDateTime(val),
 				action: (_, record) => (
 					<Space size={4}>
-						<Tooltip title="Detail">
-							<Link to={`/crawler/crawl-job/${record.id}`}>
-								<Button size="small" type="text" icon={<EyeOutlined style={{ color: '#1677ff' }} />} />
-							</Link>
-						</Tooltip>
-						{record.status === 'pending' && (
-							<Tooltip title="Edit">
-								<Link to={`/crawler/crawl-job/${record.id}/edit`}>
-									<Button size="small" type="text" icon={<EditOutlined style={{ color: '#52c41a' }} />} />
+						<PermissionGate module="crawler" action="view">
+							<Tooltip title="Detail">
+								<Link to={`/crawler/crawl-job/${record.id}`}>
+									<Button size="small" type="text" icon={<EyeOutlined style={{ color: '#1677ff' }} />} />
 								</Link>
 							</Tooltip>
-						)}
-						<Popconfirm
-							title="Delete crawl job"
-							description="Are you sure you want to delete this crawl job?"
-							onConfirm={() => handleDelete(record.id)}
-							okText="Delete"
-							cancelText="Cancel"
-							okButtonProps={{ danger: true }}
-						>
-							<Tooltip title="Delete">
-								<Button type="text" danger size="small" icon={<DeleteOutlined />} />
-							</Tooltip>
-						</Popconfirm>
+						</PermissionGate>
+						<PermissionGate module="crawler" action="edit">
+							{record.status === 'pending' && (
+								<Tooltip title="Edit">
+									<Link to={`/crawler/crawl-job/${record.id}/edit`}>
+										<Button size="small" type="text" icon={<EditOutlined style={{ color: '#52c41a' }} />} />
+									</Link>
+								</Tooltip>
+							)}
+							<PermissionGate module="crawler" action="delete">
+								<Popconfirm
+									title="Delete crawl job"
+									description="Are you sure you want to delete this crawl job?"
+									onConfirm={() => handleDelete(record.id)}
+									okText="Delete"
+									cancelText="Cancel"
+									okButtonProps={{ danger: true }}
+								>
+									<Tooltip title="Delete">
+										<Button type="text" danger size="small" icon={<DeleteOutlined />} />
+									</Tooltip>
+								</Popconfirm>
+							</PermissionGate>
+						</PermissionGate>
 					</Space>
 				),
 			}}
 		/>
 	);
 }
-

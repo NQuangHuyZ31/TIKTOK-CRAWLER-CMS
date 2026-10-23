@@ -7,6 +7,7 @@ import StatusTag from '@core/components/StatusTag';
 import SpinComponent from '@core/components/SpinComponent';
 import PageHeader from '@core/components/PageHeader';
 import CrawlResultTable from '../components/CrawlResultTable';
+import { PermissionGate } from '@';
 
 export default function CrawlJobDetailPage() {
 	const { message } = AntdApp.useApp();
@@ -112,29 +113,35 @@ export default function CrawlJobDetailPage() {
 					<Space align="center" style={{ gap: 8 }}>
 						{job?.status === 'pending' ? (
 							<>
-								<Button icon={<EditOutlined />} onClick={() => navigate(`/crawler/crawl-job/${id}/edit`)}>
-									Edit
-								</Button>
-								<Button type="primary" icon={<PlayCircleOutlined />} loading={starting} onClick={handleStartCrawlJob}>
-									Start
-								</Button>
+								<PermissionGate module="crawler" action="edit">
+									<Button icon={<EditOutlined />} onClick={() => navigate(`/crawler/crawl-job/${id}/edit`)}>
+										Edit
+									</Button>
+								</PermissionGate>
+								<PermissionGate module="crawler" action="edit">
+									<Button type="primary" icon={<PlayCircleOutlined />} loading={starting} onClick={handleStartCrawlJob}>
+										Start
+									</Button>
+								</PermissionGate>
 							</>
 						) : (
 							<Button disabled>{job?.status}</Button>
 						)}
 
-						<Popconfirm
-							title="Delete crawl job"
-							description="Are you sure you want to delete this crawl job?"
-							onConfirm={handleDelete}
-							okText="Delete"
-							cancelText="Cancel"
-							okButtonProps={{ danger: true, loading: deleting }}
-						>
-							<Button danger icon={<DeleteOutlined />} loading={deleting}>
-								Delete
-							</Button>
-						</Popconfirm>
+						<PermissionGate module="crawler" action="delete">
+							<Popconfirm
+								title="Delete crawl job"
+								description="Are you sure you want to delete this crawl job?"
+								onConfirm={handleDelete}
+								okText="Delete"
+								cancelText="Cancel"
+								okButtonProps={{ danger: true, loading: deleting }}
+							>
+								<Button danger icon={<DeleteOutlined />} loading={deleting}>
+									Delete
+								</Button>
+							</Popconfirm>
+						</PermissionGate>
 					</Space>
 				}
 			/>
