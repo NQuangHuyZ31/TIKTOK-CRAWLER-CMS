@@ -54,7 +54,14 @@ const tiktokAccountSlice = createSlice({
 
 	reducers: {
 		setParams: (state, action: PayloadAction<Record<string, any>>) => {
-			state.params = { ...state.params, ...action.payload };
+			const updated = { ...state.params, ...action.payload };
+			const cleaned: Record<string, any> = {};
+			Object.entries(updated).forEach(([k, v]) => {
+				if (v !== undefined && v !== null && v !== '' && v !== 'Invalid Date') {
+					cleaned[k] = v;
+				}
+			});
+			state.params = cleaned as any;
 		},
 		resetParams: (state) => {
 			state.params = {
@@ -106,4 +113,3 @@ const tiktokAccountSlice = createSlice({
 
 export const { setParams, resetParams } = tiktokAccountSlice.actions;
 export default tiktokAccountSlice.reducer;
-

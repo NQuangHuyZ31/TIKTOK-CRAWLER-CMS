@@ -9,25 +9,66 @@ use Modules\TiktokAccount\Repositories\Interfaces\TiktokAccountRepositoryInterfa
 
 class TiktokAccountService
 {
-    private const ACCOUNT_STATUSES = ['active', 'inactive'];
+    private const ACCOUNT_STATUSES = ['active', 'inactive', 'banned'];
 
     public function __construct(protected TiktokAccountRepositoryInterface $tiktokAccountRepository)
     {
     }
 
     /**
-     * Complex Business Logic: Update account profile with avatar file handling.
-     * Validates avatar image file, stores to disk, deletes old avatar, updates account.
+     * Create a new TikTok account with optional avatar upload and default values.
+     */
+    public function create(array $data): TiktokAccount
+    {
+        if (isset($data['status']) && !in_array($data['status'], self::ACCOUNT_STATUSES, true)) {
+            throw new \InvalidArgumentException('Status must be active, inactive, or banned.');
+        }
+
+        if (empty($data['status'])) {
+            $data['status'] = 'active';
+        }
+
+        if (empty($data['profile_url']) && !empty($data['username'])) {
+            $cleanUsername = ltrim($data['username'], '@');
+            $data['profile_url'] = "https://www.tiktok.com/@{$cleanUsername}";
+        }
+
+        if (isset($data['avatar'])) {
+            if (!CheckFileUpload::checkImageFile($data['avatar'])) {
+                throw new \InvalidArgumentException('Invalid avatar file. Please upload a valid image file.');
+            }
+
+            $newAvatarPath = UploadFile::uploadFile($data['avatar'], 'tiktok-accounts/avatars');
+            if (!$newAvatarPath) {
+                throw new \RuntimeException('Failed to upload avatar.');
+            }
+
+            $data['avatar_path'] = $newAvatarPath;
+            unset($data['avatar']);
+        }
+
+        /** @var TiktokAccount $account */
+        $account = $this->tiktokAccountRepository->create($data);
+        return $account;
+    }
+
+    /**
+     * Update account profile with optional avatar file replacement and cleanup.
      */
     public function update(int $id, array $data): TiktokAccount
     {
         if (isset($data['status']) && !in_array($data['status'], self::ACCOUNT_STATUSES, true)) {
-            throw new \InvalidArgumentException('Status must be active or inactive.');
+            throw new \InvalidArgumentException('Status must be active, inactive, or banned.');
         }
 
         $account = $this->tiktokAccountRepository->findById($id);
         if (!$account) {
             throw new \InvalidArgumentException('TikTok account not found.');
+        }
+
+        if (empty($data['profile_url']) && !empty($data['username'])) {
+            $cleanUsername = ltrim($data['username'], '@');
+            $data['profile_url'] = "https://www.tiktok.com/@{$cleanUsername}";
         }
 
         if (isset($data['avatar'])) {
@@ -60,9 +101,9 @@ class TiktokAccountService
     public function updateStatus(int $id, string $status): ?TiktokAccount
     {
         if (!in_array($status, self::ACCOUNT_STATUSES, true)) {
-            throw new \InvalidArgumentException('Status must be active or inactive.');
+            throw new \InvalidArgumentException('Status must be active, inactive, or banned.');
         }
 
         return $this->tiktokAccountRepository->updateStatus($id, $status);
     }
-}
+}

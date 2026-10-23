@@ -1,36 +1,18 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import {
-	Alert,
-	App as AntdApp,
-	Avatar,
-	Button,
-	Card,
-	Col,
-	Descriptions,
-	Popconfirm,
-	Row,
-	Space,
-	Typography,
-} from 'antd';
-import {
-	CalendarOutlined,
-	DeleteOutlined,
-	EditOutlined,
-	HeartOutlined,
-	LinkOutlined,
-	UserAddOutlined,
-	UserOutlined,
-} from '@ant-design/icons';
+import { Alert, App as AntdApp, Avatar, Button, Card, Col, Descriptions, Popconfirm, Row, Space, Tag, Typography } from 'antd';
+import { CalendarOutlined, CheckCircleFilled, DeleteOutlined, EditOutlined, HeartOutlined, LinkOutlined, UserAddOutlined, UserOutlined, VideoCameraOutlined } from '@ant-design/icons';
 import tiktokAccountAPI from '../Action/tiktokAccount';
 import SpinComponent from '@core/components/SpinComponent';
 import PageHeader from '@core/components/PageHeader';
 import CardKPI from '@core/components/CardKPI';
 import StatusTag from '@core/components/StatusTag';
-import formatCurrency from '@core/utils/formatCurrency';
+import PermissionGate from '@core/components/PermissionGate';
+import { formatNumber } from '@core/utils/formatNumber';
+import { formatDateTime } from '@core/utils/formatDate';
 import CrawlResultTable from '@modules/Crawler/resources/js/components/CrawlResultTable';
 
-const { Text, Title } = Typography;
+const { Text, Title, Paragraph } = Typography;
 
 export default function TiktokAccountDetailPage() {
 	const { message } = AntdApp.useApp();
@@ -41,7 +23,6 @@ export default function TiktokAccountDetailPage() {
 	const [accountData, setAccountData] = useState<any>(null);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
-	const [updatingStatus, setUpdatingStatus] = useState(false);
 	const [deleting, setDeleting] = useState(false);
 	const [showCrawlHistory, setShowCrawlHistory] = useState(true);
 
@@ -90,23 +71,6 @@ export default function TiktokAccountDetailPage() {
 		loadResults(1, 10);
 	}, [loadAccountDetail, loadResults]);
 
-	// Change account status (active/inactive)
-	const handleStatusChange = async () => {
-		if (!id) return;
-		const nextStatus = accountData?.status === 'active' ? 'inactive' : 'active';
-		setUpdatingStatus(true);
-
-		try {
-			const result: any = await tiktokAccountAPI.updateTiktokAccountStatus(id, nextStatus);
-			message.success(result?.message || 'Status update completed');
-			setAccountData((prev: any) => ({ ...prev, status: nextStatus }));
-		} catch (statusError: any) {
-			message.error(statusError?.response?.data?.message ?? statusError?.message ?? 'Status update failed');
-		} finally {
-			setUpdatingStatus(false);
-		}
-	};
-
 	// Handle delete account
 	const handleDelete = async () => {
 		if (!id) return;
@@ -139,32 +103,30 @@ export default function TiktokAccountDetailPage() {
 			{/* Shared PageHeader */}
 			<PageHeader
 				title={`Account @${accountData?.username || id}`}
-				subtitle="Review profile information and crawl activity."
+				subtitle="Review profile information, follower analytics, and crawl activity."
 				onBack={() => navigate('/tiktok-account')}
 				extra={
 					<Space wrap>
-						<Button icon={<EditOutlined />} onClick={() => navigate(`/tiktok-account/${id}/edit`)}>
-							Edit
-						</Button>
-						<Button
-							type={accountData?.status === 'active' ? 'default' : 'primary'}
-							loading={updatingStatus}
-							onClick={handleStatusChange}
-						>
-							{accountData?.status === 'active' ? 'Set Inactive' : 'Set Active'}
-						</Button>
-						<Popconfirm
-							title="Delete TikTok account"
-							description="Are you sure you want to delete this account?"
-							onConfirm={handleDelete}
-							okText="Delete"
-							cancelText="Cancel"
-							okButtonProps={{ danger: true, loading: deleting }}
-						>
-							<Button danger icon={<DeleteOutlined />} loading={deleting}>
-								Delete
+						<PermissionGate module="tiktok_account" action="edit">
+							<Button icon={<EditOutlined />} onClick={() => navigate(`/tiktok-account/${id}/edit`)}>
+								Edit Profile
 							</Button>
-						</Popconfirm>
+						</PermissionGate>
+
+						<PermissionGate module="tiktok_account" action="delete">
+							<Popconfirm
+								title="Delete TikTok account"
+								description="Are you sure you want to delete this account?"
+								onConfirm={handleDelete}
+								okText="Delete"
+								cancelText="Cancel"
+								okButtonProps={{ danger: true, loading: deleting }}
+							>
+								<Button danger icon={<DeleteOutlined />} loading={deleting}>
+									Delete
+								</Button>
+							</Popconfirm>
+						</PermissionGate>
 					</Space>
 				}
 			/>
@@ -173,13 +135,23 @@ export default function TiktokAccountDetailPage() {
 				<Space align="start" size={20} wrap>
 					<Avatar size={96} src={accountData?.avatar_path || accountData?.avatar_url} icon={<UserOutlined />} />
 					<Space direction="vertical" size={6}>
-						<Space align="center">
+						<Space align="center" wrap>
 							<Title level={4} style={{ margin: 0 }}>
 								{accountData?.nickname || accountData?.username || '-'}
 							</Title>
+							{accountData?.is_verified ? (
+								<Tag icon={<CheckCircleFilled />} color="blue">
+									Verified
+								</Tag>
+							) : null}
 							<StatusTag status={accountData?.status} />
 						</Space>
 						<Text type="secondary">@{accountData?.username || '-'}</Text>
+						{accountData?.bio && (
+							<Paragraph ellipsis={{ rows: 2, expandable: true, symbol: 'more' }} style={{ margin: 0, maxWidth: 600 }}>
+								{accountData.bio}
+							</Paragraph>
+						)}
 						<Space wrap>
 							{accountData?.profile_url && (
 								<Link to={accountData?.profile_url} target="_blank" rel="noopener noreferrer">
@@ -187,23 +159,26 @@ export default function TiktokAccountDetailPage() {
 								</Link>
 							)}
 							<Text type="secondary">
-								<CalendarOutlined /> Last crawled: {accountData?.last_crawled_at || 'Never'}
+								<CalendarOutlined /> Last crawled: {accountData?.last_crawled_at ? formatDateTime(accountData.last_crawled_at) : 'Never'}
 							</Text>
 						</Space>
 					</Space>
 				</Space>
 			</Card>
 
-			{/* Reusing CardKPI instead of raw Statistic */}
+			{/* Reusing CardKPI with formatNumber */}
 			<Row gutter={[16, 16]}>
-				<Col xs={24} sm={8}>
-					<CardKPI title="Followers" value={formatCurrency(accountData?.followers_count || 0)} icon={<UserAddOutlined />} color="#1677ff" />
+				<Col xs={24} sm={12} md={6}>
+					<CardKPI title="Followers" value={formatNumber(accountData?.followers_count || 0)} icon={<UserAddOutlined />} color="#1677ff" />
 				</Col>
-				<Col xs={24} sm={8}>
-					<CardKPI title="Following" value={formatCurrency(accountData?.following_count || 0)} icon={<UserOutlined />} color="#52c41a" />
+				<Col xs={24} sm={12} md={6}>
+					<CardKPI title="Following" value={formatNumber(accountData?.following_count || 0)} icon={<UserOutlined />} color="#52c41a" />
 				</Col>
-				<Col xs={24} sm={8}>
-					<CardKPI title="Likes" value={formatCurrency(accountData?.likes_count || 0)} icon={<HeartOutlined />} color="#fa8c16" />
+				<Col xs={24} sm={12} md={6}>
+					<CardKPI title="Likes" value={formatNumber(accountData?.likes_count || 0)} icon={<HeartOutlined />} color="#fa8c16" />
+				</Col>
+				<Col xs={24} sm={12} md={6}>
+					<CardKPI title="Videos" value={formatNumber(accountData?.video_count || 0)} icon={<VideoCameraOutlined />} color="#722ed1" />
 				</Col>
 			</Row>
 
@@ -215,8 +190,19 @@ export default function TiktokAccountDetailPage() {
 					<Descriptions.Item label="Status">
 						<StatusTag status={accountData?.status} />
 					</Descriptions.Item>
-					<Descriptions.Item label="First Crawled">{accountData?.created_at || 'Unknown'}</Descriptions.Item>
-					<Descriptions.Item label="Last Crawled">{accountData?.last_crawled_at || 'Never'}</Descriptions.Item>
+					<Descriptions.Item label="Verified Badge">
+						{accountData?.is_verified ? (
+							<Tag icon={<CheckCircleFilled />} color="blue">
+								Verified
+							</Tag>
+						) : (
+							<Text type="secondary">Not Verified</Text>
+						)}
+					</Descriptions.Item>
+					<Descriptions.Item label="Sec UID">{accountData?.sec_uid || '-'}</Descriptions.Item>
+					<Descriptions.Item label="First Crawled">{accountData?.created_at ? formatDateTime(accountData.created_at) : 'Unknown'}</Descriptions.Item>
+					<Descriptions.Item label="Last Crawled">{accountData?.last_crawled_at ? formatDateTime(accountData.last_crawled_at) : 'Never'}</Descriptions.Item>
+					<Descriptions.Item label="Total Videos">{formatNumber(accountData?.video_count || 0)}</Descriptions.Item>
 					<Descriptions.Item label="Profile URL" span={3}>
 						{accountData?.profile_url ? (
 							<Link to={accountData?.profile_url} target="_blank" rel="noopener noreferrer">
@@ -226,6 +212,11 @@ export default function TiktokAccountDetailPage() {
 							'-'
 						)}
 					</Descriptions.Item>
+					{accountData?.bio && (
+						<Descriptions.Item label="Bio" span={3}>
+							{accountData.bio}
+						</Descriptions.Item>
+					)}
 				</Descriptions>
 			</Card>
 
@@ -237,16 +228,8 @@ export default function TiktokAccountDetailPage() {
 					</Button>
 				}
 			>
-				{showCrawlHistory && (
-					<CrawlResultTable
-						data={results}
-						loading={resultsLoading}
-						pagination={pagination}
-						onPageChange={(page, per_page) => loadResults(page, per_page)}
-					/>
-				)}
+				{showCrawlHistory && <CrawlResultTable data={results} loading={resultsLoading} pagination={pagination} onPageChange={(page, per_page) => loadResults(page, per_page)} />}
 			</Card>
 		</Space>
 	);
 }
-

@@ -5,65 +5,66 @@ const baseURL = '/tiktok-account/tiktok-account';
 /**
  * Fetch all TikTok accounts with optional pagination and filters.
  * API: GET /tiktok-account/tiktok-account
- * Example: getAllTiktokAccounts({ page: 1, per_page: 10, search: 'huyak' })
  */
 export const getAllTiktokAccounts = (params: Record<string, any> = {}) =>
-    api(`${baseURL}`, { params });
+	api(`${baseURL}`, { params });
 
 /**
  * Fetch TikTok account details by ID.
  * API: GET /tiktok-account/tiktok-account/{id}
- * Example: getTiktokAccountByID(1)
  */
 export const getTiktokAccountByID = (id: string | number) =>
-    api(`${baseURL}/${id}`);
+	api(`${baseURL}/${id}`);
+
+/**
+ * Create a new TikTok account (supports JSON or multipart FormData for avatar uploads).
+ * API: POST /tiktok-account/tiktok-account
+ */
+export const createTiktokAccount = (data: any) =>
+	api(`${baseURL}`, { method: 'POST', data });
 
 /**
  * Update TikTok account details (supports JSON or multipart FormData for avatar uploads).
  * API: POST or PUT /tiktok-account/tiktok-account/{id}
- * Example: updateTiktokAccount(1, formData)
  */
 export const updateTiktokAccount = (id: string | number, data: any) =>
-    api(`${baseURL}/${id}`, { method: 'PUT', data });
+	api(`${baseURL}/${id}`, { method: 'PUT', data });
 
 /**
  * Delete TikTok account by ID.
  * API: DELETE /tiktok-account/tiktok-account/{id}
- * Example: deleteTiktokAccount(1)
  */
 export const deleteTiktokAccount = (id: string | number) =>
-    api(`${baseURL}/${id}`, { method: 'DELETE' });
+	api(`${baseURL}/${id}`, { method: 'DELETE' });
 
 /**
- * Update TikTok account status (active/inactive).
+ * Update TikTok account status (active/inactive/banned).
  * API: PATCH /tiktok-account/tiktok-account/{id}/status
- * Example: updateTiktokAccountStatus(1, 'active')
  */
 export const updateTiktokAccountStatus = (id: string | number, status: string | number) =>
-    api(`${baseURL}/${id}/status`, { method: 'PATCH', data: { status } });
+	api(`${baseURL}/${id}/status`, { method: 'PATCH', data: { status } });
 
 /**
  * Fetch crawl history / results of a specific TikTok account.
  * API: GET /tiktok-account/tiktok-account/{id}/results
- * Example: getResults(1, { page: 1, per_page: 10 })
  */
 export const getResults = (id: string | number, params: Record<string, any> = {}) =>
-    api(`${baseURL}/${id}/results`, { params });
+	api(`${baseURL}/${id}/results`, { params });
 
 /**
  * Fetch aggregate TikTok account statistics summary for KPI dashboard cards.
  * API: GET /tiktok-account/tiktok-account/statistic-summary
- * Example: getStatisticSummary()
  */
 export const getStatisticSummary = () =>
-    api(`${baseURL}/statistic-summary`);
+	api(`${baseURL}/statistic-summary`);
 
 export default {
-    getAllTiktokAccounts,
-    getTiktokAccountByID,
-    deleteTiktokAccount,
-    updateTiktokAccountStatus,
-    updateTiktokAccount,
-    getStatisticSummary,
-    getResults,
+	getAllTiktokAccounts,
+	getTiktokAccountByID,
+	createTiktokAccount,
+	deleteTiktokAccount,
+	updateTiktokAccountStatus,
+	updateTiktokAccount,
+	getStatisticSummary,
+	getResults,
 };

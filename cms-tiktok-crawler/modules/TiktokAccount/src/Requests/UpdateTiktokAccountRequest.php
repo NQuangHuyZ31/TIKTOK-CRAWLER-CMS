@@ -4,6 +4,7 @@ namespace Modules\TiktokAccount\Requests;
 
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UpdateTiktokAccountRequest extends FormRequest
 {
@@ -22,14 +23,25 @@ class UpdateTiktokAccountRequest extends FormRequest
      */
     public function rules(): array
     {
+        $id = $this->route('id') ?? $this->id;
+
         return [
-            "username" => "required|string|max:255",
-			"followers_count" => "required|integer|min:0",
-            "following_count" => "required|integer|min:0",
-			"likes_count" => "required|integer|min:0",
-			"profile_url" => "required|url|max:255|regex:/^https:\/\/www\.tiktok\.com\/@[\w.-]+$/",
-			"avatar" => "sometimes|image|mimes:jpeg,png,jpg,gif|max:2048",
-			"status" => "required|in:active,inactive",
+            'username' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::unique('tiktok_accounts', 'username')->ignore($id),
+            ],
+            'nickname' => 'nullable|string|max:255',
+            'bio' => 'nullable|string|max:1000',
+            'profile_url' => 'nullable|url|max:255',
+            'followers_count' => 'nullable|integer|min:0',
+            'following_count' => 'nullable|integer|min:0',
+            'likes_count' => 'nullable|integer|min:0',
+            'video_count' => 'nullable|integer|min:0',
+            'is_verified' => 'nullable|boolean',
+            'status' => 'sometimes|in:active,inactive,banned',
+            'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
         ];
     }
 }

@@ -21,12 +21,12 @@ class TiktokAccountRepository extends BaseRepository implements TiktokAccountRep
 	public function getStatisticSummary(): array
 	{
 		return [
-			'total_accounts' => TiktokAccount::count(),
-			'total_followers' => (int) TiktokAccount::sum('followers_count'),
-			'total_following' => (int) TiktokAccount::sum('following_count'),
-			'total_likes' => (int) TiktokAccount::sum('likes_count'),
-			'total_active_accounts' => TiktokAccount::where('status', 'active')->count(),
-			'total_inactive_accounts' => TiktokAccount::where('status', 'inactive')->count(),
+			'total_accounts' => $this->model->count(),
+			'total_followers' => (int) $this->model->sum('followers_count'),
+			'total_following' => (int) $this->model->sum('following_count'),
+			'total_likes' => (int) $this->model->sum('likes_count'),
+			'total_active_accounts' => $this->model->where('status', 'active')->count(),
+			'total_inactive_accounts' => $this->model->where('status', 'inactive')->count(),
 		];
 	}
 
@@ -55,11 +55,7 @@ class TiktokAccountRepository extends BaseRepository implements TiktokAccountRep
 
 	public function getUsernamesByIds(array $ids): array
 	{
-		return TiktokAccount::query()
-			->whereIn('id', $ids)
-			->pluck('username')
-			->values()
-			->all();
+		return $this->model->query()->whereIn('id', $ids)->pluck('username')->values()->all();
 	}
 
 	public function updateStatus(int $id, string $status): ?TiktokAccount
@@ -75,7 +71,7 @@ class TiktokAccountRepository extends BaseRepository implements TiktokAccountRep
 
 	public function getAccountByField(string $field, string $value, ?int $excludeId = null): ?TiktokAccount
 	{
-		$query = TiktokAccount::query()->where($field, $value);
+		$query = $this->model->query()->where($field, $value);
 		if (!empty($excludeId)) {
 			$query->where('id', '!=', $excludeId);
 		}
@@ -84,6 +80,6 @@ class TiktokAccountRepository extends BaseRepository implements TiktokAccountRep
 
 	public function updateOrCreateAccount(array $attributes, array $values): TiktokAccount
 	{
-		return TiktokAccount::updateOrCreate($attributes, $values);
+		return $this->model->updateOrCreate($attributes, $values);
 	}
 }

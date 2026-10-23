@@ -25,4 +25,4 @@ const AccountColumn: React.FC<AccountColumnProps> = ({ username, nickname, imgPa
 	);
 };
 
-export default AccountColumn;
+export default AccountColumn;
