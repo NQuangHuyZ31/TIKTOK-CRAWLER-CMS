@@ -42,7 +42,7 @@ class DynamicRouteResovle {
 
         Route::any('/{module}/{controller}/{action}/{parameters?}', function (Request $request, string $module, string $controller, string $action, ?string $parameters = null) {
             return app(self::class)->handle($request, $module, $controller, $action, null, $parameters);
-        })->where(['module' => '[a-zA-Z0-9_-]+', 'controller' => '[a-zA-Z0-9_-]+', 'action' => '^(?![0-9]+$)[a-zA-Z0-9_-]+', 'parameters' => '.*']);
+        })->where(['module' => '[a-zA-Z0-9_-]+', 'controller' => '^(?![0-9]+$)[a-zA-Z0-9_-]+', 'action' => '^(?![0-9]+$)[a-zA-Z0-9_-]+', 'parameters' => '.*']);
 
         Route::any('/{module}/{controller}/{id}', function (Request $request, string $module, string $controller, int | string $id) {
             return app(self::class)->handle($request, $module, $controller, null, $id, null);

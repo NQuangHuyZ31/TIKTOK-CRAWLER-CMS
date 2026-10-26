@@ -195,7 +195,7 @@ abstract class BaseController extends Controller
      */
     protected function validateStore(Request $request): array
     {
-        return $request->validated();
+        return $request instanceof \Illuminate\Foundation\Http\FormRequest ? $request->validated() : $request->all();
     }
 
     /**
@@ -203,6 +203,6 @@ abstract class BaseController extends Controller
      */
     protected function validateUpdate(Request $request, int|string $id): array
     {
-        return $request->validated();
+        return $request instanceof \Illuminate\Foundation\Http\FormRequest ? $request->validated() : $request->all();
     }
 }

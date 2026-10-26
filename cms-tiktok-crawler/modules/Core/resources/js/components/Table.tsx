@@ -35,7 +35,7 @@ export interface TableComponentProps<T = any> extends Omit<TableProps<T>, 'dataS
 }
 
 /**
- * Processes column configurations: merges prepended/extra columns and applies custom or default renderers.
+ * Merges column configurations, prepended/extra columns, and applies custom renderers.
  */
 export function buildColumns<T = any>(
 	baseColumns: TableColumn<T>[],
@@ -59,12 +59,10 @@ export function buildColumns<T = any>(
 			};
 		}
 
-		// Priority 2: Built-in column render function
 		if (typeof col.render === 'function') {
 			return col;
 		}
 
-		// Priority 3: Standard value renderer with fallback '-' for null/undefined/empty
 		return {
 			...col,
 			render: (value: any) => {
@@ -78,7 +76,7 @@ export function buildColumns<T = any>(
 }
 
 /**
- * Shared TableComponent containing pure table logic, fully decoupled from business domains.
+ * Streamlined TableComponent with concise base actions (Edit, Delete) and extra action slot.
  */
 export default function TableComponent<T = any>({
 	columns,

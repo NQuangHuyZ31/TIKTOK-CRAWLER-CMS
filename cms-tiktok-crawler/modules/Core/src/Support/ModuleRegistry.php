@@ -6,7 +6,8 @@ namespace Modules\Core\Support;
  * Discovers and manages registered modules in the system.
  * Inspired by Ureka's ModuleRegistry pattern.
  */
-class ModuleRegistry {
+class ModuleRegistry
+{
     /** @var array<string, string>|null */
     private ?array $modules = null;
 

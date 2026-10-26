@@ -1,22 +1,20 @@
-import { useCallback, useMemo } from "react";
-import { useSelector } from "react-redux";
-
+import { useCallback, useMemo } from 'react';
+import { useSelector } from 'react-redux';
 
 export type PermissionAction = 'view' | 'create' | 'edit' | 'delete';
 
 interface CanCheckOptions {
-	module?: string,
-	action?: PermissionAction,
-	slug?: string,
-	role?: string | string[]
+	module?: string;
+	action?: PermissionAction;
+	slug?: string;
+	role?: string | string[];
 }
 
 export default function usePermission() {
-	const { roles, modulePermissions, permissions } = useSelector((state: any) => state.auth)
+	const { roles, modulePermissions, permissions } = useSelector((state: any) => state.auth);
 	const isAdmin = useMemo(() => roles?.includes('admin'), [roles]);
-	console.log(isAdmin);
 
-	/** Check role  */
+	/** Check role */
 	const hasRole = useCallback((requiredRole: string | string[]): boolean => {
 		if (isAdmin) return true;
 
@@ -25,27 +23,26 @@ export default function usePermission() {
 		const checkList = Array.isArray(requiredRole) ? requiredRole : [requiredRole];
 
 		return checkList.some((r) => roles.includes(r));
-
 	}, [isAdmin, roles]);
 
 	/** Check slug */
-
 	const hasPermission = useCallback((slug: string): boolean => {
 		if (isAdmin) return true;
 
 		return permissions?.includes(slug) ?? false;
-	}, [isAdmin, permissions])
+	}, [isAdmin, permissions]);
 
 	/** Check CRUD for module */
 	const canDoModule = useCallback((module: string, action: PermissionAction = 'view'): boolean => {
 		if (isAdmin) return true;
+		if (module === 'core' || module === 'auth') return true;
 
-		const targetPerms = modulePermissions?.[module] ?? (module == 'role' ? modulePermissions?.['user'] : undefined);
+		const targetPerms = modulePermissions?.[module] ?? (module === 'role' ? modulePermissions?.['user'] : undefined);
 
 		if (!targetPerms) return false;
 
 		if (targetPerms[action] === true) return true;
-		if (action === 'edit' && (targetPerms.edit === true)) {
+		if (action === 'edit' && targetPerms.edit === true) {
 			return true;
 		}
 
@@ -53,8 +50,8 @@ export default function usePermission() {
 			return true;
 		}
 
-		return false
-	}, [isAdmin, modulePermissions])
+		return false;
+	}, [isAdmin, modulePermissions]);
 
 	/** Can */
 	const can = useCallback((options: CanCheckOptions): boolean => {
@@ -80,6 +77,6 @@ export default function usePermission() {
 		hasPermission,
 		canDoModule,
 		can,
-		isAdmin
-	}
+		isAdmin,
+	};
 }

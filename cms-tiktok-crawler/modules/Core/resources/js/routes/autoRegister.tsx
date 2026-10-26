@@ -57,3 +57,8 @@ export function initRouteRegistry(): void {
 		console.warn('[RouteRegistry] Auto-registration encountered an issue:', e);
 	}
 }
+
+// Auto-initialize Core route registry upon module import
+initRouteRegistry();
+
+export default initRouteRegistry;

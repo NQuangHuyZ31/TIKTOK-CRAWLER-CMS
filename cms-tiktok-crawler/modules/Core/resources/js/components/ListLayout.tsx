@@ -147,11 +147,7 @@ export default function ListLayout<T = any>({
 
 	// Primary header action button
 	const primaryAddButton = onAdd ? (
-		<Button
-			type="primary"
-			icon={<PlusOutlined />}
-			onClick={() => (typeof onAdd === 'string' ? navigate(onAdd) : onAdd())}
-		>
+		<Button type="primary" icon={<PlusOutlined />} onClick={() => (typeof onAdd === 'string' ? navigate(onAdd) : onAdd())}>
 			{addText}
 		</Button>
 	) : null;
@@ -188,13 +184,7 @@ export default function ListLayout<T = any>({
 	return (
 		<div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 			{/* 1. Page Header */}
-			<PageHeader
-				title={title}
-				subtitle={subtitle}
-				breadcrumbs={breadcrumbs}
-				onBack={onBack}
-				extra={primaryAddButton}
-			/>
+			<PageHeader title={title} subtitle={subtitle} breadcrumbs={breadcrumbs} onBack={onBack} extra={primaryAddButton} />
 
 			{/* 2. Main List Card */}
 			<Card
@@ -313,16 +303,7 @@ export default function ListLayout<T = any>({
 
 				{/* 4. Table Component */}
 				{columns && data !== undefined ? (
-					<TableComponent<T>
-						columns={columns}
-						data={data}
-						loading={loading}
-						pagination={pagination}
-						handlePageChange={onPageChange}
-						renderColumns={renderColumns}
-						rowKey={rowKey}
-						rowSelection={rowSelection}
-					/>
+					<TableComponent<T> columns={columns} data={data} loading={loading} pagination={pagination} handlePageChange={onPageChange} renderColumns={renderColumns} rowKey={rowKey} rowSelection={rowSelection} />
 				) : (
 					children
 				)}

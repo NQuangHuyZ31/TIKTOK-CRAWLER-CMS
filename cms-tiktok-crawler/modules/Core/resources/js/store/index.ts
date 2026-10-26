@@ -4,6 +4,7 @@ import crawlJobReducer from '@modules/Crawler/resources/js/store/crawlJob/crawlJ
 import tiktokAccountReducer from '@modules/TiktokAccount/resources/js/store/tiktokAccount/tiktokAccountSlice';
 import authReducer from '@modules/Auth/resources/js/store/auth/authSlice';
 import userReducer from '@modules/User/resources/js/store/user/userSlice';
+import roleReducer from '@modules/Role/resources/js/store/role/roleSlice';
 
 export const store = configureStore({
 	reducer: {
@@ -11,6 +12,7 @@ export const store = configureStore({
 		crawlJob: crawlJobReducer,
 		tiktokAccount: tiktokAccountReducer,
 		user: userReducer,
+		role: roleReducer,
 	}
 });
 
