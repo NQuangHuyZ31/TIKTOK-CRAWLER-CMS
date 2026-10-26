@@ -14,16 +14,10 @@ class PermissionRepository extends BaseRepository implements PermissionRepositor
         return new Permission();
     }
 
-    public function findById(int|string $id): ?Permission
-    {
-        /** @var Permission|null */
-        return $this->model->find($id);
-    }
-
     public function findBySlug(string $slug): ?Permission
     {
         /** @var Permission|null */
-        return Permission::where('slug', $slug)->first();
+        return $this->model->where('slug', $slug)->first();
     }
 
     /**
@@ -33,7 +27,7 @@ class PermissionRepository extends BaseRepository implements PermissionRepositor
      */
     public function getGroupedByModule(): array
     {
-        $permissions = Permission::orderBy('module')->orderBy('action')->get();
+        $permissions = $this->model->orderBy('module')->orderBy('action')->get();
         $grouped = [];
 
         foreach ($permissions as $permission) {
@@ -45,16 +39,21 @@ class PermissionRepository extends BaseRepository implements PermissionRepositor
 
     public function getByIds(array $ids): Collection
     {
-        return Permission::whereIn('id', $ids)->get();
+        return $this->model->whereIn('id', $ids)->get();
     }
 
     public function getBySlugs(array $slugs): Collection
     {
-        return Permission::whereIn('slug', $slugs)->get();
+        return $this->model->whereIn('slug', $slugs)->get();
+    }
+
+    public function resolveIdsBySlugs(array $slugs): array
+    {
+        return $this->model->whereIn('slug', $slugs)->pluck('id')->all();
     }
 
     public function getDistinctModules(): array
     {
-        return Permission::distinct()->pluck('module')->filter()->values()->all();
+        return $this->model->distinct()->pluck('module')->filter()->values()->all();
     }
 }

@@ -10,18 +10,20 @@ export interface PermissionItem {
     created_at?: string;
 }
 
+const baseURL = '/user/permission';
+
 /**
  * Fetch all available permissions list.
- * API: GET /permission/permission
+ * API: GET /user/permission
  * Example: getPermissions({ module: 'crawler' })
  */
 export const getPermissions = (params: Record<string, any> = {}) =>
-    api<{ status: string; data: PermissionItem[] }>('/permission/permission', { params });
+    api<{ status: string; data: PermissionItem[] }>(baseURL, { params });
 
 /**
  * Fetch permissions grouped by module.
- * API: GET /permission/permission/modules
+ * API: GET /user/permission/modules
  * Example: getGroupedPermissions()
  */
 export const getGroupedPermissions = () =>
-    api<{ status: string; data: Record<string, PermissionItem[]> }>('/permission/permission/modules');
+    api<{ status: string; data: Record<string, PermissionItem[]> }>(`${baseURL}/modules`);
