@@ -7,7 +7,11 @@ import PageHeader from '../components/PageHeader';
 import TableComponent, { TableColumn } from '../components/Table';
 import StatusTag from '../components/StatusTag';
 import EmptyState from '../components/EmptyState';
-import { CrawlerStatistics, TiktokStatistics, CrawlJobItem, DashboardKpiCards, CrawlEngineOverview, TiktokEcosystemOverview, DashboardQuickShortcuts } from './ui';
+import type { CrawlerStatistics, TiktokStatistics, CrawlJobItem } from './ui/types';
+import DashboardKpiCards from './ui/DashboardKpiCards';
+import CrawlEngineOverview from './ui/CrawlEngineOverview';
+import TiktokEcosystemOverview from './ui/TiktokEcosystemOverview';
+import DashboardQuickShortcuts from './ui/DashboardQuickShortcuts';
 
 const recentJobColumns: TableColumn<CrawlJobItem>[] = [
 	{

@@ -3,8 +3,8 @@ import type { MenuProps } from 'antd';
 import { Avatar, Button, Dropdown, Flex, Layout, Space, Typography } from 'antd';
 import { DownOutlined, LogoutOutlined, MenuFoldOutlined, MenuOutlined, MenuUnfoldOutlined } from '@ant-design/icons';
 import { useLayout } from '../contexts/LayoutContext';
-import { useCurrentRoute } from '../routes';
-import { useCurrentUser } from '../hooks';
+import { useCurrentRoute } from '../routes/registry';
+import useCurrentUser from '../hooks/useCurrentUser';
 
 const { Header: AntHeader } = Layout;
 const { Text } = Typography;

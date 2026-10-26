@@ -1,21 +1,21 @@
 import React, { ReactNode, useState, useEffect } from 'react';
-import { Card, Input, Select, DatePicker, InputNumber, Radio, Form, Button, Space, Flex, Tooltip, Badge, Typography } from 'antd';
+import { Card, Input, Select, DatePicker, InputNumber, Radio, Form, Button, Space, Flex, Tooltip } from 'antd';
 import { PlusOutlined, ReloadOutlined, ClearOutlined, DownOutlined, UpOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import PageHeader, { PageHeaderProps } from './PageHeader';
 import TableComponent, { TableComponentProps, TableColumn } from './Table';
-import EmptyState from './EmptyState';
+import NumericRangeFilter, { NumericPreset } from './NumericRangeFilter';
 
-const { Text } = Typography;
-
-/**
- * Filter item types supported dynamically by Ant Design Form controls.
- */
-export type FilterFieldType = 'select' | 'dateRange' | 'date' | 'number' | 'radio' | 'text' | 'custom';
+export type FilterFieldType = 'select' | 'dateRange' | 'date' | 'number' | 'numberRange' | 'radio' | 'text' | 'custom';
 
 export interface FilterItemOption {
 	label: string;
 	value: string | number | boolean;
+}
+
+export interface SearchFieldOption {
+	label: string;
+	value: string;
 }
 
 /**
@@ -27,6 +27,7 @@ export interface DynamicFilterField {
 	type?: FilterFieldType;
 	placeholder?: string;
 	options?: FilterItemOption[];
+	presets?: NumericPreset[];
 	initialValue?: any;
 	value?: any;
 	onChange?: (value: any) => void;
@@ -37,152 +38,93 @@ export interface DynamicFilterField {
 	style?: React.CSSProperties;
 }
 
-/**
- * Backwards compatibility alias for FilterItemConfig
- */
 export type FilterItemConfig = DynamicFilterField;
 
 /**
- * Options for selecting which field to search against.
- */
-export interface SearchFieldOption {
-	label: string;
-	value: string;
-}
-
-/**
- * Unified ListLayout properties supporting dynamic search, dynamic filters,
- * dynamic column rendering, and table management using built-in Ant Design components.
+ * Streamlined ListLayout properties providing unified PageHeader,
+ * dynamic search/filter toolbar, and standardized table rendering.
  */
 export interface ListLayoutProps<T = any> {
-	// 1. Page Header Props
+	// 1. Header Props
 	title: ReactNode;
 	subtitle?: ReactNode;
-	description?: ReactNode;
 	breadcrumbs?: PageHeaderProps['breadcrumbs'];
 	onBack?: () => void;
 
 	// Primary Action: Add / Create
 	onAdd?: (() => void) | string;
 	addText?: string;
-	addIcon?: ReactNode;
-	addDisabled?: boolean;
-	headerExtra?: ReactNode;
 
-	// 2. Dynamic Search Props (Ant Design Input.Search)
+	// 2. Search Props
 	showSearch?: boolean;
 	searchPlaceholder?: string;
 	searchValue?: string;
-	searchFields?: SearchFieldOption[];
-	selectedSearchField?: string;
-	onSearchFieldChange?: (field: string) => void;
-	onSearch?: (keyword: string, field?: string) => void;
+	onSearch?: (keyword: string) => void;
 
-	// 3. Dynamic Filter Form Props (Ant Design Form)
+	// 3. Dynamic Filter Props
 	filters?: DynamicFilterField[];
-	filterValues?: Record<string, any>;
-	onFilterChange?: (values: Record<string, any>) => void;
 	onResetFilters?: () => void;
 
-	// 4. General Actions
+	// 4. Refresh Action
 	onRefresh?: () => void;
 	refreshing?: boolean;
-	toolbarExtra?: ReactNode;
 
-	// 5. Selection & Batch Actions
-	selectedRowKeys?: React.Key[];
-	batchActions?: ReactNode;
-
-	// 6. Card Presentation Props
+	// 5. Card Props
 	cardTitle?: ReactNode;
-	cardExtra?: ReactNode;
-	cardStyle?: React.CSSProperties;
 
-	// 7. Dynamic Table Columns & TableComponent Props
+	// 6. Table Props
 	columns?: TableColumn<T>[];
 	data?: T[];
 	loading?: boolean;
 	pagination?: TableComponentProps<T>['pagination'];
 	onPageChange?: (page: number, pageSize: number) => void;
 	renderColumns?: TableComponentProps<T>['renderColumns'];
-	prependColumns?: TableColumn<T>[];
-	extraColumns?: TableColumn<T>[];
 	rowKey?: string | ((record: T) => string);
 	rowSelection?: TableComponentProps<T>['rowSelection'];
-	size?: 'small' | 'middle' | 'large';
-	emptyDescription?: string;
-	emptyActionText?: string;
-	onEmptyAction?: () => void;
 
-	// 8. Child slot (Optional fallback when passing custom child table)
+	// 7. Child slot (Optional fallback when passing custom table content)
 	children?: ReactNode;
 }
 
 /**
- * Unified List Layout for all modules in CMS TikTok Crawler.
- *
- * Utilizes standard Ant Design components for:
- * 1. Dynamic Search (Input.Search with optional target field selector)
- * 2. Dynamic Filter Form (Ant Design Form with Select, DatePicker, Radio, InputNumber)
- * 3. Dynamic Table Columns Rendering (directly renders passed TableColumn<T>[] into TableComponent)
+ * Standardized List Layout component for CMS pages.
+ * Integrates PageHeader, dynamic search, Ant Design form filters, and TableComponent.
  */
 export default function ListLayout<T = any>({
 	// Header props
 	title,
 	subtitle,
-	description,
 	breadcrumbs,
 	onBack,
 	onAdd,
 	addText = 'Add New',
-	addIcon = <PlusOutlined />,
-	addDisabled = false,
-	headerExtra,
 
-	// Dynamic Search props
+	// Search props
 	showSearch = true,
 	searchPlaceholder = 'Search...',
 	searchValue,
-	searchFields,
-	selectedSearchField,
-	onSearchFieldChange,
 	onSearch,
 
-	// Dynamic Filter props
+	// Filter props
 	filters = [],
-	filterValues,
-	onFilterChange,
 	onResetFilters,
 
-	// General actions
+	// Refresh props
 	onRefresh,
 	refreshing = false,
-	toolbarExtra,
-
-	// Batch actions
-	selectedRowKeys = [],
-	batchActions,
 
 	// Card props
 	cardTitle,
-	cardExtra,
-	cardStyle,
 
-	// Dynamic Table Columns & Table props
+	// Table props
 	columns,
 	data,
 	loading = false,
 	pagination,
 	onPageChange,
 	renderColumns,
-	prependColumns,
-	extraColumns,
 	rowKey = 'id',
 	rowSelection,
-	size = 'middle',
-	emptyDescription = 'No records found',
-	emptyActionText,
-	onEmptyAction,
 
 	// Child slot
 	children,
@@ -192,7 +134,6 @@ export default function ListLayout<T = any>({
 
 	// Search state
 	const [localSearch, setLocalSearch] = useState<string>(searchValue ?? '');
-	const [currentSearchField, setCurrentSearchField] = useState<string>(selectedSearchField ?? searchFields?.[0]?.value ?? '');
 
 	// Collapsible advanced filters state
 	const [expandFilters, setExpandFilters] = useState<boolean>(false);
@@ -204,117 +145,64 @@ export default function ListLayout<T = any>({
 		}
 	}, [searchValue]);
 
-	// Synchronize external filter values with Antd Form
-	useEffect(() => {
-		if (filterValues) {
-			form.setFieldsValue(filterValues);
-		} else {
-			const individualValues: Record<string, any> = {};
-			filters.forEach((f) => {
-				if (f.value !== undefined) {
-					individualValues[f.key] = f.value;
-				}
-			});
-			if (Object.keys(individualValues).length > 0) {
-				form.setFieldsValue(individualValues);
-			}
-		}
-	}, [filterValues, filters, form]);
-
-	// Handle add button click
-	const handleAddClick = () => {
-		if (typeof onAdd === 'string') {
-			navigate(onAdd);
-		} else if (typeof onAdd === 'function') {
-			onAdd();
-		}
-	};
-
-	// Handle search trigger
-	const handleSearchTrigger = (val: string) => {
-		if (onSearch) {
-			onSearch(val.trim(), currentSearchField || undefined);
-		}
-	};
-
-	// Handle filter form values change
-	const handleFormValuesChange = (changedValues: any, allValues: any) => {
-		Object.keys(changedValues).forEach((key) => {
-			const matchingFilter = filters.find((f) => f.key === key);
-			matchingFilter?.onChange?.(changedValues[key]);
-		});
-		if (onFilterChange) {
-			onFilterChange(allValues);
-		}
-	};
-
-	// Handle filter reset
-	const handleReset = () => {
-		// Reset all form fields.
-		form.resetFields();
-
-		// Clear the values displayed by the filters.
-		const resetValues = Object.fromEntries(filters.map((filter) => [filter.key, undefined]));
-
-		form.setFieldsValue(resetValues);
-
-		setLocalSearch('');
-		onResetFilters?.();
-	};
-
 	// Primary header action button
 	const primaryAddButton = onAdd ? (
-		<Button type="primary" icon={addIcon} disabled={addDisabled} onClick={handleAddClick}>
+		<Button
+			type="primary"
+			icon={<PlusOutlined />}
+			onClick={() => (typeof onAdd === 'string' ? navigate(onAdd) : onAdd())}
+		>
 			{addText}
 		</Button>
 	) : null;
 
-	// Render dynamic search input with optional target field addon
-	const searchAddonBefore =
-		searchFields && searchFields.length > 0 ? (
-			<Select
-				value={currentSearchField}
-				onChange={(val) => {
-					setCurrentSearchField(val);
-					onSearchFieldChange?.(val);
-				}}
-				style={{ width: 110 }}
-				options={searchFields}
-			/>
-		) : undefined;
+	// Handle search trigger
+	const handleSearchTrigger = (val: string) => {
+		onSearch?.(val.trim());
+	};
 
-	// Number of visible filters before collapse
+	// Handle filter change
+	const handleFormValuesChange = (changedValues: Record<string, any>) => {
+		Object.keys(changedValues).forEach((key) => {
+			const matchingFilter = filters.find((f) => f.key === key);
+			matchingFilter?.onChange?.(changedValues[key]);
+		});
+	};
+
+	// Handle filter reset
+	const handleReset = () => {
+		form.resetFields();
+		const resetValues = Object.fromEntries(filters.map((filter) => [filter.key, undefined]));
+		form.setFieldsValue(resetValues);
+		setLocalSearch('');
+		onResetFilters?.();
+	};
+
+	// Collapsible filter slice
 	const primaryFilters = expandFilters ? filters : filters.slice(0, 3);
 	const hasCollapsibleFilters = filters.length > 3;
 
-	// Determine if toolbar has any elements to display
-	const hasToolbar = (showSearch && Boolean(onSearch)) || filters.length > 0 || Boolean(onResetFilters) || Boolean(onRefresh) || Boolean(toolbarExtra) || (selectedRowKeys && selectedRowKeys.length > 0);
+	// Check if toolbar has content
+	const hasToolbar = (showSearch && Boolean(onSearch)) || filters.length > 0 || Boolean(onResetFilters) || Boolean(onRefresh);
 
 	return (
 		<div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-			{/* 1. Standardized PageHeader */}
+			{/* 1. Page Header */}
 			<PageHeader
 				title={title}
-				subtitle={subtitle ?? description}
+				subtitle={subtitle}
 				breadcrumbs={breadcrumbs}
 				onBack={onBack}
-				extra={
-					<Space wrap size={12}>
-						{headerExtra}
-						{primaryAddButton}
-					</Space>
-				}
+				extra={primaryAddButton}
 			/>
 
-			{/* 2. List Card Container */}
+			{/* 2. Main List Card */}
 			<Card
 				title={cardTitle}
-				extra={cardExtra}
 				style={{
 					borderRadius: 12,
 					border: '1px solid #edf0f5',
 					boxShadow: '0 2px 12px rgba(23, 32, 51, 0.04)',
-					...cardStyle,
 				}}
 				styles={{
 					body: {
@@ -322,7 +210,7 @@ export default function ListLayout<T = any>({
 					},
 				}}
 			>
-				{/* 3. Dynamic Search & Filter Toolbar */}
+				{/* 3. Search & Filter Toolbar */}
 				{hasToolbar && (
 					<div
 						style={{
@@ -333,22 +221,19 @@ export default function ListLayout<T = any>({
 						}}
 					>
 						<Flex justify="space-between" align="center" wrap="wrap" gap={12}>
-							{/* Left: Dynamic Search & Dynamic Form Filters */}
+							{/* Left: Search input & Dynamic form filters */}
 							<Flex align="center" wrap="wrap" gap={12} style={{ flex: 1 }}>
-								{/* Dynamic Keyword Search using Antd Input.Search */}
 								{showSearch && onSearch && (
 									<Input.Search
-										addonBefore={searchAddonBefore}
 										placeholder={searchPlaceholder}
 										allowClear
 										value={localSearch}
 										onChange={(e) => setLocalSearch(e.target.value)}
 										onSearch={handleSearchTrigger}
-										style={{ maxWidth: searchAddonBefore ? 380 : 280, minWidth: 220 }}
+										style={{ maxWidth: 280, minWidth: 200 }}
 									/>
 								)}
 
-								{/* Dynamic Filters Form using Antd Form */}
 								{filters.length > 0 && (
 									<Form form={form} layout="inline" onValuesChange={handleFormValuesChange} style={{ gap: '10px 12px' }}>
 										{primaryFilters.map((filter) => {
@@ -362,10 +247,19 @@ export default function ListLayout<T = any>({
 												inputComponent = <DatePicker placeholder={filter.placeholder} allowClear={filter.allowClear ?? true} style={{ minWidth: 150, ...filter.style }} />;
 											} else if (filter.type === 'number') {
 												inputComponent = <InputNumber placeholder={filter.placeholder} style={{ minWidth: filter.width ?? 130, ...filter.style }} />;
+											} else if (filter.type === 'numberRange') {
+												inputComponent = (
+													<NumericRangeFilter
+														placeholder={filter.placeholder ?? filter.label ?? 'Range'}
+														presets={filter.presets}
+														width={filter.width ?? 150}
+														allowClear={filter.allowClear ?? true}
+														style={filter.style}
+													/>
+												);
 											} else if (filter.type === 'radio') {
 												inputComponent = <Radio.Group optionType="button" buttonStyle="solid" options={filter.options} />;
 											} else {
-												// Default: 'select'
 												inputComponent = (
 													<Select
 														placeholder={filter.placeholder ?? filter.label ?? 'Filter'}
@@ -386,14 +280,12 @@ export default function ListLayout<T = any>({
 									</Form>
 								)}
 
-								{/* Reset Filters button */}
 								{(onResetFilters || filters.length > 0) && (
 									<Button icon={<ClearOutlined />} onClick={handleReset}>
 										Reset
 									</Button>
 								)}
 
-								{/* Expand / Collapse advanced filters */}
 								{hasCollapsibleFilters && (
 									<Button type="link" size="small" onClick={() => setExpandFilters(!expandFilters)} style={{ fontSize: 13, padding: 0 }}>
 										{expandFilters ? (
@@ -409,33 +301,17 @@ export default function ListLayout<T = any>({
 								)}
 							</Flex>
 
-							{/* Right: Batch Actions, Refresh Button & Toolbar Extra */}
-							<Flex align="center" gap={10}>
-								{/* Batch actions indicator */}
-								{selectedRowKeys.length > 0 && (
-									<Space size={8} align="center">
-										<Badge count={selectedRowKeys.length} style={{ backgroundColor: '#1677ff' }} />
-										<Text type="secondary" style={{ fontSize: 13 }}>
-											selected
-										</Text>
-										{batchActions}
-									</Space>
-								)}
-
-								{toolbarExtra}
-
-								{/* Refresh Button */}
-								{onRefresh && (
-									<Tooltip title="Refresh data">
-										<Button icon={<ReloadOutlined spin={refreshing} />} onClick={onRefresh} loading={refreshing} />
-									</Tooltip>
-								)}
-							</Flex>
+							{/* Right: Refresh button */}
+							{onRefresh && (
+								<Tooltip title="Refresh data">
+									<Button icon={<ReloadOutlined spin={refreshing} />} onClick={onRefresh} loading={refreshing} />
+								</Tooltip>
+							)}
 						</Flex>
 					</div>
 				)}
 
-				{/* 4. Table Rendering: directly renders dynamic columns into TableComponent or custom children */}
+				{/* 4. Table Component */}
 				{columns && data !== undefined ? (
 					<TableComponent<T>
 						columns={columns}
@@ -444,14 +320,8 @@ export default function ListLayout<T = any>({
 						pagination={pagination}
 						handlePageChange={onPageChange}
 						renderColumns={renderColumns}
-						prependColumns={prependColumns}
-						extraColumns={extraColumns}
 						rowKey={rowKey}
 						rowSelection={rowSelection}
-						size={size}
-						locale={{
-							emptyText: <EmptyState description={emptyDescription} actionText={emptyActionText ?? (onAdd ? addText : undefined)} onAction={onEmptyAction ?? (onAdd ? handleAddClick : undefined)} />,
-						}}
 					/>
 				) : (
 					children

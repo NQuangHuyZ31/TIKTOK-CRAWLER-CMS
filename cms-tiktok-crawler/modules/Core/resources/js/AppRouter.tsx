@@ -1,11 +1,11 @@
 import { App as AntdApp, ConfigProvider } from 'antd';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Suspense } from 'react';
-import { useAdminRoutes, useBareRoutes } from './routes';
+import { useAdminRoutes, useBareRoutes } from './routes/registry';
 import AdminLayout from './layouts/AdminLayout';
 import SpinComponent from './components/SpinComponent';
 import NotFound from './pages/NotFound';
-import { PermissionGate } from './components';
+import PermissionGate from './components/PermissionGate';
 import AccessDeny from './components/AccessDeny';
 
 export default function AppRouter() {

@@ -3,9 +3,9 @@ import { Button, Flex, Layout, Menu, Tag, Tooltip } from 'antd';
 import type { MenuProps } from 'antd';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { AppstoreOutlined, DashboardOutlined, MenuFoldOutlined, MenuUnfoldOutlined, RobotOutlined, SafetyCertificateOutlined, SettingOutlined, TeamOutlined, UserOutlined, VideoCameraOutlined } from '@ant-design/icons';
-import { useMenuRoutes, useCurrentRoute, type RouteDef } from '../routes';
+import { useMenuRoutes, useCurrentRoute, type RouteDef } from '../routes/registry';
 import { useLayout } from '../contexts/LayoutContext';
-import { usePermission } from '../hooks';
+import usePermission from '../hooks/usePermission';
 
 const { Sider } = Layout;
 
