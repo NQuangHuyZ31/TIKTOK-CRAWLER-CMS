@@ -13,7 +13,13 @@
 		"mix:core": "node scripts/mix-module.cjs Core",
 		"mix:crawler": "node scripts/mix-module.cjs Crawler",
 		"mix:tiktokaccount": "node scripts/mix-module.cjs TiktokAccount",
-		"mix:module": "node scripts/mix-module.cjs"
+		"mix:system": "node scripts/mix-module.cjs System",
+		"mix:role": "node scripts/mix-module.cjs Role",
+		"mix:permission": "node scripts/mix-module.cjs Permission",
+		"mix:auth": "node scripts/mix-module.cjs Auth",
+		"mix:user": "node scripts/mix-module.cjs User",
+		"mix:module": "node scripts/mix-module.cjs",
+		"check-types": "tsc --noEmit"
 	},
 	"overrides": {
 		"webpack": "5.94.0"
@@ -36,7 +42,8 @@
 		"ts-loader": "^9.6.2",
 		"typescript": "^7.0.2",
 		"vite": "^8.0.0",
-		"webpack": "^5.94.0"
+		"webpack": "5.94.0",
+		"dayjs": "^1.11.13"
 	},
 	"optionalDependencies": {
 		"@laravel/multiplex": "^0.4.1"

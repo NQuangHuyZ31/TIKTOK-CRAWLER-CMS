@@ -38,9 +38,18 @@
 			"Modules\\Crawler\\": "Modules/Crawler/src/",
 			"Modules\\TiktokAccount\\": "Modules/TiktokAccount/src/",
 			"Modules\\API\\": "Modules/API/src/",
+			"Modules\\System\\": "modules/System/src/",
+			"Modules\\Role\\": "modules/Role/src/",
+			"Modules\\Permission\\": "modules/Permission/src/",
+			"Modules\\Auth\\": "modules/Auth/src/",
+			"Modules\\User\\": "modules/User/src/",
 			"Modules\\Core\\Database\\Seeders\\": "modules/Core/database/seeders/",
 			"Modules\\Crawler\\Database\\Seeders\\": "modules/Crawler/database/seeders/",
-			"Modules\\TiktokAccount\\Database\\Seeders\\": "modules/TiktokAccount/database/seeders/"
+			"Modules\\TiktokAccount\\Database\\Seeders\\": "modules/TiktokAccount/database/seeders/",
+			"Modules\\System\\Database\\Seeders\\": "modules/System/database/seeders/",
+			"Modules\\Role\\Database\\Seeders\\": "modules/Role/database/seeders/",
+			"Modules\\Permission\\Database\\Seeders\\": "modules/Permission/database/seeders/",
+			"Modules\\User\\Database\\Seeders\\": "modules/User/database/seeders/"
 		}
 	},
 	"autoload-dev": {

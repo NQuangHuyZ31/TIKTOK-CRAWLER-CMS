@@ -83,12 +83,32 @@ Hệ thống được tái cấu trúc hoàn toàn theo mô hình **Ureka Enterp
 
 9. **Cơ chế Route Registry & AdminLayout Chuẩn Kiến Trúc Ureka**:
    - **`AdminLayout`**: Cấu hình theo mô hình Layout Route chuẩn (`<Route element={<AdminLayout />}>`), các route chức năng con hiển thị qua `<Outlet />` giúp tránh re-mount layout không cần thiết khi chuyển trang.
+   - **Giao Diện Responsive Đa Nền Tảng (`LayoutContext` & `Sidebar`)**: Tự động nhận diện thiết bị (`isMobile < 992px`), sử dụng thuần túy Ant Design `<Layout.Sider>` với chế độ thu gọn icon-only (64px) trên mobile không mở modal/drawer phức tạp, hỗ trợ mở rộng (240px) $\leftrightarrow$ thu gọn (64px) mượt mà qua nút toggle tại Header và chân Sidebar.
+   - **Đồng Bộ Toàn Bộ Form Chiếm Trọn 100% Không Gian Nội Dung**: Xóa bỏ hoàn toàn giới hạn cố định hẹp ở giữa màn hình (`maxWidth: 960` và `maxWidth: 1100`), đưa [`UserFormPage`](modules/User/resources/js/pages/UserFormPage.tsx), [`ProfilePage`](modules/Auth/resources/js/pages/ProfilePage.tsx) và [`UserDetailPage`](modules/User/resources/js/pages/UserDetailPage.tsx) về chuẩn 100% chiều rộng nội dung đồng bộ cùng `CrawlJobFormPage`, `TiktokAccountEditPage` và `ListLayout`.
+   - **Hệ Thống Icon Sidebar Chuyên Biệt**: Tự động phân giải fallback icon theo từ khóa route (`resolveMenuIcon`), gán icon `VideoCameraOutlined` chuyên biệt cho TikTok Accounts, phân biệt rõ ràng với Users (`TeamOutlined`).
+   - **Tối Ưu Hóa Hook Điều Hướng & Trạng Thái Người Dùng**:
+     - Bổ sung hook `useCurrentUser()` dùng chung tại `@core/hooks` loại bỏ trùng lặp logic user/role/logout giữa `Header` và `Sidebar`.
+     - Bổ sung hook `useCurrentRoute()` tra cứu trực tiếp route hiện tại cho `Header` mà không cần re-build toàn bộ cây menu phân cấp `useMenuRoutes()`.
+     - Tối ưu hóa `Sidebar`: Tận dụng cây menu đã build từ `useMenuRoutes()`, chuyển đổi quyền và Ant Design items trong một pass duy nhất, triệt tiêu double tree build.
    - **Điều hướng Sidebar theo Route Registration Tự Động**:
      - **Core hoàn toàn độc lập**: `Core` chỉ sở hữu router và layout, hoàn toàn không cần duy trì danh sách page, menu hay đường dẫn của các module con (`Core has no list of pages, menu entries or paths to maintain`).
      - **Tự động đăng ký qua từng Module**: Mỗi module (`Crawler`, `TiktokAccount`...) tự đăng ký page và menu item của mình khi script thực thi thông qua `registerRoute(def)`. Danh sách route được lưu và duy trì tập trung trên `window.__CMS_ROUTES_REGISTRY__`.
      - **Không còn hiện tượng load 2 lần**: Loại bỏ hoàn toàn component tạm `createModuleLoader` và script injection thủ công lúc runtime. Trình duyệt nạp sẵn các bundle module (~180 KiB tổng cộng), chuyển trang SPA tức thì (0ms trễ, không chớp giật spinner).
 
-10. **Nền tảng RESTful Controller Dùng Chung (`BaseController` & `CoreController`)**:
+10. **ResourceForm Dùng Chung & Chuẩn Hóa Route (`/create` & `/:id/edit`)**:
+    - **Component Dùng Chung Lõi (`@core/components/ResourceForm`)**: Cung cấp form chuẩn hóa thống nhất cho toàn bộ modules cả ở thao tác Thêm mới lẫn Chỉnh sửa.
+    - **Bảo toàn chuẩn Route RESTful**:
+      - `/create`: Tự động nhận diện chế độ Thêm mới (`isEdit = false`, `id = undefined`), gọi hàm submit `onCreate(values)`.
+      - `/:id/edit` (ví dụ `/1/edit`): Tự động nhận diện chế độ Chỉnh sửa (`isEdit = true`, `id = '1'`), tự động gọi `fetchRecord(id)` nạp initial values và submit `onUpdate(id, values, record)`.
+      - Tự động bỏ qua chuỗi literal `"create"` khi bị pattern route tham lam bắt (`id !== 'create'`).
+      - Hỗ trợ prop ghi đè tường minh: `isEdit?: boolean` và `id?: string | number`.
+      - Tự động điều hướng về `redirectUrl` hoặc fallback về `backUrl` sau khi hoàn tất.
+    - **Áp dụng đồng bộ**:
+      - `Crawler`: `/crawler/crawl-job/create` (tạo job) và `/crawler/crawl-job/:id/edit` (sửa job).
+      - `TiktokAccount`: `/tiktok-account/create` và `/tiktok-account/:id/edit`.
+      - `User`: `/user/create` và `/user/:id/edit`.
+
+11. **Nền tảng RESTful Controller Dùng Chung (`BaseController` & `CoreController`)**:
     - **`BaseController`**: Cung cấp sẵn 5 hành vi chuẩn RESTful (`index`, `show`, `store`, `update`, `destroy`), tích hợp pipeline tìm kiếm toàn văn (`?search=...`), lọc theo cột động (lọc số `_min`/`_max`/`_gte`/`_lte`/`1000..5000`, lọc ngày `_from`/`_to`, `whereIn`, wildcards), sắp xếp mặc định theo cấu hình `$defaultSort` (ví dụ: `['id', 'desc']` hoặc `['created_at', 'desc']`), phân trang và hỗ trợ tắt phân trang (`pagination=false`). Các tính năng tìm kiếm và lọc chỉ thực thi khi được khai báo tường minh (`$searchableColumns`, `$filterableColumns`).
     - **`CoreController`**: Controller cụ thể kế thừa `BaseController` xử lý các tác vụ hệ thống dùng chung (`ping`, tải lên file `upload`, xóa file `delete-uploaded-file`), đồng thời hỗ trợ truy vấn RESTful CRUD trực tiếp cho bất kỳ Model nào thông qua tham số `?model=...`.
 
@@ -102,7 +122,7 @@ Hệ thống được tái cấu trúc hoàn toàn theo mô hình **Ureka Enterp
       - `CrawlJobRepository`: `getStatisticsSummary()` (tổng hợp KPI dashboard), `hasRunningJob()`, `findByStatus()`, `getResults()`.
       - `CrawlResultRepository`: `getByJobId()` (chuẩn hóa tên method), `getCrawlResultsByJobId()` (alias tương thích ngược).
     - **Tầng Controller (`CrawlJobController` & `CrawlResultController`)**:
-      - **Đồng bộ kế thừa `CoreController`**: Tận dụng pipeline RESTful listing (`index`), xem chi tiết (`show`), tìm kiếm từ khóa, bộ lọc động và biến đổi qua API Resource (`CrawlJobResource`, `CrawlResultResource`).
+      - **Đồng bộ kế thừa `BaseController`**: Tận dụng pipeline RESTful listing (`index`), xem chi tiết (`show`), tìm kiếm từ khóa, bộ lọc động và biến đổi qua API Resource (`CrawlJobResource`, `CrawlResultResource`).
       - Chuẩn hóa tên hàm theo quy chuẩn RESTful và giữ alias tương thích ngược: `store`, `update`, `destroy`, `start`, `statisticsSummary`, `results`, `byJob`.
     - **Loại bỏ service trung gian dư thừa**: Xóa hoàn toàn file rỗng `CrawlResultService.php`.
 
@@ -191,13 +211,12 @@ cms-tiktok-crawler/
 │   │   │   ├── admin.php                # Cấu hình admin prefix và api path
 │   │   │   └── modules.php              # Mapping URL prefix sang module
 │   │   ├── database/
-│   │   │   ├── migrations/              # users, roles, permissions, role_permissions, personal_access_tokens...
-│   │   │   └── seeders/                 # RolePermissionSeeder, UserSeeder, CoreDatabaseSeeder
+│   │   │   └── migrations/              # Core thuần infrastructure (tự động nạp migrations từ các module)
 │   │   ├── resources/
 │   │   │   ├── css/app.css              # Global Tailwind & Ant Design Reset styles
 │   │   │   ├── js/
 │   │   │   │   ├── Action/api.ts        # Central API Client (strict .env baseURL)
-│   │   │   │   ├── components/          # CardKPI, Table, CustomModal, Spin, StatusTag...
+│   │   │   │   ├── components/          # CardKPI, Table, CustomModal, Spin, StatusTag, UploadComponent, ResourceForm...
 │   │   │   │   ├── layouts/             # AdminLayout, Header, Sidebar
 │   │   │   │   ├── pages/               # DashboardPage, NotFoundPage
 │   │   │   │   │   └── ui/              # Dashboard UI subcomponents (Header, KpiCards, Overview, Table, Shortcuts)
@@ -209,7 +228,23 @@ cms-tiktok-crawler/
 │   │   ├── routes/
 │   │   │   ├── api.php                  # DynamicRouteResovle::routes()
 │   │   │   └── web.php                  # SPA catch-all & route-level module resolver
-│   │   └── src/                         # Controllers, Repositories, Providers, Support, Traits...
+│   ├── Auth/                            # Module Xác thực & Quản lý Phiên Đăng Nhập
+│   │   ├── database/migrations/         # personal_access_tokens (Sanctum tokens)
+│   │   ├── resources/js/                # LoginPage, ProfilePage, ChangePasswordModal...
+│   │   ├── routes/api.php               # Hướng dẫn API xác thực
+│   │   └── src/                         # AuthController, AuthService, TokenRepository...
+│   ├── User/                            # Module Quản lý Người Dùng
+│   │   ├── database/migrations/         # users, password_reset_tokens, sessions
+│   │   ├── resources/js/                # UserListPage, UserDetailPage, UserFormPage...
+│   │   └── src/                         # UserController, UserRepository, UserService...
+│   ├── Permission/                      # Module Quản lý Quyền Hạn
+│   │   ├── database/migrations/         # permissions
+│   │   ├── resources/js/                # PermissionMatrix...
+│   │   └── src/                         # PermissionController, PermissionRepository...
+│   ├── Role/                            # Module Quản lý Vai Trò & Bảng Pivot Phân Quyền
+│   │   ├── database/migrations/         # roles, role_permissions, user_roles, user_permissions
+│   │   ├── resources/js/                # RolesPage, RoleFormModal, RoleTableList...
+│   │   └── src/                         # RoleController, RoleRepository...
 │   ├── Crawler/                         # Module Quản lý Crawl Jobs
 │   │   ├── database/
 │   │   │   ├── migrations/              # crawl_jobs, crawl_results
@@ -218,7 +253,7 @@ cms-tiktok-crawler/
 │   │   │   ├── Action/                  # crawlJob.ts (API calls)
 │   │   │   ├── components/              # CrawlJobListTable, CrawlResultTable...
 │   │   │   ├── configs/tableConfig.ts   # Cấu hình bảng dữ liệu
-│   │   │   ├── pages/                   # CrawlJobsPage, CrawlJobDetailPage, Create, Edit
+│   │   │   ├── pages/                   # CrawlJobsPage, CrawlJobDetailPage, CrawlJobFormPage (Create & Edit)
 │   │   │   ├── routes/route.ts          # Route definitions cho Crawler
 │   │   │   └── store/                   # crawlJobSlice.ts, crawlJobThunks.ts...
 │   │   ├── routes/api.php               # API endpoints cho Crawler (Dynamic routing qua Core)
@@ -229,13 +264,18 @@ cms-tiktok-crawler/
 │       │   └── seeders/                 # TiktokAccountSeeder
 │       ├── resources/js/
 │       │   ├── Action/tiktokAccount.ts  # API calls cho tài khoản TikTok
-│       │   ├── components/              # TiktokAccountTableList, AvatarUpload, DeleteAccount...
+│       │   ├── components/              # TiktokAccountTableList, DeleteAccount...
 │       │   ├── configs/columnConfig.ts  # Cấu hình cột hiển thị & bộ lọc
 │       │   ├── pages/                   # TiktokAccountPage, DetailPage, EditPage
 │       │   ├── routes/route.ts          # Route definitions cho TiktokAccount
 │       │   └── store/                   # tiktokAccountSlice.ts, tiktokAccountThunks.ts
 │       ├── routes/api.php               # API endpoints cho TikTok Accounts
 │       └── src/                         # Controllers, Models, Repositories, Services, Providers...
+│   ├── System/                          # Module Cấu hình Thông số & Chẩn đoán Hệ thống
+│   │   ├── database/migrations/         # system_settings
+│   │   ├── resources/js/                # SystemSettingsPage.tsx, settingsConfig.ts, Action/systemSetting.ts
+│   │   ├── routes/api.php               # API cấu hình hệ thống
+│   │   └── src/                         # SystemSettingController, SystemSetting model, Repository, Service
 ├── public/
 │   ├── entrypoints.json                 # Manifest ánh xạ bundle JS/CSS cho từng module
 │   ├── modules/                         # Output bundle chuẩn Ureka (Không copy file)
@@ -245,8 +285,10 @@ cms-tiktok-crawler/
 │   │   │   └── app.css                  # Core CSS bundle
 │   │   ├── Crawler/
 │   │   │   └── index.js                 # Crawler code bundle
-│   │   └── TiktokAccount/
-│   │       └── index.js                 # TiktokAccount code bundle
+│   │   ├── TiktokAccount/
+│   │   │   └── index.js                 # TiktokAccount code bundle
+│   │   └── System/
+│   │       └── index.js                 # System code bundle (~57 KiB)
 │   └── build/                           # Thư mục chứa production bundle khi build qua Vite
 ├── routes/
 │   ├── api.php                          # Master API routes shell (Core tự động nạp routes từ Modules)
@@ -386,13 +428,19 @@ Hệ thống cung cấp cơ chế build frontend thông qua **Webpack 5 & Larave
 
 | Lệnh npm | Mô tả |
 | :--- | :--- |
-| `npm run mix` hoặc `npm run mix:all` | Quét và **build toàn bộ modules** (`Core`, `Crawler`, `TiktokAccount`) kèm gói shared vendor (mặc định Production tối ưu minified) |
+| `npm run mix` hoặc `npm run mix:all` | Quét và **build toàn bộ 8 modules** (`Core`, `Crawler`, `TiktokAccount`, `Auth`, `System`, `Role`, `Permission`, `User`) kèm gói shared vendor (mặc định Production tối ưu minified) |
 | `npm run mix:core` | **Chỉ build module Core** (`vendor.js`, `index.js`, `app.css`) |
 | `npm run mix:crawler` | **Chỉ build module Crawler** (`public/modules/Crawler/index.js`) |
 | `npm run mix:tiktokaccount` | **Chỉ build module TiktokAccount** (`public/modules/TiktokAccount/index.js`) |
-| `npm run mix:module <ModuleName>` | **Build tùy chọn một module bất kỳ** (vd: `npm run mix:module Crawler`) |
-| `npm run mix:dev` | Build chế độ development khi cần giữ nguyên mã nguồn unminified để inspect |
+| `npm run mix:auth` | **Chỉ build module Auth** (`public/modules/Auth/index.js`) |
+| `npm run mix:user` | **Chỉ build module User** (`public/modules/User/index.js`) |
+| `npm run mix:system` | **Chỉ build module System** (`public/modules/System/index.js`) |
+| `npm run mix:role` | **Chỉ build module Role** (`public/modules/Role/index.js`) |
+| `npm run mix:permission` | **Chỉ build module Permission** (`public/modules/Permission/index.js`) |
+| `npm run mix:module <ModuleName>` | **Build tùy chọn một module bất kỳ** (vd: `npm run mix:module User`) |
+| `npm run mix:prod` | Build toàn bộ các modules ở chế độ production |
 | `npm run mix:watch` | Theo dõi thay đổi file (file watching) và tự động compile lại |
+| `npm run check-types` | Kiểm tra toàn diện kiểu dữ liệu TypeScript (`tsc --noEmit`) |
 
 ---
 
@@ -439,22 +487,43 @@ Dưới đây là tổng hợp các endpoint API chính trong hệ thống:
 | :--- | :--- | :--- |
 | `POST` | `/admin/api/public/crawler/crawl-jobs/{jobId}/events` | Webhook nhận kết quả crawl tài khoản và trạng thái hoàn thành từ Python service |
 
-### Quản lý Tài khoản TikTok
-| Phương thức | Endpoint | Mô tả |
-| :--- | :--- | :--- |
-| `GET` | `/admin/api/tiktok-account/tiktok-account/all` | Lấy danh sách tài khoản TikTok |
-| `GET` | `/admin/api/tiktok-account/tiktok-account/statistic-summary` | Thống kê tổng quan tài khoản TikTok |
-| `GET` | `/admin/api/tiktok-account/tiktok-account/{id}` | Xem chi tiết thông tin hồ sơ tài khoản |
-| `PUT` / `POST` | `/admin/api/tiktok-account/tiktok-account/{id}` | Cập nhật thông tin & upload avatar tài khoản |
-| `DELETE` | `/admin/api/tiktok-account/tiktok-account/{id}` | Xóa tài khoản TikTok |
+### Quản lý Tài khoản TikTok (`TiktokAccountController`)
+| Phương thức | Endpoint | Mô tả | Quyền hạn yêu cầu |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/admin/api/tiktok-account/tiktok-account` | Lấy danh sách tài khoản TikTok (hỗ trợ search username/nickname/bio, filter status, sort, phân trang) | `tiktok_account.view` hoặc `admin` |
+| `GET` | `/admin/api/tiktok-account/tiktok-account/statistic-summary` | Thống kê tổng quan tài khoản TikTok (total, active, inactive, followers, likes) | `tiktok_account.view` hoặc `admin` |
+| `GET` | `/admin/api/tiktok-account/tiktok-account/{id}` | Xem chi tiết thông tin hồ sơ tài khoản | `tiktok_account.view` hoặc `admin` |
+| `POST` | `/admin/api/tiktok-account/tiktok-account` | Tạo mới tài khoản TikTok (tự động điền profile_url, upload avatar) | `tiktok_account.create` hoặc `admin` |
+| `PUT` / `POST` | `/admin/api/tiktok-account/tiktok-account/{id}` | Cập nhật thông tin & upload avatar tài khoản | `tiktok_account.edit` hoặc `admin` |
+| `PATCH` | `/admin/api/tiktok-account/tiktok-account/{id}/status` | Cập nhật nhanh trạng thái tài khoản (`active`, `inactive`, `banned`) | `tiktok_account.edit` hoặc `admin` |
+| `GET` | `/admin/api/tiktok-account/tiktok-account/{id}/results` | Lấy lịch sử cào dữ liệu phân trang của tài khoản | `tiktok_account.view` hoặc `admin` |
+| `DELETE` | `/admin/api/tiktok-account/tiktok-account/{id}` | Xóa mềm tài khoản TikTok | `tiktok_account.delete` hoặc `admin` |
 
-### Xác thực CMS & Phân quyền Role/Permission (`AuthController`)
-| Phương thức | Endpoint | Mô tả |
-| :--- | :--- | :--- |
-| `POST` | `/admin/api/core/auth/login` | Đăng nhập hệ thống bằng email & password, cấp Sanctum Bearer Token & ma trận quyền |
-| `POST` | `/admin/api/core/auth/logout` | Đăng xuất, hủy bỏ Bearer Token hiện tại và logout session |
-| `GET` | `/admin/api/core/auth/me` | Lấy thông tin user đăng nhập hiện tại, vai trò và ma trận quyền hạn module |
-| `GET` | `/admin/api/core/auth/permissions` | Lấy danh mục quyền hạn toàn hệ thống phân nhóm theo module |
+### Quản lý Người dùng & Phân quyền Module User (`UserController`)
+| Phương thức | Endpoint | Mô tả | Quyền hạn yêu cầu |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/admin/api/user/users` | Lấy danh sách tài khoản (hỗ trợ search, filter status/role, sort, phân trang) | `user.view` hoặc `admin` |
+| `GET` | `/admin/api/user/users/statistics-summary` | Thống kê KPI tổng quan người dùng (tổng số, active, inactive, blocked, roles) | `user.view` hoặc `admin` |
+| `GET` | `/admin/api/user/users/roles-and-permissions` | Lấy danh mục tất cả vai trò & quyền hạn hệ thống phân theo module | `user.view` hoặc `admin` |
+| `GET` | `/admin/api/user/users/{id}` | Xem chi tiết thông tin hồ sơ tài khoản, vai trò và ma trận quyền module | `user.view` hoặc `admin` |
+| `POST` | `/admin/api/user/users` | Tạo mới tài khoản người dùng, băm mật khẩu và phân vai trò/quyền | `user.edit` hoặc `admin` |
+| `PUT` / `PATCH` | `/admin/api/user/users/{id}` | Cập nhật thông tin tài khoản, đổi mật khẩu và cập nhật vai trò | `user.edit` hoặc `admin` |
+| `DELETE` | `/admin/api/user/users/{id}` | Xóa mềm tài khoản (chặn xóa chính mình và chặn xóa admin cuối cùng) | `user.edit` hoặc `admin` |
+| `PATCH` / `POST` | `/admin/api/user/users/{id}/status` | Cập nhật nhanh trạng thái tài khoản (`active`, `inactive`, `blocked`) | `user.edit` hoặc `admin` |
+
+### Xác thực CMS & Quản lý Phiên Người Dùng (`AuthController` - Tự Động Định Tuyến Động)
+| Phương thức | Endpoint | Mô tả | Quyền hạn |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/admin/api/auth/login` | Đăng nhập hệ thống bằng email & password, cấp Sanctum Bearer Token | Public |
+| `POST` | `/admin/api/auth/logout` | Đăng xuất, thu hồi Bearer Token hiện tại và xóa phiên làm việc | Bearer Token |
+| `GET` | `/admin/api/auth/me` | **Endpoint duy nhất** lấy toàn bộ thông tin tài khoản, danh sách vai trò (`roles`), quyền hạn (`permissions`) và ma trận phân quyền module (`module_permissions`) | Bearer Token |
+| `POST` | `/admin/api/auth/forgot-password` | Gửi yêu cầu cấp reset token đặt lại mật khẩu qua email | Public |
+| `POST` | `/admin/api/auth/reset-password` | Đặt lại mật khẩu mới bằng reset token | Public |
+| `POST` | `/admin/api/auth/change-password` | Đổi mật khẩu tài khoản đang đăng nhập | Bearer Token |
+| `PUT` | `/admin/api/auth/profile` | Cập nhật hồ sơ cá nhân (họ tên, số điện thoại, avatar) | Bearer Token |
+| `GET` | `/admin/api/auth/login-logs` | Lấy lịch sử log đăng nhập phân trang (IP, thiết bị, trạng thái thành công/thất bại, lý do) | Bearer Token |
+
+*(Lưu ý về Định tuyến: Module `Auth` hoàn toàn **không cần khai báo route tĩnh** trong `modules/Auth/routes/api.php` vì toàn bộ các endpoint trên đều được `DynamicRouteResovle` của `Core` tự động phát hiện và dispatch vào `AuthController@{action}`. Đồng thời, `GET /admin/api/auth/me` là route duy nhất và toàn diện nhất cung cấp thông tin profile kèm quyền hạn phân quyền, không cần các route permission riêng lẻ trong module Auth. Danh mục quản lý phân quyền toàn hệ thống được phụ trách độc lập bởi module `Permission` và `Role`).*
 
 ### Hệ thống Core & Tác vụ dùng chung (`CoreController` & `BaseController`)
 | Phương thức | Endpoint | Mô tả |
@@ -465,6 +534,22 @@ Dưới đây là tổng hợp các endpoint API chính trong hệ thống:
 | `GET` | `/admin/api/core/core?model={ModelName}` | Truy vấn danh sách bản ghi bất kỳ Model nào (hỗ trợ search, filter cột, sort, phân trang) |
 | `POST` | `/admin/api/core/core?model={ModelName}` | Tạo mới bản ghi cho Model chỉ định qua Core |
 | `GET` / `PUT` / `DELETE` | `/admin/api/core/core/{id}?model={ModelName}` | Xem, cập nhật, xóa bản ghi Model chỉ định qua Core |
+
+### Quản lý Vai trò, Phân quyền & Cấu hình Hệ thống (`RoleController`, `PermissionController`, `SystemSettingController`)
+| Phương thức | Endpoint | Mô tả |
+| :--- | :--- | :--- |
+| `GET` | `/admin/api/system/role` | Lấy danh sách vai trò hệ thống (hỗ trợ phân trang, tìm kiếm) |
+| `GET` | `/admin/api/system/role/{id}` | Lấy chi tiết vai trò và danh sách quyền hạn đã gán |
+| `POST` | `/admin/api/system/role` | Tạo mới vai trò và gán quyền hạn |
+| `PUT` | `/admin/api/system/role/{id}` | Cập nhật tên, mô tả và đồng bộ quyền hạn của vai trò |
+| `DELETE` | `/admin/api/system/role/{id}` | Xóa vai trò (có cơ chế bảo vệ chống xóa role `admin`) |
+| `GET` | `/admin/api/system/role/permissions` | Lấy danh mục tất cả quyền hạn có sẵn phân nhóm theo module |
+| `GET` | `/admin/api/system/permission` | Danh sách toàn bộ permissions trong hệ thống |
+| `GET` | `/admin/api/system/permission/modules` | Lấy permissions nhóm theo module |
+| `GET` | `/admin/api/system/system-setting` | Lấy danh sách cấu hình hệ thống (hoặc `?grouped=true`) |
+| `GET` | `/admin/api/system/system-setting/group/{group}` | Lấy cấu hình theo nhóm (`general`, `crawler`, `security`) |
+| `POST` | `/admin/api/system/system-setting/batch-update` | Cập nhật hàng loạt các tham số cấu hình |
+| `GET` | `/admin/api/system/system-setting/info` | Kiểm tra thông số chẩn đoán runtime môi trường máy chủ |
 
 ### Dynamic Route Resolver (`Modules\Core\Support\DynamicRouteResovle`)
 | Phương thức | Endpoint Pattern | Mô tả |
@@ -541,13 +626,18 @@ Chạy bộ test suite của Laravel (bao gồm Feature Tests cho Dynamic Routes
 ```bash
 php artisan test
 ```
-*(54 tests passed 100%, 244 assertions).*
+*(78 tests passed 100%, 358 assertions).*
 
 ### 4. Kiểm tra danh sách Route
 Xác nhận toàn bộ routes của các module đã được đăng ký chính xác bắt đầu bằng prefix admin:
 ```bash
 php artisan route:list
 ```
+
+### 5. Cơ chế Bảo vệ Route & Chặn Truy Cập Khi Bị Cấm (Strict RBAC Route Guarding)
+- **Tự động nhận diện quyền theo Route**: `AuthGuard` tự động phân tích `pathname` để kiểm tra quyền module (`view` hoặc `edit`) dựa trên ma trận `module_permissions` của người dùng.
+- **Chặn truy cập tuyệt đối**: Khi người dùng không có quyền truy cập, hệ thống lập tức chặn không cho mount component trang con, không gửi request API tới backend và hiển thị màn hình Ant Design `<Result status="403" ... />` cùng nút quay lại Dashboard.
+- **Bảo vệ hai lớp**: Tất cả các trang quản trị (`UserListPage`, `UserFormPage`, `UserDetailPage`) đều tích hợp xử lý trả về sớm trang 403 nếu nhận phản hồi Forbidden từ API, tuyệt đối không hiển thị khung layout hoặc thao tác chức năng của trang bị cấm.
 
 ---
 
@@ -566,6 +656,7 @@ php artisan route:list
      - `ConfirmDialog`: Hộp thoại xác nhận thao tác quan trọng/nguy hiểm.
      - `SpinComponent`: Trạng thái đang tải dữ liệu / Suspense fallback.
      - `EmptyState`: Trạng thái danh sách rỗng kèm nút hành động.
+     - `UploadComponent`: Thành phần tải file dùng chung chuẩn hóa, hỗ trợ 4 chế độ (`avatar`, `dragger`, `button`, `picture-card`), tích hợp thẩm định dung lượng, định dạng MIME và modal xem trước.
    - **Cột Thao Tác Bảng (Action Column)**: Luôn ghim cố định bên phải (`fixed: 'right'`, kèm chiều rộng chuẩn `width: 120`, `title: ''`). Các thao tác hiển thị dưới dạng nút Icon Ant Design kèm Tooltip (`EyeOutlined` xem chi tiết, `EditOutlined` chỉnh sửa, `DeleteOutlined` xóa an toàn với `Popconfirm`) thay vì dùng chữ link thô.
    - **Đồng Bộ Dữ Liệu & Giao Diện Các Module**: Các trang quản lý danh sách (`CrawlJobsPage`, `TiktokAccountPage`) phải duy trì sự đồng bộ tuyệt đối về cấu trúc `ListLayout` (`cardTitle`, `onAdd`, `onResetFilters`, `filters`), cột `ID` (sorter, `width: 80`), định dạng số (`formatNumber`) và thời gian (`formatDateTime`), cùng quy ước phân trang mặc định `per_page: 10`.
    - Mọi lời gọi HTTP API phải đi qua các hàm định kiểu trong thư mục `Action/` của module tương ứng.

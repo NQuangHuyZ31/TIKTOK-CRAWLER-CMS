@@ -111,9 +111,12 @@ mix.webpackConfig({
     },
     output: {
         publicPath: 'auto',
+        uniqueName: 'cms_tiktok_crawler',
+        chunkLoadingGlobal: 'webpackChunk_cms_tiktok_crawler',
         chunkFilename: 'modules/Core/chunks/[name].js',
     },
     optimization: {
+        moduleIds: mix.inProduction() ? 'deterministic' : 'named',
         runtimeChunk: {
             name: VENDOR_CHUNK,
         },

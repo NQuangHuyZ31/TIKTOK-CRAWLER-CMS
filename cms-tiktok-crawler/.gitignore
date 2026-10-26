@@ -36,4 +36,5 @@ PROJECT_SUMMARY.md
 tests/
 public/modules
 public/*.json
+docs/*
 
