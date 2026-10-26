@@ -13,9 +13,7 @@ process.env.NODE_OPTIONS = `${process.env.NODE_OPTIONS || ''}`.trim();
 console.log(`\n======================================================`);
 console.log(` CMS TikTok Crawler - Modular Build Runner (CMS Tiktok Crawler)`);
 console.log(` Target Module : ${moduleName.toUpperCase()}`);
-console.log(
-	` Environment   : ${isProd ? 'PRODUCTION (Optimized & Minified)' : 'DEVELOPMENT'}`,
-);
+console.log(` Environment   : ${isProd ? 'PRODUCTION (Optimized & Minified)' : 'DEVELOPMENT'}`);
 console.log(`======================================================\n`);
 
 // Thiết lập MIX_MODULES để webpack.mix.js lọc đúng module cần build
@@ -26,10 +24,7 @@ const binDir = path.resolve(__dirname, '../node_modules/.bin');
 process.env.PATH = `${binDir}${path.delimiter}${process.env.PATH || ''}`;
 
 // Chuyển tiếp argv cho Laravel Mix CLI trong cùng 1 process để tối ưu bộ nhớ
-process.argv = [
-	process.argv[0],
-	path.resolve(__dirname, '../node_modules/laravel-mix/bin/cli.js'),
-];
+process.argv = [process.argv[0], path.resolve(__dirname, '../node_modules/laravel-mix/bin/cli.js')];
 if (isProd) {
 	process.argv.push('--production');
 }

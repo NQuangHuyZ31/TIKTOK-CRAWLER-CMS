@@ -3,6 +3,8 @@
 namespace Modules\User\Providers;
 
 use Modules\Core\Providers\ModuleServiceProvider;
+use Modules\Permission\Repositories\PermissionRepositoryInterface;
+use Modules\Role\Repositories\RoleRepositoryInterface;
 use Modules\User\Repositories\Interfaces\UserRepositoryInterface;
 use Modules\User\Repositories\UserRepository;
 use Modules\User\Services\UserService;
@@ -15,7 +17,11 @@ class UserServiceProvider extends ModuleServiceProvider
     {
         $this->app->bind(UserRepositoryInterface::class, UserRepository::class);
         $this->app->singleton(UserService::class, function ($app) {
-            return new UserService($app->make(UserRepositoryInterface::class));
+            return new UserService(
+                $app->make(UserRepositoryInterface::class),
+                $app->make(RoleRepositoryInterface::class),
+                $app->make(PermissionRepositoryInterface::class)
+            );
         });
     }
 }

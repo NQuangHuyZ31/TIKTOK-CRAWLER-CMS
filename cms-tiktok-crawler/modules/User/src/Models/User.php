@@ -83,7 +83,7 @@ class User extends BaseUser
         }
 
         if (!empty($slugs)) {
-            $resolvedIds = Role::whereIn('slug', $slugs)->pluck('id')->all();
+            $resolvedIds = app(\Modules\Role\Repositories\RoleRepositoryInterface::class)->resolveIdsBySlugs($slugs);
             $ids = array_unique(array_merge($ids, $resolvedIds));
         }
 
@@ -109,7 +109,7 @@ class User extends BaseUser
         }
 
         if (!empty($slugs)) {
-            $resolvedIds = Permission::whereIn('slug', $slugs)->pluck('id')->all();
+            $resolvedIds = app(\Modules\Permission\Repositories\PermissionRepositoryInterface::class)->resolveIdsBySlugs($slugs);
             $ids = array_unique(array_merge($ids, $resolvedIds));
         }
 

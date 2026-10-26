@@ -14,43 +14,40 @@ class RoleRepository extends BaseRepository implements RoleRepositoryInterface
         return new Role();
     }
 
-    public function findById(int|string $id): ?Role
-    {
-        /** @var Role|null */
-        return $this->model->find($id);
-    }
-
-    public function findOrFail(int|string $id): Role
-    {
-        /** @var Role */
-        return $this->model->findOrFail($id);
-    }
-
     public function findBySlug(string $slug): ?Role
     {
         /** @var Role|null */
-        return Role::where('slug', $slug)->first();
+        return $this->model->where('slug', $slug)->first();
     }
 
     public function findWithPermissions(int|string $id): ?Role
     {
         /** @var Role|null */
-        return Role::with('permissions')->find($id);
+        return $this->model->with('permissions')->find($id);
     }
 
     public function allWithCounts(): Collection
     {
-        return Role::withCount(['permissions', 'users'])->get();
+        return $this->model->withCount(['permissions', 'users'])->get();
     }
 
-    public function create(array $attributes): Role
+    public function allWithPermissions(): Collection
     {
-        /** @var Role */
-        return $this->model->create($attributes);
+        return $this->model->with('permissions')->get();
+    }
+
+    public function getBySlugs(array $slugs): Collection
+    {
+        return $this->model->whereIn('slug', $slugs)->get();
+    }
+
+    public function resolveIdsBySlugs(array $slugs): array
+    {
+        return $this->model->whereIn('slug', $slugs)->pluck('id')->all();
     }
 
     public function syncPermissions(Role $role, array $permissionIds): array
     {
-        return $role->syncPermissions($permissionIds);
+        return $role->permissions()->sync($permissionIds);
     }
 }

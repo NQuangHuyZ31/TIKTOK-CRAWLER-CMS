@@ -6,8 +6,6 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Modules\Permission\Models\Permission;
-use Modules\Role\Models\Role;
 use Modules\Core\Repositories\BaseRepository;
 use Modules\User\Models\User;
 use Modules\User\Repositories\Interfaces\UserRepositoryInterface;
@@ -48,7 +46,7 @@ class UserRepository extends BaseRepository implements UserRepositoryInterface
             ];
 
             /** @var User $user */
-            $user = User::create($userData);
+            $user = $this->model->create($userData);
 
             if (isset($data['roles']) && is_array($data['roles'])) {
                 $user->syncRoles($data['roles']);
@@ -165,49 +163,6 @@ class UserRepository extends BaseRepository implements UserRepositoryInterface
             'manager_users' => User::whereHas('roles', fn($q) => $q->where('slug', 'manager'))->count(),
             'editor_users' => User::whereHas('roles', fn($q) => $q->where('slug', 'editor'))->count(),
             'viewer_users' => User::whereHas('roles', fn($q) => $q->where('slug', 'viewer'))->count(),
-        ];
-    }
-
-    /**
-     * Retrieve list of all available roles and permissions for assignments.
-     *
-     * @return array<string, mixed>
-     */
-    public function getAllRolesAndPermissions(): array
-    {
-        $roles = Role::with('permissions')->get()->map(fn($r) => [
-            'id' => $r->id,
-            'name' => $r->name,
-            'slug' => $r->slug,
-            'description' => $r->description,
-            'permissions' => $r->permissions->pluck('slug')->all(),
-        ]);
-
-        $permissions = Permission::all();
-        $groupedPermissions = $permissions->groupBy('module')->map(function ($items, $module) {
-            return [
-                'module' => $module,
-                'items' => $items->map(fn($p) => [
-                    'id' => $p->id,
-                    'name' => $p->name,
-                    'slug' => $p->slug,
-                    'action' => $p->action,
-                    'description' => $p->description,
-                ]),
-            ];
-        })->values();
-
-        return [
-            'roles' => $roles,
-            'permissions' => $permissions->map(fn($p) => [
-                'id' => $p->id,
-                'name' => $p->name,
-                'slug' => $p->slug,
-                'module' => $p->module,
-                'action' => $p->action,
-                'description' => $p->description,
-            ]),
-            'grouped_permissions' => $groupedPermissions,
         ];
     }
 }

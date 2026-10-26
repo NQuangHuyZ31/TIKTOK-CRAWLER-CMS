@@ -15,6 +15,8 @@ use Modules\User\Services\UserService;
 
 class UserController extends BaseController
 {
+    public string $permissionModule = 'user';
+
     protected string $modelClass = User::class;
     protected ?string $resourceClass = UserResource::class;
     protected array $searchableColumns = ['name', 'email', 'phone'];
@@ -142,7 +144,7 @@ class UserController extends BaseController
      */
     public function rolesAndPermissions(Request $request = null)
     {
-        $data = $this->userRepository->getAllRolesAndPermissions();
+        $data = $this->userService->getRolesAndPermissionsCatalog();
         return $this->respondSuccess($data, 'Roles and permissions retrieved successfully.');
     }
 }

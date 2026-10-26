@@ -37,9 +37,4 @@ interface UserRepositoryInterface extends BaseRepositoryInterface
      * Retrieve aggregate KPI statistics for user management.
      */
     public function getStatisticsSummary(): array;
-
-    /**
-     * Retrieve list of all available roles and permissions for assignments.
-     */
-    public function getAllRolesAndPermissions(): array;
 }

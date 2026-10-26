@@ -3,14 +3,21 @@
 namespace Modules\User\Services;
 
 use InvalidArgumentException;
+use Modules\Permission\Repositories\PermissionRepositoryInterface;
+use Modules\Role\Repositories\RoleRepositoryInterface;
 use Modules\User\Models\User;
 use Modules\User\Repositories\Interfaces\UserRepositoryInterface;
 
 class UserService
 {
     public function __construct(
-        protected UserRepositoryInterface $userRepository
-    ) {}
+        protected UserRepositoryInterface $userRepository,
+        protected ?RoleRepositoryInterface $roleRepository = null,
+        protected ?PermissionRepositoryInterface $permissionRepository = null
+    ) {
+        $this->roleRepository = $roleRepository ?? app(RoleRepositoryInterface::class);
+        $this->permissionRepository = $permissionRepository ?? app(PermissionRepositoryInterface::class);
+    }
 
     /**
      * Create a new user with role and permission assignments.
@@ -141,5 +148,49 @@ class UserService
         }
 
         return $updated;
+    }
+
+    /**
+     * Retrieve aggregated roles and permissions catalog for assignment UI.
+     * All role queries pass through RoleRepository and permission queries pass through PermissionRepository.
+     *
+     * @return array<string, mixed>
+     */
+    public function getRolesAndPermissionsCatalog(): array
+    {
+        $roles = $this->roleRepository->allWithPermissions()->map(fn($r) => [
+            'id' => $r->id,
+            'name' => $r->name,
+            'slug' => $r->slug,
+            'description' => $r->description,
+            'permissions' => $r->permissions->pluck('slug')->all(),
+        ]);
+
+        $permissions = $this->permissionRepository->all();
+        $groupedPermissions = $permissions->groupBy('module')->map(function ($items, $module) {
+            return [
+                'module' => $module,
+                'items' => $items->map(fn($p) => [
+                    'id' => $p->id,
+                    'name' => $p->name,
+                    'slug' => $p->slug,
+                    'action' => $p->action,
+                    'description' => $p->description,
+                ]),
+            ];
+        })->values();
+
+        return [
+            'roles' => $roles,
+            'permissions' => $permissions->map(fn($p) => [
+                'id' => $p->id,
+                'name' => $p->name,
+                'slug' => $p->slug,
+                'module' => $p->module,
+                'action' => $p->action,
+                'description' => $p->description,
+            ]),
+            'grouped_permissions' => $groupedPermissions,
+        ];
     }
 }

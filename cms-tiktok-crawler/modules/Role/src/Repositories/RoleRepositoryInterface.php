@@ -3,27 +3,22 @@
 namespace Modules\Role\Repositories;
 
 use Illuminate\Database\Eloquent\Collection;
+use Modules\Core\Repositories\Interfaces\BaseRepositoryInterface;
 use Modules\Role\Models\Role;
 
-interface RoleRepositoryInterface
+interface RoleRepositoryInterface extends BaseRepositoryInterface
 {
-    public function all(array $columns = ['*']): Collection;
-
-    public function findById(int|string $id): ?Role;
-
-    public function findOrFail(int|string $id): Role;
-
     public function findBySlug(string $slug): ?Role;
 
     public function findWithPermissions(int|string $id): ?Role;
 
     public function allWithCounts(): Collection;
 
-    public function create(array $attributes): Role;
+    public function allWithPermissions(): Collection;
 
-    public function update(int|string $id, array $attributes): bool|Role;
+    public function getBySlugs(array $slugs): Collection;
 
-    public function delete(int|string $id): bool;
+    public function resolveIdsBySlugs(array $slugs): array;
 
     public function syncPermissions(Role $role, array $permissionIds): array;
 }

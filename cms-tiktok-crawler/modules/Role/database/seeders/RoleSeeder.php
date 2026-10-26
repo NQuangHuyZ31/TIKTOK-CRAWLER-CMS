@@ -30,6 +30,14 @@ class RoleSeeder extends Seeder
             ]
         );
 
+        $editorRole = Role::updateOrCreate(
+            ['slug' => 'editor'],
+            [
+                'name' => 'Crawler Editor',
+                'description' => 'Can view and edit crawler results, jobs, and tiktok accounts.',
+            ]
+        );
+
         $viewerRole = Role::updateOrCreate(
             ['slug' => 'viewer'],
             [
@@ -55,8 +63,21 @@ class RoleSeeder extends Seeder
         ])->pluck('id')->all();
         $managerRole->permissions()->sync($managerPermissions);
 
-        // Viewer gets view-only permissions
-        $viewerPermissions = Permission::where('action', 'view')->pluck('id')->all();
+        // Editor gets crawler and tiktok_account view & edit permissions
+        $editorPermissions = Permission::whereIn('slug', [
+            'core.view',
+            'crawler.view',
+            'crawler.edit',
+            'tiktok_account.view',
+            'tiktok_account.edit',
+        ])->pluck('id')->all();
+        $editorRole->permissions()->sync($editorPermissions);
+
+        // Viewer gets view-only permissions (excluding administrative user/role/permission modules)
+        $viewerPermissions = Permission::where('action', 'view')
+            ->whereNotIn('module', ['user', 'role', 'permission'])
+            ->pluck('id')
+            ->all();
         $viewerRole->permissions()->sync($viewerPermissions);
     }
 }

@@ -55,7 +55,7 @@ class Role extends Model
         }
 
         if (!empty($slugs)) {
-            $resolvedIds = Permission::whereIn('slug', $slugs)->pluck('id')->all();
+            $resolvedIds = app(\Modules\Permission\Repositories\PermissionRepositoryInterface::class)->resolveIdsBySlugs($slugs);
             $ids = array_unique(array_merge($ids, $resolvedIds));
         }
 

@@ -1,6 +1,6 @@
 import { api } from '@core/Action/api';
 
-const baseURL = '/user/users';
+const baseURL = '/user';
 
 export interface UserRole {
     id: number;

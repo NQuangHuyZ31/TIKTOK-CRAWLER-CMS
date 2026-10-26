@@ -64,13 +64,13 @@ class RoleService
             $updateData['description'] = $data['description'];
         }
 
-        $role->update($updateData);
+        $this->roleRepository->update($role->id, $updateData);
 
         if (isset($data['permissions']) && is_array($data['permissions'])) {
             $this->syncRolePermissions($role, $data['permissions']);
         }
 
-        return $role->load('permissions');
+        return $role->refresh()->load('permissions');
     }
 
     /**
@@ -115,7 +115,7 @@ class RoleService
         }
 
         if (!empty($slugs)) {
-            $resolvedIds = $this->permissionRepository->getBySlugs($slugs)->pluck('id')->all();
+            $resolvedIds = $this->permissionRepository->resolveIdsBySlugs($slugs);
             $ids = array_unique(array_merge($ids, $resolvedIds));
         }
 

@@ -17,50 +17,52 @@ export interface RoleItem {
     updated_at?: string;
 }
 
+const baseURL = '/user/role';
+
 /**
  * Fetch paginated list of roles with optional search query.
- * API: GET /role/role
+ * API: GET /user/role
  * Example: getRoles({ page: 1, per_page: 10, search: 'admin' })
  */
 export const getRoles = (params: Record<string, any> = {}) =>
-    api<{ status: string; data: RoleItem[]; meta?: any }>('/role/role', { params });
+    api<{ status: string; data: RoleItem[]; meta?: any }>(baseURL, { params });
 
 /**
  * Fetch single role detail by ID with associated permissions.
- * API: GET /role/role/{id}
+ * API: GET /user/role/{id}
  * Example: getRoleById(1)
  */
 export const getRoleById = (id: string | number) =>
-    api<{ status: string; data: RoleItem }>(`/role/role/${id}`);
+    api<{ status: string; data: RoleItem }>(`${baseURL}/${id}`);
 
 /**
  * Create a new system role.
- * API: POST /role/role
+ * API: POST /user/role
  * Example: createRole({ name: 'Editor', slug: 'editor', permissions: [1, 2] })
  */
 export const createRole = (data: { name: string; slug?: string; description?: string; permissions?: (number | string)[] }) =>
-    api<{ status: string; data: RoleItem }>('/role/role', { method: 'POST', data });
+    api<{ status: string; data: RoleItem }>(baseURL, { method: 'POST', data });
 
 /**
  * Update an existing system role.
- * API: PUT /role/role/{id}
+ * API: PUT /user/role/{id}
  * Example: updateRole(1, { name: 'Super Admin', permissions: [1, 2, 3] })
  */
 export const updateRole = (id: string | number, data: { name: string; slug?: string; description?: string; permissions?: (number | string)[] }) =>
-    api<{ status: string; data: RoleItem }>(`/role/role/${id}`, { method: 'PUT', data });
+    api<{ status: string; data: RoleItem }>(`${baseURL}/${id}`, { method: 'PUT', data });
 
 /**
  * Delete a role by ID.
- * API: DELETE /role/role/{id}
+ * API: DELETE /user/role/{id}
  * Example: deleteRole(2)
  */
 export const deleteRole = (id: string | number) =>
-    api<{ status: string; message: string }>(`/role/role/${id}`, { method: 'DELETE' });
+    api<{ status: string; message: string }>(`${baseURL}/${id}`, { method: 'DELETE' });
 
 /**
  * Fetch available system permissions grouped by module.
- * API: GET /role/role/permissions
+ * API: GET /user/role/permissions
  * Example: getAvailablePermissions()
  */
 export const getAvailablePermissions = () =>
-    api<{ status: string; data: Record<string, PermissionItem[]> }>('/role/role/permissions');
+    api<{ status: string; data: Record<string, PermissionItem[]> }>(`${baseURL}/permissions`);

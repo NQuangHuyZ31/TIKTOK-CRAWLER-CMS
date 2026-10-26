@@ -19,7 +19,7 @@ class SystemSettingRepository extends BaseRepository
      */
     public function getByGroup(string $group): Collection
     {
-        return SystemSetting::where('group', $group)->get();
+        return $this->model->where('group', $group)->get();
     }
 
     /**
@@ -29,7 +29,7 @@ class SystemSettingRepository extends BaseRepository
      */
     public function getAllGrouped(): array
     {
-        $settings = SystemSetting::all();
+        $settings = $this->all();
         $grouped = [];
 
         foreach ($settings as $setting) {
@@ -44,7 +44,7 @@ class SystemSettingRepository extends BaseRepository
      */
     public function findByKey(string $key): ?SystemSetting
     {
-        return SystemSetting::where('key', $key)->first();
+        return $this->model->where('key', $key)->first();
     }
 
     /**

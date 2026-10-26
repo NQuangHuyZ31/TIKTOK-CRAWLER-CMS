@@ -1,24 +1,35 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use Modules\User\Controllers\UserController;
 
 /*
 |--------------------------------------------------------------------------
 | Module User API Routes
 |--------------------------------------------------------------------------
-| api: GET /{admin_path}/api/user/user/statistics-summary
-| api: GET /{admin_path}/api/user/user/roles-and-permissions
-| api: GET /{admin_path}/api/user/user
-| api: POST /{admin_path}/api/user/user
-| api: GET /{admin_path}/api/user/user/{id}
-| api: PUT /{admin_path}/api/user/user/{id}
-| api: PATCH /{admin_path}/api/user/user/{id}
-| api: DELETE /{admin_path}/api/user/user/{id}
-| api: PATCH /{admin_path}/api/user/user/{id}/status
-| api: POST /{admin_path}/api/user/user/{id}/status
-| Auto-loaded through CoreServiceProvider under /{admin_path}/api/
-| All routes documented with usage per Rule 9.
-| Every route is protected by both module.permission middleware and controller authorization.
+| Auto-loaded dynamically through Core DynamicRouteResolver under /{admin_path}/api/
+| Controllers located inside Modules\User\Controllers:
+|
+| 1. User Management (UserController):
+|    - GET    /{admin_path}/api/user
+|    - POST   /{admin_path}/api/user
+|    - GET    /{admin_path}/api/user/{id}
+|    - PUT    /{admin_path}/api/user/{id}
+|    - DELETE /{admin_path}/api/user/{id}
+|    - PATCH  /{admin_path}/api/user/{id}/status
+|    - GET    /{admin_path}/api/user/statistics-summary
+|    - GET    /{admin_path}/api/user/roles-and-permissions
+|    - Also supports legacy /{admin_path}/api/user/user/*
+|
+| 2. Role Management (RoleController):
+|    - GET    /{admin_path}/api/user/role
+|    - POST   /{admin_path}/api/user/role
+|    - GET    /{admin_path}/api/user/role/{id}
+|    - PUT    /{admin_path}/api/user/role/{id}
+|    - DELETE /{admin_path}/api/user/role/{id}
+|    - GET    /{admin_path}/api/user/role/permissions
+|
+| 3. Permission Catalog (PermissionController):
+|    - GET    /{admin_path}/api/user/permission
+|    - GET    /{admin_path}/api/user/permission/modules
 |
 */

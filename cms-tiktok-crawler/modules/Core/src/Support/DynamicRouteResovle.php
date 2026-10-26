@@ -40,17 +40,29 @@ class DynamicRouteResovle {
             return app(self::class)->handle($request, $module, $controller, $action, $id, $parameters);
         })->where(['module' => '[a-zA-Z0-9_-]+', 'controller' => '[a-zA-Z0-9_-]+', 'id' => '[0-9]+', 'action' => '[a-zA-Z0-9_-]+', 'parameters' => '.*']);
 
+        Route::any('/{module}/{id}/{action}/{parameters?}', function (Request $request, string $module, int | string $id, string $action, ?string $parameters = null) {
+            return app(self::class)->handle($request, $module, $module, $action, $id, $parameters);
+        })->where(['module' => '[a-zA-Z0-9_-]+', 'id' => '[0-9]+', 'action' => '^(?![0-9]+$)[a-zA-Z0-9_-]+', 'parameters' => '.*']);
+
         Route::any('/{module}/{controller}/{action}/{parameters?}', function (Request $request, string $module, string $controller, string $action, ?string $parameters = null) {
             return app(self::class)->handle($request, $module, $controller, $action, null, $parameters);
         })->where(['module' => '[a-zA-Z0-9_-]+', 'controller' => '^(?![0-9]+$)[a-zA-Z0-9_-]+', 'action' => '^(?![0-9]+$)[a-zA-Z0-9_-]+', 'parameters' => '.*']);
 
         Route::any('/{module}/{controller}/{id}', function (Request $request, string $module, string $controller, int | string $id) {
             return app(self::class)->handle($request, $module, $controller, null, $id, null);
-        })->where(['module' => '[a-zA-Z0-9_-]+', 'controller' => '[a-zA-Z0-9_-]+', 'id' => '[0-9]+']);
+        })->where(['module' => '[a-zA-Z0-9_-]+', 'controller' => '^(?![0-9]+$)[a-zA-Z0-9_-]+', 'id' => '[0-9]+']);
 
         Route::any('/{module}/{controller}', function (Request $request, string $module, string $controller) {
             return app(self::class)->handle($request, $module, $controller, null, null, null);
-        })->where(['module' => '[a-zA-Z0-9_-]+', 'controller' => '[a-zA-Z0-9_-]+']);
+        })->where(['module' => '[a-zA-Z0-9_-]+', 'controller' => '^(?![0-9]+$)[a-zA-Z0-9_-]+']);
+
+        Route::any('/{module}/{id}', function (Request $request, string $module, int | string $id) {
+            return app(self::class)->handle($request, $module, $module, null, $id, null);
+        })->where(['module' => '[a-zA-Z0-9_-]+', 'id' => '[0-9]+']);
+
+        Route::any('/{module}', function (Request $request, string $module) {
+            return app(self::class)->handle($request, $module, $module, null, null, null);
+        })->where(['module' => '[a-zA-Z0-9_-]+']);
     }
 
     public function handle(Request $request, ?string $module = null, ?string $controller = null, ?string $action = null, mixed $id = null, ?string $parameters = null) {
@@ -94,7 +106,10 @@ class DynamicRouteResovle {
 
         // Resovle action need for permission
         $permissionAction = $this->resolvePermissionAction($actionMethod, $request->method());
-        $request->attributes->set('module', str_replace('-','_',$module));
+        $permissionModule = property_exists($controllerInstance, 'permissionModule') && !empty($controllerInstance->permissionModule)
+            ? $controllerInstance->permissionModule
+            : str_replace('-', '_', $module);
+        $request->attributes->set('module', $permissionModule);
         $request->attributes->set('permission_action', $permissionAction);
 
         Log::info(''. $module .''. $controller .''. $actionMethod .''. $id .''. $permissionAction);
@@ -170,6 +185,8 @@ class DynamicRouteResovle {
             "Modules\\{$matchedModule}\\Controllers\\{$controllerSingular}Controller",
             "Modules\\{$matchedModule}\\Controllers\\{$matchedModule}{$controllerStudly}Controller",
             "Modules\\{$matchedModule}\\Controllers\\{$matchedModule}{$controllerSingular}Controller",
+            "Modules\\{$controllerStudly}\\Controllers\\{$controllerStudly}Controller",
+            "Modules\\{$controllerStudly}\\Controllers\\{$controllerSingular}Controller",
         ];
 
         foreach ($candidates as $candidate) {
