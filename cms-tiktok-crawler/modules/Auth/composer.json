@@ -1,0 +1,24 @@
+{
+	"name": "cms-tiktok-crawler/module-auth",
+	"description": "Authentication and RBAC module for Tiktok CMS",
+	"version": "1.0.0",
+	"type": "library",
+	"require": {
+		"php": "^8.3",
+		"laravel/framework": "^13.17",
+		"laravel/sanctum": "^4.0"
+	},
+	"autoload": {
+		"psr-4": {
+			"Modules\\Auth\\": "src/"
+		}
+	},
+	"extra": {
+		"laravel": {
+			"providers": [
+				"Modules\\Auth\\Providers\\AuthServiceProvider"
+			]
+		}
+	},
+	"minimum-stability": "dev"
+}

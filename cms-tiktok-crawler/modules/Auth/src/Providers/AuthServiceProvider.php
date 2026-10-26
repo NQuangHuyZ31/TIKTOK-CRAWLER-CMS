@@ -1,0 +1,36 @@
+<?php
+
+namespace Modules\Auth\Providers;
+
+use Illuminate\Routing\Router;
+use Modules\Auth\Repositories\AuthRepository;
+use Modules\Auth\Repositories\Interfaces\AuthRepositoryInterface;
+use Modules\Auth\Services\AuthService;
+use Modules\Core\Middleware\CheckModulePermission;
+use Modules\Core\Providers\ModuleServiceProvider;
+
+class AuthServiceProvider extends ModuleServiceProvider
+{
+    protected string $name = 'Auth';
+
+    /**
+     * Register any module services.
+     */
+    public function register(): void
+    {
+        $this->app->bind(AuthRepositoryInterface::class, AuthRepository::class);
+        $this->app->singleton(AuthService::class);
+    }
+
+    /**
+     * Bootstrap any module services.
+     */
+    public function boot(): void
+    {
+        parent::boot();
+
+        /** @var Router $router */
+        $router = $this->app->make(Router::class);
+        $router->aliasMiddleware('auth.permission', CheckModulePermission::class);
+    }
+}

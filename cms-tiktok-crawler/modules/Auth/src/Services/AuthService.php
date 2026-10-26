@@ -1,0 +1,159 @@
+<?php
+
+namespace Modules\Auth\Services;
+
+use App\Models\User;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\ValidationException;
+use Modules\Auth\Repositories\Interfaces\AuthRepositoryInterface;
+use Modules\User\Repositories\Interfaces\UserRepositoryInterface;
+
+class AuthService
+{
+    public function __construct(
+        protected AuthRepositoryInterface $authRepository,
+        protected UserRepositoryInterface $userRepository
+    ) {}
+
+    /**
+     * Authenticate user with credentials and issue personal access token.
+     */
+    public function login(array $data, ?string $ipAddress = null, ?string $userAgent = null): array
+    {
+        $device = $this->detectDevice($userAgent);
+        $user = $this->userRepository->findByEmail($data['email']);
+        $logData = [
+            'user_id' => $user?->id,
+            'email' => $data['email'],
+            'ip_address' => $ipAddress,
+            'user_agent' => $userAgent,
+            'device' => $device,
+        ];
+
+        $dummyHash = '$2y$10$abcdefghijklmnopqrstuuABCDEFGHIJKLMNOPQRSTUVWXYZ012';
+        $passwordValid = Hash::check($data['password'], $user ? $user->password : $dummyHash);
+
+        if (!$user || !$passwordValid) {
+            $this->logAndFail($logData, 'invalid_credentials', ['email' => ['The provided credentials do not match our records.']]);
+        }
+
+        if ($user->status === 'blocked') {
+            $this->logAndFail($logData, 'account_blocked', ['email' => ['This account has been blocked. Please contact support.']]);
+        }
+
+        if ($user->status === 'inactive') {
+            $this->logAndFail($logData, 'account_inactive', ['email' => ['This account is inactive.']]);
+        }
+
+        // Issue Sanctum token
+        $token = $user->createToken('auth_token')->plainTextToken;
+
+        // Record successful login log
+        $logData['status'] = 'success';
+        $logData['failure_reason'] = null;
+        $this->authRepository->recordLoginLog($logData);
+
+        return [
+            'token' => $token,
+            'token_type' => 'Bearer',
+            'user' => $this->formatUserData($user),
+        ];
+    }
+
+    /**
+     * Parse client device category from User-Agent.
+     */
+    protected function detectDevice(?string $userAgent): string
+    {
+        if (!$userAgent) {
+            return 'Unknown';
+        }
+
+        if (preg_match('/(tablet|ipad|playbook)|(android(?!.*(mobi|opera mini)))/i', $userAgent)) {
+            return 'Tablet';
+        }
+
+        if (preg_match('/(up.browser|up.link|mmp|symbian|smartphone|midp|wap|phone|android|iemobile|iphone)/i', $userAgent)) {
+            return 'Mobile';
+        }
+
+        return 'Desktop';
+    }
+
+    /**
+     * Retrieve paginated login logs with role-based scoping.
+     */
+    public function getLoginLogs(?User $user, array $filters = [], int $perPage = 15): \Illuminate\Contracts\Pagination\LengthAwarePaginator
+    {
+        if ($user && !$user->isAdmin()) {
+            $filters['user_id'] = $user->id;
+        }
+
+        return $this->authRepository->getLoginLogs($filters, $perPage);
+    }
+
+    /**
+     * Format current user payload with roles and module permissions matrix.
+     */
+    public function getMe(User $user): array
+    {
+        return $this->formatUserData($user);
+    }
+
+    /**
+     * Verify token and reset password.
+     */
+    // public function resetPassword(string $email, string $token, string $newPassword): bool
+    // {
+    //     $isValid = $this->authRepository->verifyPasswordResetToken($email, $token);
+
+    //     if (!$isValid) {
+    //         throw ValidationException::withMessages([
+    //             'token' => ['The password reset token is invalid or has expired.'],
+    //         ]);
+    //     }
+
+    //     $user = $this->authRepository->findByEmail($email);
+    //     if (!$user) {
+    //         throw ValidationException::withMessages([
+    //             'email' => ['User not found with this email address.'],
+    //         ]);
+    //     }
+
+    //     $this->authRepository->updatePassword($user, Hash::make($newPassword));
+    //     $this->authRepository->deletePasswordResetToken($email);
+
+    //     // Revoke existing tokens for security
+    //     $user->tokens()->delete();
+
+    //     return true;
+    // }
+
+    /**
+     * Format user data with roles, permissions, and module access matrix.
+     */
+    protected function formatUserData(User $user): array
+    {
+        return [
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'phone' => $user->phone,
+            'avatar' => $user->avatar,
+            'status' => $user->status,
+            'is_admin' => $user->isAdmin(),
+            'roles' => $user->getRolesSlugs(),
+            'permissions' => $user->getAllPermissionsSlugs(),
+            'module_permissions' => $user->getModulePermissionsMatrix(),
+        ];
+    }
+
+    private function logAndFail(array $logData, string $reason, array $messages): never
+    {
+        $logData['status'] = 'failed';
+        $logData['failure_reason'] = $reason;
+        $this->authRepository->recordLoginLog($logData);
+
+        throw ValidationException::withMessages($messages);
+    }
+}
