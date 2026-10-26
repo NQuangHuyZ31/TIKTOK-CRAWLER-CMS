@@ -1,42 +1,27 @@
-import React, { useState } from 'react';
-import { Form, Input, Button, Checkbox, Card, Typography, Alert, Flex } from 'antd';
-import { UserOutlined, LockOutlined, LoginOutlined, SafetyCertificateOutlined } from '@ant-design/icons';
-import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { useDispatch, useSelector } from '@core/store';
-import { loginThunk } from '../store/auth/authThunks';
-import { AUTH_ROUTES } from '../configs/authConfig';
+import React, { useEffect } from 'react';
+import { Card, Typography } from 'antd';
+import { SafetyCertificateOutlined, LockOutlined } from '@ant-design/icons';
+import { useSearchParams } from 'react-router-dom';
+import LoginForm from '../components/LoginForm';
+import ResetPasswordForm from '../components/ResetPasswordForm';
 
 const { Title, Text } = Typography;
 
 export default function LoginPage() {
-	const [form] = Form.useForm();
-	const dispatch = useDispatch();
-	const navigate = useNavigate();
-	const location = useLocation();
+	const [searchParams, setSearchParams] = useSearchParams();
 
-	const { loading, error } = useSelector((state: any) => state.auth);
-	const [localError, setLocalError] = useState<string | null>(null);
+	const resetParam = searchParams.get('reset-password') ?? searchParams.get('reset_password');
+	const isResetMode = resetParam === '1' || searchParams.has('reset-password') || searchParams.has('reset_password');
 
-	const from = (location.state as any)?.from?.pathname || AUTH_ROUTES.DEFAULT_REDIRECT;
+	const emailParam = searchParams.get('email') || '';
+	const tokenParam = searchParams.get('token') || '';
 
-	const handleSubmit = async (values: any) => {
-		setLocalError(null);
-		try {
-			const resultAction = await dispatch(
-				loginThunk({
-					email: values.email,
-					password: values.password,
-				}),
-			);
+	useEffect(() => {
+		document.title = isResetMode ? 'Reset Password - TikTok Crawler CMS' : 'Sign In - TikTok Crawler CMS';
+	}, [isResetMode]);
 
-			if (loginThunk.fulfilled.match(resultAction)) {
-				navigate(from, { replace: true });
-			} else {
-				setLocalError((resultAction.payload as string) || 'Invalid email or password.');
-			}
-		} catch (e: any) {
-			setLocalError(e.message || 'An unexpected error occurred.');
-		}
+	const handleBackToLogin = () => {
+		setSearchParams({}, { replace: true });
 	};
 
 	return (
@@ -68,65 +53,26 @@ export default function LoginPage() {
 							width: 56,
 							height: 56,
 							borderRadius: 14,
-							background: 'linear-gradient(135deg, #1677ff 0%, #69b1ff 100%)',
+							background: isResetMode ? 'linear-gradient(135deg, #10b981 0%, #34d399 100%)' : 'linear-gradient(135deg, #1677ff 0%, #69b1ff 100%)',
 							display: 'inline-flex',
 							alignItems: 'center',
 							justifyContent: 'center',
 							marginBottom: 16,
-							boxShadow: '0 8px 16px rgba(22, 119, 255, 0.35)',
+							boxShadow: isResetMode ? '0 8px 16px rgba(16, 185, 129, 0.3)' : '0 8px 16px rgba(22, 119, 255, 0.35)',
+							transition: 'all 0.3s ease',
 						}}
 					>
-						<SafetyCertificateOutlined style={{ fontSize: 28, color: '#ffffff' }} />
+						{isResetMode ? <LockOutlined style={{ fontSize: 26, color: '#ffffff' }} /> : <SafetyCertificateOutlined style={{ fontSize: 28, color: '#ffffff' }} />}
 					</div>
 					<Title level={3} style={{ margin: 0, fontWeight: 700, color: '#0f172a' }}>
-						TikTok Crawler CMS
+						{isResetMode ? 'Set New Password' : 'TikTok Crawler CMS'}
 					</Title>
 					<Text type="secondary" style={{ fontSize: 14 }}>
-						Sign in to manage crawlers, accounts, and reports
+						{isResetMode ? 'Create a strong and secure new password' : 'Sign in to manage crawlers, accounts, and reports'}
 					</Text>
 				</div>
 
-				{(localError || error) && <Alert type="error" showIcon message={localError || error} style={{ marginBottom: 20, borderRadius: 8 }} closable onClose={() => setLocalError(null)} />}
-
-				<Form form={form} layout="vertical" size="large" initialValues={{ remember: true }} onFinish={handleSubmit}>
-					<Form.Item
-						name="email"
-						rules={[
-							{ required: true, message: 'Please enter your email' },
-							{ type: 'email', message: 'Please enter a valid email address' },
-						]}
-					>
-						<Input prefix={<UserOutlined style={{ color: '#94a3b8' }} />} placeholder="Email address" autoComplete="email" />
-					</Form.Item>
-
-					<Form.Item name="password" rules={[{ required: true, message: 'Please enter your password' }]}>
-						<Input.Password prefix={<LockOutlined style={{ color: '#94a3b8' }} />} placeholder="Password" autoComplete="current-password" />
-					</Form.Item>
-
-					<Flex justify="space-between" align="center" style={{ marginBottom: 20 }}>
-						<Form.Item name="remember" valuePropName="checked" noStyle>
-							<Checkbox>Remember me</Checkbox>
-						</Form.Item>
-					</Flex>
-
-					<Form.Item style={{ marginBottom: 16 }}>
-						<Button
-							type="primary"
-							htmlType="submit"
-							block
-							loading={loading}
-							icon={<LoginOutlined />}
-							style={{
-								height: 44,
-								fontWeight: 600,
-								borderRadius: 8,
-								background: 'linear-gradient(135deg, #1677ff 0%, #0958d9 100%)',
-							}}
-						>
-							Sign In
-						</Button>
-					</Form.Item>
-				</Form>
+				{isResetMode ? <ResetPasswordForm initialEmail={emailParam} initialToken={tokenParam} onBackToLogin={handleBackToLogin} /> : <LoginForm />}
 			</Card>
 		</div>
 	);

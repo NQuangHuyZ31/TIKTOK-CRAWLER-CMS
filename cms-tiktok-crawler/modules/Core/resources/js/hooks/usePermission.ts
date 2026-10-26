@@ -37,7 +37,7 @@ export default function usePermission() {
 		if (isAdmin) return true;
 		if (module === 'core' || module === 'auth') return true;
 
-		const targetPerms = modulePermissions?.[module] ?? (module === 'role' ? modulePermissions?.['user'] : undefined);
+		const targetPerms = modulePermissions?.[module] ?? (module === 'role' || module === 'permission' ? modulePermissions?.['user'] : undefined);
 
 		if (!targetPerms) return false;
 

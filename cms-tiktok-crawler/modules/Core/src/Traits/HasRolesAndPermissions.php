@@ -106,10 +106,16 @@ trait HasRolesAndPermissions
     {
         $modules = config('modules.modules') ?? [];
         $permissionActions = config('modules.permission_action') ?? [];
+        $ignoreGroup = config('modules.ignore_group') ?? [];
+        
         $matrix = [];
         $isSuperAdmin = $this->isAdmin();
 
         foreach ($modules as $module) {
+            if (in_array($module, $ignoreGroup)) {
+                continue;
+            }
+
             $matrix[$module] = [];
             foreach ($permissionActions as $action) {
                 $matrix[$module][$action] = $isSuperAdmin || $this->canAccessModule($module, $action);

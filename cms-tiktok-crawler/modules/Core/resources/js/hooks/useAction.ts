@@ -1,75 +1,102 @@
 import { App as AntdApp, message as staticMessage } from 'antd';
 import { useCallback, useState } from 'react';
 
-export interface UseActionOptions<TParams = any, TResult = any> {
-	successMessage?: string | ((result: TResult, params: TParams) => string);
-	errorMessage?: string;
-	onSuccess?: (result: TResult, params: TParams) => any;
+export interface ActionConfig<TResult = any, TParams = any> {
+    successMessage?: string | ((result: TResult, params?: TParams) => string);
+    errorMessage?: string;
+    onSuccess?: (result: TResult, params?: TParams) => any | Promise<any>;
+    onError?: (error: any) => any;
 }
 
+export type UseActionOptions<TParams = any, TResult = any> = ActionConfig<TResult, TParams>;
+
 /**
- * Concise Action Execution Hook
- * Calls an API function, displays success/error notification, and executes an optional callback.
- *
- * Example:
- * const { execute: handleDelete, loading } = useAction(
- *     (role: RoleItem) => deleteRole(role.id),
- *     'Role deleted successfully',
- *     () => dispatch(fetchRoles(params))
- * );
+ * Concise action execution hook.
+ * Supports both pre-bound style:
+ *   const { execute, loading } = useAction((item) => deleteItem(item.id), options);
+ * And call-site style:
+ *   const { execute, loading } = useAction();
+ *   execute(() => deleteItem(id), options);
  */
 export function useAction<TParams = any, TResult = any>(
-	api: (params: TParams) => Promise<TResult>,
-	successMessageOrOptions?: string | UseActionOptions<TParams, TResult>,
-	callback?: (result: TResult, params: TParams) => any,
+    boundApi?: (params: TParams) => Promise<TResult>,
+    boundOptions?: string | ActionConfig<TResult, TParams>,
+    boundCallback?: (result: TResult, params?: TParams) => any
 ) {
-	const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(false);
 
-	let messageApi: any;
-	try {
-		const app = AntdApp.useApp();
-		messageApi = app.message;
-	} catch {
-		messageApi = staticMessage;
-	}
+    let messageApi: any;
+    try {
+        const antdApp = AntdApp.useApp();
+        messageApi = antdApp?.message || staticMessage;
+    } catch {
+        messageApi = staticMessage;
+    }
 
-	const options: UseActionOptions<TParams, TResult> =
-		typeof successMessageOrOptions === 'string'
-			? { successMessage: successMessageOrOptions, onSuccess: callback }
-			: successMessageOrOptions || {};
+    const execute = useCallback(
+        async (
+            apiOrParams?: any,
+            options?: string | ActionConfig<any>,
+            callback?: (result: any) => any
+        ): Promise<any> => {
+            // Determine if called with (params) using boundApi, or (api, options, callback)
+            let apiFn: () => Promise<any>;
+            let config: ActionConfig<any> = {};
 
-	const execute = useCallback(
-		async (params: TParams): Promise<TResult | undefined> => {
-			setLoading(true);
-			try {
-				const result = await api(params);
-				const msg =
-					typeof options.successMessage === 'function'
-						? options.successMessage(result, params)
-						: options.successMessage || (result as any)?.message || 'Action executed successfully';
+            if (boundApi) {
+                const params = apiOrParams;
+                apiFn = () => boundApi(params);
+                config =
+                    typeof boundOptions === 'string'
+                        ? { successMessage: boundOptions, onSuccess: boundCallback }
+                        : boundOptions || {};
+            } else if (typeof apiOrParams === 'function') {
+                apiFn = apiOrParams;
+                config =
+                    typeof options === 'string'
+                        ? { successMessage: options, onSuccess: callback }
+                        : options || {};
+            } else {
+                throw new Error('useAction: Missing API execution function.');
+            }
 
-				if (msg) {
-					messageApi?.success(msg);
-				}
+            setLoading(true);
+            try {
+                const result = await apiFn();
 
-				if (options.onSuccess) {
-					await options.onSuccess(result, params);
-				}
+                const msg =
+                    typeof config.successMessage === 'function'
+                        ? (config.successMessage as any)(result, apiOrParams)
+                        : config.successMessage ?? (result as any)?.message ?? 'Action executed successfully';
 
-				return result;
-			} catch (err: any) {
-				const errorMsg =
-					err?.response?.data?.message || err?.message || options.errorMessage || 'Action failed';
-				messageApi?.error(errorMsg);
-				return undefined;
-			} finally {
-				setLoading(false);
-			}
-		},
-		[api, options, messageApi],
-	);
+                if (msg) {
+                    messageApi?.success(msg);
+                }
 
-	return { execute, loading };
+                if (config.onSuccess) {
+                    await (config.onSuccess as any)(result, apiOrParams);
+                }
+
+                return result;
+            } catch (err: any) {
+                const errorMsg =
+                    err?.response?.data?.message || err?.message || config.errorMessage || 'Action failed';
+
+                messageApi?.error(errorMsg);
+
+                if (config.onError) {
+                    config.onError(err);
+                }
+
+                return undefined;
+            } finally {
+                setLoading(false);
+            }
+        },
+        [boundApi, boundOptions, boundCallback, messageApi]
+    );
+
+    return { execute, loading };
 }
 
 export default useAction;

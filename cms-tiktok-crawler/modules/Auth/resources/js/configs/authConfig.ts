@@ -7,7 +7,7 @@ export const AUTH_STORAGE_KEYS = {
 
 export const AUTH_ROUTES = {
     LOGIN: '/auth/login',
-    RESET_PASSWORD: '/auth/reset-password',
+    RESET_PASSWORD: '/auth/login?reset-password=1',
     DEFAULT_REDIRECT: '/dashboard',
 } as const;
 

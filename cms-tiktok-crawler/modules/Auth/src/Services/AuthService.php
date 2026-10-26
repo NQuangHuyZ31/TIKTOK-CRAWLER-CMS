@@ -4,6 +4,7 @@ namespace Modules\Auth\Services;
 
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Password;
 use Illuminate\Validation\ValidationException;
 use Modules\Auth\Repositories\Interfaces\AuthRepositoryInterface;
 use Modules\User\Repositories\Interfaces\UserRepositoryInterface;
@@ -98,6 +99,29 @@ class AuthService
     public function getMe(User $user): array
     {
         return $this->formatUserData($user);
+    }
+
+    /**
+     * Reset account password using the provided credentials.
+     *
+     * @param array<string, mixed> $credentials
+     */
+    public function resetPassword(array $credentials): void
+    {
+        $status = Password::reset(
+            $credentials,
+            function (User $user, string $password) {
+                $this->userRepository->update($user->id, [
+                    'password' => Hash::make($password),
+                ]);
+            }
+        );
+
+        if ($status !== Password::PASSWORD_RESET) {
+            throw ValidationException::withMessages([
+                'email' => [__($status)],
+            ]);
+        }
     }
     
     /**

@@ -103,15 +103,15 @@ class AuthController extends BaseController
      * Reset account password using the provided reset token.
      * api: POST /{admin_path}/api/auth/reset-password
      */
-    // public function resetPassword(ResetPasswordRequest $request): JsonResponse
-    // {
-    //     try {
-    //         $this->authService->resetPassword($request->validated());
-    //         return $this->respondSuccess(null, 'Link reset password was sent to email.');
-    //     } catch (ValidationException $e) {
-    //         return $this->respondError($e->validator->errors()->first(), 422, $e->errors());
-    //     } catch (\Throwable $e) {
-    //         return $this->respondError($e->getMessage(), 400);
-    //     }
-    // }
+    public function resetPassword(ResetPasswordRequest $request): JsonResponse
+    {
+        try {
+            $this->authService->resetPassword($request->validated());
+            return $this->respondSuccess(null, 'Password has been reset successfully.');
+        } catch (ValidationException $e) {
+            return $this->respondError($e->validator->errors()->first(), 422, $e->errors());
+        } catch (\Throwable $e) {
+            return $this->respondError($e->getMessage(), 400);
+        }
+    }
 }
