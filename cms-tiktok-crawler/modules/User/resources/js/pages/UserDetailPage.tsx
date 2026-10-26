@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Card, Row, Col, Avatar, Typography, Space, Tag, Button, Descriptions, Spin, Alert, Result, App as AntdApp, Divider, Table } from 'antd';
 import { ArrowLeftOutlined, EditOutlined, CrownOutlined, SafetyCertificateOutlined, UserOutlined, MailOutlined, PhoneOutlined, CalendarOutlined, CheckCircleFilled, CloseCircleFilled } from '@ant-design/icons';
 import { useDispatch, useSelector } from '@core/store';
-import { PageHeader } from '@core/components';
+import PageHeader from '@core/components/PageHeader';
 import StatusTag from '@core/components/StatusTag';
 import { formatDateTime } from '@core/utils/formatDate';
 import { fetchUserDetail } from '../store/user/userThunks';

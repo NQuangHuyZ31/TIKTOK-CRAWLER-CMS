@@ -7,7 +7,3 @@ import crawlerRoutes from './routes/route';
 
 // Auto register routes into Core Route Registry
 registerRoutes(crawlerRoutes);
-
-export default crawlerRoutes;
-export * from './routes/route';
-export * from './Action/crawlJob';

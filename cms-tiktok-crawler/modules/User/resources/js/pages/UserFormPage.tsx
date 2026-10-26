@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Card, Form, Input, Select, Button, Space, Typography, Row, Col, Divider, Alert, Spin, Result, App as AntdApp, Flex } from 'antd';
 import { ArrowLeftOutlined, SaveOutlined, UserOutlined, MailOutlined, PhoneOutlined, LockOutlined, LinkOutlined } from '@ant-design/icons';
 import { useDispatch, useSelector } from '@core/store';
-import { PageHeader } from '@core/components';
+import PageHeader from '@core/components/PageHeader';
 import { fetchUserDetail, fetchRolesAndPermissions } from '../store/user/userThunks';
 import userAPI from '../Action/user';
 import RoleSelector from '../components/RoleSelector';

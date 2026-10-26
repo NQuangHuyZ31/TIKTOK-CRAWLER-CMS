@@ -7,7 +7,3 @@ import roleRoutes from './routes/route';
 
 // Auto register routes into Core Route Registry
 registerRoutes(roleRoutes);
-
-export default roleRoutes;
-export * from './routes/route';
-export * from './Action/role';

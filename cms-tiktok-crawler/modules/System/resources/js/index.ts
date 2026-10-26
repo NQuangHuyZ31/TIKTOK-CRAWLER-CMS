@@ -7,7 +7,3 @@ import systemRoutes from './routes/route';
 
 // Auto register routes into Core Route Registry
 registerRoutes(systemRoutes);
-
-export default systemRoutes;
-export * from './routes/route';
-export * from './Action/systemSetting';

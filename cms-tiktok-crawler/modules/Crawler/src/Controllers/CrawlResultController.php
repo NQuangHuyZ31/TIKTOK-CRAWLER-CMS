@@ -11,7 +11,7 @@ use Modules\Crawler\Resources\CrawlResultResource;
 class CrawlResultController extends BaseController
 {
     protected string $modelClass = CrawlResult::class;
-    protected string $resourceClass = CrawlResultResource::class;
+    protected ?string $resourceClass = CrawlResultResource::class;
     protected array $searchableColumns = ['username', 'profile_url', 'status'];
     protected array $filterableColumns = ['crawl_job_id', 'status', 'tiktok_account_id'];
     protected array $defaultSort = ['id', 'desc'];

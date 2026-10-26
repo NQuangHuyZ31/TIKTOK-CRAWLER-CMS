@@ -3,7 +3,7 @@ import { Alert, Divider, Form, Input, InputNumber, Radio } from 'antd';
 import { DatabaseOutlined, LinkOutlined, NumberOutlined, UserOutlined } from '@ant-design/icons';
 import crawlJobAPI from '../Action/crawlJob';
 import TiktokAccountSelect from '../components/TiktokAccountSelect';
-import { ResourceForm, type ResourceFormRenderContext } from '@core/components';
+import ResourceForm, { type ResourceFormRenderContext } from '@core/components/ResourceForm';
 
 /**
  * Isolated form fields component obeying React Rules of Hooks.

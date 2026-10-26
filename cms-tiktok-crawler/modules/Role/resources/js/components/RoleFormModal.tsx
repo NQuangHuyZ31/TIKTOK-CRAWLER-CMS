@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Alert, Form, Input, Modal, App as AntdApp } from 'antd';
 import { SafetyCertificateOutlined } from '@ant-design/icons';
-import { PermissionMatrix } from '@core/components';
+import PermissionMatrix from '@core/components/PermissionMatrix';
 import { createRole, updateRole, type PermissionItem, type RoleItem } from '../Action/role';
 
 const { TextArea } = Input;

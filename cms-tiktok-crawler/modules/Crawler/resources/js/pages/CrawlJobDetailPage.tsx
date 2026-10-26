@@ -6,8 +6,8 @@ import crawlJobAPI from '../Action/crawlJob';
 import StatusTag from '@core/components/StatusTag';
 import SpinComponent from '@core/components/SpinComponent';
 import PageHeader from '@core/components/PageHeader';
+import PermissionGate from '@core/components/PermissionGate';
 import CrawlResultTable from '../components/CrawlResultTable';
-import { PermissionGate } from '@';
 
 export default function CrawlJobDetailPage() {
 	const { message } = AntdApp.useApp();
