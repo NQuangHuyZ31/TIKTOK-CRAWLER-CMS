@@ -2,7 +2,9 @@
 
 namespace Modules\User\Services;
 
+use Illuminate\Support\Facades\Password;
 use InvalidArgumentException;
+use Modules\Auth\Jobs\PasswordResetNotification;
 use Modules\Permission\Repositories\PermissionRepositoryInterface;
 use Modules\Role\Repositories\RoleRepositoryInterface;
 use Modules\User\Models\User;
@@ -192,5 +194,25 @@ class UserService
             ]),
             'grouped_permissions' => $groupedPermissions,
         ];
+    }
+
+    /**
+     * Send email to user to reset password.
+     */
+    public function sendMailResetPassword(int|string $id): void
+    {
+        $user = $this->userRepository->findById($id, []);
+        if (!$user) {
+            throw new InvalidArgumentException('User account not found.');
+        }
+
+        try {
+            $token = Password::createToken($user);
+            $resetUrl = config('app.url') . '/admin/login?reset-password=1&token=' . $token . '&email=' . $user->email;
+
+            PasswordResetNotification::dispatch($user->email, $resetUrl, $user->name);
+        } catch (\Throwable $th) {
+            throw new InvalidArgumentException('Failed to send reset password email.');
+        }
     }
 }

@@ -1,14 +1,14 @@
 <?php
 
-namespace Modules\Crawler\Controllers;
+namespace Modules\Crawler\Http\Controllers;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Modules\Core\Controllers\BaseController;
+use Modules\Core\Http\Controllers\BaseController;
 use Modules\Crawler\Models\CrawlJob;
 use Modules\Crawler\Repositories\Interfaces\CrawlJobRepositoryInterface;
 use Modules\Crawler\Repositories\Interfaces\CrawlResultRepositoryInterface;
-use Modules\Crawler\Requests\StoreCrawlJobRequest;
+use Modules\Crawler\Http\Requests\StoreCrawlJobRequest;
 use Modules\Crawler\Resources\CrawlJobResource;
 use Modules\Crawler\Resources\CrawlResultResource;
 use Modules\Crawler\Services\CrawlJobService;

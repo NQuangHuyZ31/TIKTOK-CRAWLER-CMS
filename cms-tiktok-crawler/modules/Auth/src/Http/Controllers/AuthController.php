@@ -1,15 +1,15 @@
 <?php
 
-namespace Modules\Auth\Controllers;
+namespace Modules\Auth\Http\Controllers;
 
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
-use Modules\Auth\Requests\LoginRequest;
-use Modules\Auth\Requests\ResetPasswordRequest;
+use Modules\Auth\Http\Requests\LoginRequest;
+use Modules\Auth\Http\Requests\ResetPasswordRequest;
 use Modules\Auth\Services\AuthService;
-use Modules\Core\Controllers\BaseController;
+use Modules\Core\Http\Controllers\BaseController;
 
 class AuthController extends BaseController
 {
@@ -106,13 +106,8 @@ class AuthController extends BaseController
     // public function resetPassword(ResetPasswordRequest $request): JsonResponse
     // {
     //     try {
-    //         $this->authService->resetPassword(
-    //             $request->validated('email'),
-    //             $request->validated('token'),
-    //             $request->validated('password')
-    //         );
-
-    //         return $this->respondSuccess(null, 'Password has been reset successfully.');
+    //         $this->authService->resetPassword($request->validated());
+    //         return $this->respondSuccess(null, 'Link reset password was sent to email.');
     //     } catch (ValidationException $e) {
     //         return $this->respondError($e->validator->errors()->first(), 422, $e->errors());
     //     } catch (\Throwable $e) {

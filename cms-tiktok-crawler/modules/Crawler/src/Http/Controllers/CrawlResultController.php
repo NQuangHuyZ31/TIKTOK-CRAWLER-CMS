@@ -1,9 +1,9 @@
 <?php
 
-namespace Modules\Crawler\Controllers;
+namespace Modules\Crawler\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Modules\Core\Controllers\BaseController;
+use Modules\Core\Http\Controllers\BaseController;
 use Modules\Crawler\Models\CrawlResult;
 use Modules\Crawler\Repositories\Interfaces\CrawlResultRepositoryInterface;
 use Modules\Crawler\Resources\CrawlResultResource;

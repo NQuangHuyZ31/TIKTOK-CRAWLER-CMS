@@ -99,36 +99,7 @@ class AuthService
     {
         return $this->formatUserData($user);
     }
-
-    /**
-     * Verify token and reset password.
-     */
-    // public function resetPassword(string $email, string $token, string $newPassword): bool
-    // {
-    //     $isValid = $this->authRepository->verifyPasswordResetToken($email, $token);
-
-    //     if (!$isValid) {
-    //         throw ValidationException::withMessages([
-    //             'token' => ['The password reset token is invalid or has expired.'],
-    //         ]);
-    //     }
-
-    //     $user = $this->authRepository->findByEmail($email);
-    //     if (!$user) {
-    //         throw ValidationException::withMessages([
-    //             'email' => ['User not found with this email address.'],
-    //         ]);
-    //     }
-
-    //     $this->authRepository->updatePassword($user, Hash::make($newPassword));
-    //     $this->authRepository->deletePasswordResetToken($email);
-
-    //     // Revoke existing tokens for security
-    //     $user->tokens()->delete();
-
-    //     return true;
-    // }
-
+    
     /**
      * Format user data with roles, permissions, and module access matrix.
      */

@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Route;
 | Module User API Routes
 |--------------------------------------------------------------------------
 | Auto-loaded dynamically through Core DynamicRouteResolver under /{admin_path}/api/
-| Controllers located inside Modules\User\Controllers:
+| Controllers located inside Modules\User\Http\Controllers:
 |
 | 1. User Management (UserController):
 |    - GET    /{admin_path}/api/user

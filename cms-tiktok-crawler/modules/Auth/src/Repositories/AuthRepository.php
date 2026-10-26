@@ -19,52 +19,6 @@ class AuthRepository extends BaseRepository implements AuthRepositoryInterface
     }
 
     /**
-     * Create or update password reset token in password_reset_tokens table.
-     */
-    public function createPasswordResetToken(string $email): string
-    {
-        $token = Str::random(60);
-
-        DB::table('password_reset_tokens')->updateOrInsert(
-            ['email' => $email],
-            [
-                'token' => $token,
-                'created_at' => Carbon::now(),
-            ]
-        );
-
-        return $token;
-    }
-
-    /**
-     * Verify if password reset token is valid and not expired (default: 60 mins).
-     */
-    public function verifyPasswordResetToken(string $email, string $token): bool
-    {
-        $record = DB::table('password_reset_tokens')
-            ->where('email', $email)
-            ->where('token', $token)
-            ->first();
-
-        if (!$record) {
-            return false;
-        }
-
-        $createdAt = Carbon::parse($record->created_at);
-        $expiresAt = $createdAt->addMinutes(config('auth.passwords.users.expire', 60));
-
-        return Carbon::now()->lessThanOrEqualTo($expiresAt);
-    }
-
-    /**
-     * Delete password reset token.
-     */
-    public function deletePasswordResetToken(string $email): void
-    {
-        DB::table('password_reset_tokens')->where('email', $email)->delete();
-    }
-
-    /**
      * Record a login attempt log.
      */
     public function recordLoginLog(array $data): LoginLog

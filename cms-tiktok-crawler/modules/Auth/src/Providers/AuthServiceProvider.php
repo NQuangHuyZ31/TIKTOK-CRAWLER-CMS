@@ -6,7 +6,7 @@ use Illuminate\Routing\Router;
 use Modules\Auth\Repositories\AuthRepository;
 use Modules\Auth\Repositories\Interfaces\AuthRepositoryInterface;
 use Modules\Auth\Services\AuthService;
-use Modules\Core\Middleware\CheckModulePermission;
+use Modules\Core\Http\Middleware\CheckModulePermission;
 use Modules\Core\Providers\ModuleServiceProvider;
 
 class AuthServiceProvider extends ModuleServiceProvider
@@ -28,6 +28,7 @@ class AuthServiceProvider extends ModuleServiceProvider
     public function boot(): void
     {
         parent::boot();
+        $this->loadViewsFrom(dirname(__DIR__, 2) . '/resources/views', 'auth');
 
         /** @var Router $router */
         $router = $this->app->make(Router::class);

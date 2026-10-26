@@ -1,6 +1,6 @@
 <?php
 
-use Modules\TiktokAccount\Controllers\TiktokAccountController;
+use Modules\TiktokAccount\Http\Controllers\TiktokAccountController;
 use Illuminate\Support\Facades\Route;
 
 // Route::prefix('tiktok-accounts')->group(function () {

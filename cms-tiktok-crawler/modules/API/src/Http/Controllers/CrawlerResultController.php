@@ -1,11 +1,11 @@
 <?php
 
-namespace Modules\API\Controllers;
+namespace Modules\API\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
-use Modules\API\Requests\CrawlerResultStoreRequest;
+use Modules\API\Http\Requests\CrawlerResultStoreRequest;
 use Modules\Crawler\Repositories\Interfaces\CrawlJobRepositoryInterface;
 use Modules\Crawler\Repositories\Interfaces\CrawlResultRepositoryInterface;
 use Modules\TiktokAccount\Repositories\Interfaces\TiktokAccountRepositoryInterface;

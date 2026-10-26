@@ -1,6 +1,6 @@
 <?php
 
-use Modules\Crawler\Controllers\CrawlJobController;
+use Modules\Crawler\Http\Controllers\CrawlJobController;
 use Illuminate\Support\Facades\Route;
 
 // Route::prefix('crawlers')->group(function () {

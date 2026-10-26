@@ -1,7 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use Modules\API\Controllers\CrawlerResultController;
+use Modules\API\Http\Controllers\CrawlerResultController;
 
 Route::prefix('public')->group(function () {
     Route::post(

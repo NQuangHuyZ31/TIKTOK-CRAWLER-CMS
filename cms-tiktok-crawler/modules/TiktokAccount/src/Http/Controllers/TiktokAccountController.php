@@ -1,14 +1,14 @@
 <?php
 
-namespace Modules\TiktokAccount\Controllers;
+namespace Modules\TiktokAccount\Http\Controllers;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Modules\Core\Controllers\BaseController;
+use Modules\Core\Http\Controllers\BaseController;
 use Modules\TiktokAccount\Models\TiktokAccount;
 use Modules\TiktokAccount\Repositories\Interfaces\TiktokAccountRepositoryInterface;
-use Modules\TiktokAccount\Requests\StoreTiktokAccountRequest;
-use Modules\TiktokAccount\Requests\UpdateTiktokAccountRequest;
+use Modules\TiktokAccount\Http\Requests\StoreTiktokAccountRequest;
+use Modules\TiktokAccount\Http\Requests\UpdateTiktokAccountRequest;
 use Modules\TiktokAccount\Resources\TiktokAccountResource;
 use Modules\TiktokAccount\Services\TiktokAccountService;
 

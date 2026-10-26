@@ -1,10 +1,10 @@
 <?php
 
-namespace Modules\System\Controllers;
+namespace Modules\System\Http\Controllers;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Modules\Core\Controllers\BaseController;
+use Modules\Core\Http\Controllers\BaseController;
 use Modules\System\Models\SystemSetting;
 use Modules\System\Repositories\SystemSettingRepository;
 use Modules\System\Resources\SystemSettingResource;

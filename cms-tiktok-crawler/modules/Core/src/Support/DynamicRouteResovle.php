@@ -6,7 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Pipeline\Pipeline;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
-use Modules\Core\Middleware\CheckModulePermission;
+use Modules\Core\Http\Middleware\CheckModulePermission;
 use Modules\Core\Support\ModuleRegistry;
 
 /*
@@ -171,7 +171,7 @@ class DynamicRouteResovle {
 
         if (!$matchedModule) {
             $matchedModule = $this->toStudly($module);
-            if (!class_exists("Modules\\{$matchedModule}\\Controllers\\" . $this->toStudly($controller) . 'Controller')) {
+            if (!class_exists("Modules\\{$matchedModule}\\Http\\Controllers\\" . $this->toStudly($controller) . 'Controller') && !class_exists("Modules\\{$matchedModule}\\Controllers\\" . $this->toStudly($controller) . 'Controller')) {
                 $matchedModule = rtrim($matchedModule, 's');
             }
         }
@@ -181,6 +181,12 @@ class DynamicRouteResovle {
         $controllerSingular = rtrim($controllerStudly, 's');
 
         $candidates = [
+            "Modules\\{$matchedModule}\\Http\\Controllers\\{$controllerStudly}Controller",
+            "Modules\\{$matchedModule}\\Http\\Controllers\\{$controllerSingular}Controller",
+            "Modules\\{$matchedModule}\\Http\\Controllers\\{$matchedModule}{$controllerStudly}Controller",
+            "Modules\\{$matchedModule}\\Http\\Controllers\\{$matchedModule}{$controllerSingular}Controller",
+            "Modules\\{$controllerStudly}\\Http\\Controllers\\{$controllerStudly}Controller",
+            "Modules\\{$controllerStudly}\\Http\\Controllers\\{$controllerSingular}Controller",
             "Modules\\{$matchedModule}\\Controllers\\{$controllerStudly}Controller",
             "Modules\\{$matchedModule}\\Controllers\\{$controllerSingular}Controller",
             "Modules\\{$matchedModule}\\Controllers\\{$matchedModule}{$controllerStudly}Controller",

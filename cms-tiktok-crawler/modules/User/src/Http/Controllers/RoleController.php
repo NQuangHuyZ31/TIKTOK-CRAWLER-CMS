@@ -1,13 +1,13 @@
 <?php
 
-namespace Modules\User\Controllers;
+namespace Modules\User\Http\Controllers;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Modules\Core\Controllers\BaseController;
+use Modules\Core\Http\Controllers\BaseController;
 use Modules\Permission\Services\PermissionService;
 use Modules\Role\Models\Role;
-use Modules\Role\Requests\RoleRequest;
+use Modules\Role\Http\Requests\RoleRequest;
 use Modules\Role\Resources\RoleResource;
 use Modules\Role\Services\RoleService;
 

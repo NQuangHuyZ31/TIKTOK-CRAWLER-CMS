@@ -1,6 +1,6 @@
 <?php
 
-namespace Modules\TiktokAccount\Requests;
+namespace Modules\TiktokAccount\Http\Requests;
 
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;

@@ -1,6 +1,6 @@
 <?php
 
-namespace Modules\Crawler\Requests;
+namespace Modules\Crawler\Http\Requests;
 
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;

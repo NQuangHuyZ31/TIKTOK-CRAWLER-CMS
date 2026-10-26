@@ -1,8 +1,8 @@
 <?php
 
-namespace Modules\Role\Controllers;
+namespace Modules\Role\Http\Controllers;
 
-use Modules\User\Controllers\RoleController as BaseRoleController;
+use Modules\User\Http\Controllers\RoleController as BaseRoleController;
 
 /**
  * RoleController within Role module, extending the centralized RoleController in User module.

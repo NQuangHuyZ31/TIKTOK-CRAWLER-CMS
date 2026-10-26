@@ -60,64 +60,54 @@ export interface RolesAndPermissionsCatalog {
 
 /**
  * Fetch all users with search, role/status filters, sorting, and pagination.
- * API: GET /user/users
- * Example: getUsers({ page: 1, per_page: 10, search: 'alex', status: 'active', role: 'manager' })
  */
 export const getUsers = (params: Record<string, any> = {}) =>
     api(`${baseURL}`, { params });
 
 /**
  * Fetch user details by ID.
- * API: GET /user/users/{id}
- * Example: getUserById(1)
  */
 export const getUserById = (id: number | string) =>
     api(`${baseURL}/${id}`);
 
 /**
  * Create a new user with assigned roles and direct permissions.
- * API: POST /user/users
- * Example: createUser({ name: 'Jane', email: 'jane@cms.com', password: 'password', roles: ['manager'] })
  */
 export const createUser = (data: Record<string, any>) =>
     api(`${baseURL}`, { method: 'POST', data });
 
 /**
  * Update an existing user with role and permission assignments.
- * API: PUT /user/users/{id}
- * Example: updateUser(1, { name: 'Jane Doe', status: 'active' })
  */
 export const updateUser = (id: number | string, data: Record<string, any>) =>
     api(`${baseURL}/${id}`, { method: 'PUT', data });
 
 /**
  * Delete a user account.
- * API: DELETE /user/users/{id}
- * Example: deleteUser(2)
  */
 export const deleteUser = (id: number | string) =>
     api(`${baseURL}/${id}`, { method: 'DELETE' });
 
 /**
  * Quick update of user status (active, inactive, blocked).
- * API: PATCH /user/users/{id}/status
- * Example: updateUserStatus(1, 'inactive')
  */
 export const updateUserStatus = (id: number | string, status: string) =>
     api(`${baseURL}/${id}/status`, { method: 'PATCH', data: { status } });
 
 /**
+ * Reset password for a user.
+ */
+export const resetPassword = (id: number | string) =>
+    api(`${baseURL}/${id}/reset-password`, { method: 'POST' });
+
+/**
  * Fetch aggregate KPI statistics for user management.
- * API: GET /user/users/statistics-summary
- * Example: getStatisticsSummary()
  */
 export const getStatisticsSummary = () =>
     api(`${baseURL}/statistics-summary`);
 
 /**
  * Fetch all system roles and permissions catalog for user assignment UI.
- * API: GET /user/users/roles-and-permissions
- * Example: getRolesAndPermissions()
  */
 export const getRolesAndPermissions = () =>
     api(`${baseURL}/roles-and-permissions`);
@@ -129,6 +119,7 @@ const userAPI = {
     updateUser,
     deleteUser,
     updateUserStatus,
+    resetPassword,
     getStatisticsSummary,
     getRolesAndPermissions,
 };

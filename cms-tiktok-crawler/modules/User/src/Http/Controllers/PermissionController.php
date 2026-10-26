@@ -1,10 +1,10 @@
 <?php
 
-namespace Modules\User\Controllers;
+namespace Modules\User\Http\Controllers;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Modules\Core\Controllers\BaseController;
+use Modules\Core\Http\Controllers\BaseController;
 use Modules\Permission\Models\Permission;
 use Modules\Permission\Resources\PermissionResource;
 use Modules\Permission\Services\PermissionService;

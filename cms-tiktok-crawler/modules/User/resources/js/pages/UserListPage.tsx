@@ -86,11 +86,6 @@ export default function UserListPage() {
 		);
 	};
 
-	// If 403 Forbidden is returned, completely block page access
-	if (error && (error.includes('Forbidden') || error.includes('403'))) {
-		return <AccessDeny />;
-	}
-
 	return (
 		<div>
 			{/* Top KPI Cards */}

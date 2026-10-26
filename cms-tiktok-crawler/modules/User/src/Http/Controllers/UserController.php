@@ -1,15 +1,15 @@
 <?php
 
-namespace Modules\User\Controllers;
+namespace Modules\User\Http\Controllers;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use InvalidArgumentException;
-use Modules\Core\Controllers\BaseController;
+use Modules\Core\Http\Controllers\BaseController;
 use Modules\User\Models\User;
 use Modules\User\Repositories\Interfaces\UserRepositoryInterface;
-use Modules\User\Requests\StoreUserRequest;
-use Modules\User\Requests\UpdateUserRequest;
+use Modules\User\Http\Requests\StoreUserRequest;
+use Modules\User\Http\Requests\UpdateUserRequest;
 use Modules\User\Resources\UserResource;
 use Modules\User\Services\UserService;
 
@@ -146,5 +146,19 @@ class UserController extends BaseController
     {
         $data = $this->userService->getRolesAndPermissionsCatalog();
         return $this->respondSuccess($data, 'Roles and permissions retrieved successfully.');
+    }
+
+    /**
+     * Change password for the authenticated user.
+     * api: POST /{module}/user/{id}/reset-password
+     */
+    public function resetPassword(int|string $id)
+    {
+        try {
+            $this->userService->sendMailResetPassword($id);
+            return $this->respondSuccess(null, 'Reset password email sent successfully.');
+        } catch (\Throwable $e) {
+            return $this->respondError($e->getMessage(), 400);
+        }
     }
 }

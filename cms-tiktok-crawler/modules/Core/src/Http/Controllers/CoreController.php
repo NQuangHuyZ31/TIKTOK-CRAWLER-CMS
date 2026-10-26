@@ -1,6 +1,6 @@
 <?php
 
-namespace Modules\Core\Controllers;
+namespace Modules\Core\Http\Controllers;
 
 class CoreController extends BaseController
 {
