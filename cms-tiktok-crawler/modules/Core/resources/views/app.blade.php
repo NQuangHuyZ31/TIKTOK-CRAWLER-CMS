@@ -15,7 +15,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&display=swap"
         rel="stylesheet">
 
-    @if (file_exists(public_path('hot')) || file_exists(public_path('build/manifest.json')))
+    @if (file_exists(public_path('hot')))
     @viteReactRefresh
     @vite(['modules/Core/resources/css/app.css', 'modules/Core/resources/js/app.tsx'])
     @else
@@ -27,7 +27,7 @@
 <body>
     <div id="root"></div>
 
-    @if (!file_exists(public_path('hot')) && !file_exists(public_path('build/manifest.json')))
+    @if (!file_exists(public_path('hot')))
     {{-- Automatically load JS for Core vendor + index and all modules from entrypoints.json --}}
     @moduleJs('all')
     @endif

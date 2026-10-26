@@ -3,19 +3,13 @@
 namespace Modules\Core\Traits;
 
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Illuminate\Support\Collection;
-use Modules\Core\Models\Permission;
-use Modules\Core\Models\Role;
+use Modules\Permission\Models\Permission;
+use Modules\Role\Models\Role;
 
-/**
- * Trait HasRolesAndPermissions
- *
- * Implements role-based access control with module View/Edit partitioning.
- */
 trait HasRolesAndPermissions
 {
     /**
-     * Roles assigned to the user.
+     * User roles relation.
      */
     public function roles(): BelongsToMany
     {
@@ -23,7 +17,7 @@ trait HasRolesAndPermissions
     }
 
     /**
-     * Direct permissions assigned to the user.
+     * User direct permissions relation.
      */
     public function permissions(): BelongsToMany
     {
@@ -31,46 +25,41 @@ trait HasRolesAndPermissions
     }
 
     /**
-     * Retrieve all permissions for this user (both via roles and direct).
+     * Check if user is a Super Administrator (either via is_admin flag or 'admin' role).
+     * If is_admin is 1/true, user possesses unrestricted access across all modules.
      */
-    public function allPermissions(): Collection
+    public function isAdmin(): bool
     {
-        $rolePermissions = $this->roles->flatMap(function ($role) {
-            return $role->permissions;
-        });
-
-        return $rolePermissions->merge($this->permissions)->unique('id');
+        return (bool) ($this->is_admin ?? false) || $this->hasRole('admin');
     }
 
     /**
-     * Check if user has a specific role (or one of several roles).
+     * Check if user has specific role(s) by slug.
      */
     public function hasRole(string|array $roles): bool
     {
-        if (is_array($roles)) {
-            return $this->roles->pluck('slug')->intersect($roles)->isNotEmpty();
-        }
-
-        return $this->roles->contains('slug', $roles);
+        $roleList = is_array($roles) ? $roles : [$roles];
+        return $this->roles->contains(fn(Role $role) => in_array($role->slug, $roleList, true));
     }
 
     /**
-     * Check if user has a specific permission.
+     * Check if user has a permission slug.
+     * Super Administrator ('is_admin' = 1 or 'admin' role) has all permissions by default.
      */
     public function hasPermission(string $permissionSlug): bool
     {
-        if ($this->hasRole('admin')) {
+        if ($this->isAdmin()) {
             return true;
         }
 
-        // Direct user permission
+        // Direct permission
         if ($this->permissions->contains('slug', $permissionSlug)) {
             return true;
         }
 
-        // Role permissions
+        // Permission via assigned roles
         foreach ($this->roles as $role) {
-            if ($role->hasPermission($permissionSlug)) {
+            if ($role->permissions->contains('slug', $permissionSlug)) {
                 return true;
             }
         }
@@ -79,136 +68,80 @@ trait HasRolesAndPermissions
     }
 
     /**
-     * Check if user can access a specific module with an action ('view' or 'edit').
-     * Super admin has full access.
-     * Edit permission automatically grants View permission.
+     * Check if user can access a module action ('view' or 'edit').
+     * Super Administrator ('is_admin' = 1 or 'admin' role) has full unrestricted access.
      */
-    public function canAccessModule(string $module, string $action = 'view'): bool
+    public function canAccessModule(string $module, string $action): bool
     {
-        if ($this->hasRole('admin')) {
+        if ($this->isAdmin()) {
             return true;
         }
 
-        $module = strtolower($module);
-        $action = strtolower($action);
+        $slug = strtolower($module) . '.' . strtolower($action);
 
-        if ($action === 'view') {
-            return $this->hasPermission("{$module}.view") || $this->hasPermission("{$module}.edit");
+        // Check direct permission
+        if ($this->permissions->contains(fn(Permission $p) =>
+            $p->slug === $slug || ($p->module === $module && $p->action === $action)
+        )) {
+            return true;
         }
 
-        return $this->hasPermission("{$module}.edit");
+        // Check role permissions
+        foreach ($this->roles as $role) {
+            if ($role->permissions->contains(fn(Permission $p) =>
+                $p->slug === $slug || ($p->module === $module && $p->action === $action)
+            )) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
-     * Get a mapped matrix of view/edit permissions across key modules.
-     * Useful for CMS UI authorization checks (showing/hiding buttons, tabs, actions).
+     * Get module permissions matrix for the user.
+     * When is_admin = 1 or user has 'admin' role, all modules grant full view and edit access.
      */
-    public function getModulePermissions(array $modules = ['crawler', 'tiktok_account', 'core', 'user']): array
+    public function getModulePermissionsMatrix(): array
     {
+        $modules = config('modules.modules') ?? [];
+        $permissionActions = config('modules.permission_action') ?? [];
         $matrix = [];
-        foreach ($modules as $mod) {
-            $matrix[$mod] = [
-                'view' => $this->canAccessModule($mod, 'view'),
-                'edit' => $this->canAccessModule($mod, 'edit'),
-            ];
+        $isSuperAdmin = $this->isAdmin();
+
+        foreach ($modules as $module) {
+            $matrix[$module] = [];
+            foreach ($permissionActions as $action) {
+                $matrix[$module][$action] = $isSuperAdmin || $this->canAccessModule($module, $action);
+            }
         }
 
         return $matrix;
     }
 
     /**
-     * Assign one or more roles to the user.
+     * Get list of all permission slugs the user possesses.
      */
-    public function assignRole(Role|string ...$roles): static
+    public function getAllPermissionsSlugs(): array
     {
-        foreach ($roles as $role) {
-            $roleModel = is_string($role)
-                ? Role::firstOrCreate(['slug' => $role], ['name' => ucfirst($role)])
-                : $role;
-
-            $this->roles()->syncWithoutDetaching([$roleModel->id]);
+        if ($this->isAdmin()) {
+            return Permission::pluck('slug')->all();
         }
 
-        $this->load('roles.permissions');
-        return $this;
+        $slugs = $this->permissions->pluck('slug')->all();
+
+        foreach ($this->roles as $role) {
+            $slugs = array_merge($slugs, $role->permissions->pluck('slug')->all());
+        }
+
+        return array_values(array_unique($slugs));
     }
 
     /**
-     * Remove one or more roles from the user.
+     * Get list of role slugs assigned to the user.
      */
-    public function removeRole(Role|string ...$roles): static
+    public function getRolesSlugs(): array
     {
-        foreach ($roles as $role) {
-            $roleModel = is_string($role)
-                ? Role::where('slug', $role)->first()
-                : $role;
-
-            if ($roleModel) {
-                $this->roles()->detach($roleModel->id);
-            }
-        }
-
-        $this->load('roles.permissions');
-        return $this;
-    }
-
-    /**
-     * Sync user roles by slug or ID.
-     */
-    public function syncRoles(array $roleSlugsOrIds): static
-    {
-        $ids = [];
-        foreach ($roleSlugsOrIds as $item) {
-            if (is_numeric($item)) {
-                $ids[] = (int) $item;
-            } elseif (is_string($item)) {
-                $role = Role::where('slug', $item)->first();
-                if ($role) {
-                    $ids[] = $role->id;
-                }
-            } elseif ($item instanceof Role) {
-                $ids[] = $item->id;
-            }
-        }
-
-        $this->roles()->sync($ids);
-        $this->load('roles.permissions');
-        return $this;
-    }
-
-    /**
-     * Grant direct permissions to the user.
-     */
-    public function givePermissionTo(Permission|string ...$permissions): static
-    {
-        foreach ($permissions as $permission) {
-            $perm = is_string($permission)
-                ? Permission::firstOrCreate(['slug' => $permission], ['name' => $permission, 'module' => 'core', 'action' => 'view'])
-                : $permission;
-
-            $this->permissions()->syncWithoutDetaching([$perm->id]);
-        }
-
-        $this->load('permissions');
-        return $this;
-    }
-
-    /**
-     * Revoke direct permissions from the user.
-     */
-    public function revokePermissionTo(Permission|string ...$permissions): static
-    {
-        foreach ($permissions as $permission) {
-            $perm = is_string($permission)
-                ? Permission::where('slug', $permission)->first()
-                : $permission;
-
-            if ($perm) {
-                $this->permissions()->detach($perm->id);
-            }
-        }
-
-        $this->load('permissions');
-        return $this;
+        return $this->roles->pluck('slug')->all();
     }
 }

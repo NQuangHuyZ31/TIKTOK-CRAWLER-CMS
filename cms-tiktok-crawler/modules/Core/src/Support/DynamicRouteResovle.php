@@ -3,7 +3,10 @@
 namespace Modules\Core\Support;
 
 use Illuminate\Http\Request;
+use Illuminate\Pipeline\Pipeline;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
+use Modules\Core\Middleware\CheckModulePermission;
 use Modules\Core\Support\ModuleRegistry;
 
 /*
@@ -66,7 +69,15 @@ class DynamicRouteResovle {
         $controllerClass = $this->resovleController($module, $controller);
 
         if (!$controllerClass || !class_exists($controllerClass)) {
-            abort(404, "Module controller [{$controllerClass}] not found.");
+            // Check if module has a primary {Module}Controller (e.g. AuthController for Auth)
+            // and the second segment is actually the action method (e.g. /auth/login, /auth/me)
+            $fallbackClass = $this->resovleController($module, $module);
+            if ($fallbackClass && class_exists($fallbackClass)) {
+                $controllerClass = $fallbackClass;
+                $action = $controller;
+            } else {
+                abort(404, "Module controller [{$controllerClass}] not found.");
+            }
         }
 
         $controllerInstance = app()->make($controllerClass);
@@ -80,6 +91,13 @@ class DynamicRouteResovle {
         if (!$reflection->isPublic() || $reflection->isStatic()) {
             abort(404, "Action [{$actionMethod}] is not publicly accessible.");
         }
+
+        // Resovle action need for permission
+        $permissionAction = $this->resolvePermissionAction($actionMethod, $request->method());
+        $request->attributes->set('module', str_replace('-','_',$module));
+        $request->attributes->set('permission_action', $permissionAction);
+
+        Log::info(''. $module .''. $controller .''. $actionMethod .''. $id .''. $permissionAction);
 
         // Build parameters for dependency injection generically
         $actionParams = [];
@@ -106,7 +124,19 @@ class DynamicRouteResovle {
             }
         }
 
-        return app()->call([$controllerInstance, $actionMethod], $actionParams);
+        // Allow router without permission check
+        if ($this->shouldSkipPermissionCheck($module, $controllerInstance, $actionMethod)) {
+            return app()->call([$controllerInstance, $actionMethod], $actionParams);
+        }
+
+        return app(Pipeline::class)
+            ->send($request)
+            ->through([
+                CheckModulePermission::class,
+            ])
+            ->then(function ($req) use ($controllerInstance, $actionMethod, $actionParams) {
+                return app()->call([$controllerInstance, $actionMethod], $actionParams);
+            });
     }
 
     public function resovleController(string $module, string $controller): ?string {
@@ -149,10 +179,6 @@ class DynamicRouteResovle {
         }
 
         return $candidates[0];
-    }
-
-    public function resolveController(string $module, string $controller): ?string {
-        return $this->resovleController($module, $controller);
     }
 
     public function resovleAction(object $controllerInstance, ?string $action, string $httpMethod, bool $hasId = false): ?string {
@@ -205,10 +231,6 @@ class DynamicRouteResovle {
         return null;
     }
 
-    public function resolveAction(object $controllerInstance, ?string $action, string $httpMethod, bool $hasId = false): ?string {
-        return $this->resovleAction($controllerInstance, $action, $httpMethod, $hasId);
-    }
-
     private function toStudly(string $value): string {
         return str_replace(' ', '', ucwords(str_replace(['-', '_'], ' ', $value)));
     }
@@ -233,5 +255,59 @@ class DynamicRouteResovle {
             'destroy' => ['delete', 'destroy', 'remove'],
             'delete' => ['delete', 'destroy', 'remove'],
         ];
+    }
+
+    private function resolvePermissionAction(string $actionMethod, string $httpMethod): string 
+    {
+        $map = [
+            'index'        => 'view',
+            'show'         => 'view',
+            'getDetails'   => 'view',
+            'store'        => 'create',
+            'create'       => 'create',
+            'update'       => 'edit',
+            'updateStatus' => 'edit',
+            'destroy'      => 'delete',
+            'delete'       => 'delete',
+            'remove'       => 'delete',
+            'start'        => 'edit',
+        ];
+
+        $actionLower = strtolower($actionMethod);
+
+        if (isset($map[$actionLower])) return $map[$actionLower];
+
+        if (str_starts_with($actionLower, 'get')) return 'view';
+        if (str_starts_with($actionLower, 'store') || str_starts_with($actionLower, 'create')) return 'create';
+        if (str_starts_with($actionLower, 'update') || str_starts_with($actionLower, 'edit')) return 'edit';
+        if (str_starts_with($actionLower, 'delete') || str_starts_with($actionLower, 'destroy')) return 'delete';
+        
+
+        return match (strtoupper($httpMethod)) {
+            'POST'         => 'create',
+            'PUT', 'PATCH' => 'edit',
+            'DELETE'       => 'delete',
+            default        => 'view', 
+        };
+    }
+
+    private function shouldSkipPermissionCheck(string $module, object $controllerInstance, string $actionMethod): bool
+    {
+        $ignoredModules = array_map('strtolower', (array) config('modules.ignore_check_permission', []));
+        if (in_array(strtolower($module), $ignoredModules, true)) {
+            return true;
+        }
+
+        if (property_exists($controllerInstance, 'publicActions') && is_array($controllerInstance->publicActions)) {
+            if (in_array($actionMethod, $controllerInstance->publicActions, true)) {
+                return true;
+            }
+        }
+
+        if (in_array(strtolower($actionMethod), ['login', 'logout', 'me', 'register', 'forgotpassword', 'resetpassword'], true)) {
+            return true;
+        }
+
+        return false;
     }
 }

@@ -152,7 +152,7 @@ export default function DashboardPage() {
 							Refresh
 						</Button>
 
-						<Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/crawler/crawl-job/create')}>
+						<Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/crawler/crawl-job/form')}>
 							Create Crawl Job
 						</Button>
 					</Space>
@@ -253,7 +253,7 @@ export default function DashboardPage() {
 								),
 							}}
 							locale={{
-								emptyText: <EmptyState description="No crawl jobs created yet" actionText="Create First Job" onAction={() => navigate('/crawler/crawl-job/create')} />,
+								emptyText: <EmptyState description="No crawl jobs created yet" actionText="Create First Job" onAction={() => navigate('/crawler/crawl-job/form')} />,
 							}}
 						/>
 					</Card>

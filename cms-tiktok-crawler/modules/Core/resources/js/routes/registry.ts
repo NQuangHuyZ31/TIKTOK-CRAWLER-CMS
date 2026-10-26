@@ -1,4 +1,6 @@
-import { useSyncExternalStore, type ComponentType, type ReactNode } from 'react';
+import { PermissionAction } from '@/hooks/usePermission';
+import { useMemo, useSyncExternalStore, type ComponentType, type ReactNode } from 'react';
+import { useLocation } from 'react-router-dom';
 
 export interface RouteDef {
     /** Absolute path starting with '/', e.g. '/dashboard', '/crawler/crawl-job' */
@@ -17,6 +19,18 @@ export interface RouteDef {
     icon?: ComponentType<any> | ReactNode;
     /** Sort order in menu (default 100) */
     order?: number;
+    /** Module can check permission */
+    module?: string;
+    /** Action can check permission */
+    action?: PermissionAction;
+    /** Role required to access the route */
+    roles?: string[];
+    /** Slug used to check permission */
+    slug?: string;
+    /** subMenu option 1 */
+    parentPath?: string;
+    /** subMenu option 2 */
+    subMenu?: RouteDef[];
     /** Additional metadata */
     meta?: Record<string, any>;
 }
@@ -135,12 +149,62 @@ export function useBareRoutes(): readonly RouteDef[] {
     return routes.filter((r) => !isAdminRoute(r));
 }
 
+function buildMenuTree(routes: readonly RouteDef[]): RouteDef[] {
+    const menuOnly = routes.filter((r) => Boolean(r.label) && isAdminRoute(r));
+
+    const itemMap = new Map<string, RouteDef>();
+    const rootNodes: RouteDef[] = [];
+
+    // Clone dữ liệu để tránh mutate mảng gốc
+    menuOnly.forEach((item) => {
+        itemMap.set(item.path, { ...item, subMenu: item.subMenu ? [...item.subMenu] : [] });
+    });
+
+    itemMap.forEach((node) => {
+        if (node.parentPath && node.parentPath !== node.path && itemMap.has(node.parentPath)) {
+            const parent = itemMap.get(node.parentPath)!;
+            parent.subMenu = parent.subMenu ?? [];
+            if (!parent.subMenu.some((c) => c.path === node.path)) {
+                parent.subMenu.push(node);
+                parent.subMenu.sort((a, b) => (a.order ?? 100) - (b.order ?? 100));
+            }
+        } else {
+            rootNodes.push(node);
+        }
+    });
+
+    return rootNodes.sort((a, b) => (a.order ?? 100) - (b.order ?? 100));
+}
+
 /**
- * React hook to reactively get sidebar navigation menu routes.
+ * React hook to reactively resolve the active RouteDef matching the current pathname.
+ * Handles exact matching first, then longest matching prefix (e.g. for /crawler/crawl-job/1/edit).
  */
-export function useMenuRoutes(): readonly RouteDef[] {
+export function useCurrentRoute(): RouteDef | undefined {
     const routes = useRoutes();
-    return routes
-        .filter((r) => Boolean(r.label) && isAdminRoute(r))
-        .sort((a, b) => (a.order ?? 100) - (b.order ?? 100));
+    const location = useLocation();
+
+    return useMemo(() => {
+        const pathname = location.pathname;
+        const exact = routes.find((r) => r.path === pathname);
+        if (exact) return exact;
+
+        let bestMatch: RouteDef | undefined;
+        let maxLen = 0;
+        for (const r of routes) {
+            if (r.path && pathname.startsWith(r.path) && r.path.length > maxLen) {
+                bestMatch = r;
+                maxLen = r.path.length;
+            }
+        }
+        return bestMatch;
+    }, [routes, location.pathname]);
+}
+
+/**
+ * React hook to reactively get sidebar navigation menu routes (memoized).
+ */
+export function useMenuRoutes(): RouteDef[] {
+    const routes = useRoutes();
+    return useMemo(() => buildMenuTree(routes), [routes]);
 }

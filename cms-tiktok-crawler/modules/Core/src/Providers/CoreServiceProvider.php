@@ -34,9 +34,6 @@ class CoreServiceProvider extends ServiceProvider
         $this->registerBladeDirectives();
         $this->registerModuleMigrations();
 
-        // $router = $this->app->make(\Illuminate\Routing\Router::class);
-        // $router->aliasMiddleware('module.permission', \Modules\Core\Middleware\CheckModulePermission::class);
-
         $this->app->terminating(function () {
             if ($this->app->bound(ModuleRegistry::class)) {
                 $this->app->make(ModuleRegistry::class)->resetDomCache();

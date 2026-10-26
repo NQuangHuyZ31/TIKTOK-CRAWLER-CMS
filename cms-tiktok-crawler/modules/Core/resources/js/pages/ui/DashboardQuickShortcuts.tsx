@@ -1,6 +1,6 @@
 import React from 'react';
 import { Card, Space, Flex, Typography, Tag, Badge } from 'antd';
-import { ThunderboltOutlined, PlusOutlined, ArrowRightOutlined, RobotOutlined, UserOutlined } from '@ant-design/icons';
+import { ThunderboltOutlined, PlusOutlined, ArrowRightOutlined, RobotOutlined, UserOutlined, TeamOutlined } from '@ant-design/icons';
 
 const { Text } = Typography;
 
@@ -24,7 +24,7 @@ const shortcuts: ShortcutItem[] = [
 		icon: <PlusOutlined />,
 		color: '#1677ff',
 		bgHover: '#e6f4ff',
-		path: '/crawler/crawl-job/create',
+		path: '/crawler/crawl-job/form',
 	},
 	{
 		title: 'Manage Crawl Jobs',
@@ -41,6 +41,14 @@ const shortcuts: ShortcutItem[] = [
 		color: '#13c2c2',
 		bgHover: '#e6fffb',
 		path: '/tiktok-account',
+	},
+	{
+		title: 'User Management',
+		description: 'Manage users, roles and permissions',
+		icon: <TeamOutlined />,
+		color: '#eb2f96',
+		bgHover: '#fff0f6',
+		path: '/user',
 	},
 ];
 

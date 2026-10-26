@@ -2,11 +2,15 @@ import { configureStore } from '@reduxjs/toolkit';
 import { TypedUseSelectorHook, useDispatch as useReduxDispatch, useSelector as useReduxSelector } from 'react-redux';
 import crawlJobReducer from '@modules/Crawler/resources/js/store/crawlJob/crawlJobSlice';
 import tiktokAccountReducer from '@modules/TiktokAccount/resources/js/store/tiktokAccount/tiktokAccountSlice';
+import authReducer from '@modules/Auth/resources/js/store/auth/authSlice';
+import userReducer from '@modules/User/resources/js/store/user/userSlice';
 
 export const store = configureStore({
 	reducer: {
+		auth: authReducer,
 		crawlJob: crawlJobReducer,
 		tiktokAccount: tiktokAccountReducer,
+		user: userReducer,
 	}
 });
 

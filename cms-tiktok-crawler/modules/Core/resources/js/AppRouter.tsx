@@ -5,6 +5,8 @@ import { useAdminRoutes, useBareRoutes } from './routes';
 import AdminLayout from './layouts/AdminLayout';
 import SpinComponent from './components/SpinComponent';
 import NotFound from './pages/NotFound';
+import { PermissionGate } from './components';
+import AccessDeny from './components/AccessDeny';
 
 export default function AppRouter() {
 	const adminRoutes = useAdminRoutes();
@@ -32,7 +34,12 @@ export default function AppRouter() {
 										<Route
 											key={route.path}
 											path={route.path}
-											element={<Component />}
+											element={
+												<PermissionGate module={route.module} action={route.action} slug={route.slug} roles={route.roles} fallback={<AccessDeny />}>
+													<Component />
+												</PermissionGate>
+												// <Component />
+											}
 										/>
 									);
 								})}
@@ -41,26 +48,14 @@ export default function AppRouter() {
 							{/* Bare / Standalone / Public Routes */}
 							{bareRoutes.map((route) => {
 								const Component = route.component;
-								return (
-									<Route
-										key={route.path}
-										path={route.path}
-										element={<Component />}
-									/>
-								);
+								return <Route key={route.path} path={route.path} element={<Component />} />;
 							})}
 
 							{/* Root redirect */}
-							<Route
-								path="/"
-								element={<Navigate to="/dashboard" replace />}
-							/>
+							<Route path="/" element={<Navigate to="/dashboard" replace />} />
 
 							{/* Catch-all Not Found */}
-							<Route
-								path="*"
-								element={<NotFound />}
-							/>
+							<Route path="*" element={<NotFound />} />
 						</Routes>
 					</Suspense>
 				</BrowserRouter>

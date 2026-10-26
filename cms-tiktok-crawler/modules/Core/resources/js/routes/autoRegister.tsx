@@ -29,6 +29,8 @@ export function initRouteRegistry(): void {
 		component: DashboardPage,
 		layout: 'admin',
 		isPrivate: true,
+		module: 'core',
+		action: 'view',
 		title: 'Dashboard',
 		label: 'Dashboard',
 		icon: DashboardOutlined,
@@ -37,36 +39,21 @@ export function initRouteRegistry(): void {
 
 	// 2. Auto-discover all module route definitions if running under Vite HMR
 	try {
-		if (
-			typeof import.meta !== 'undefined' &&
-			typeof (import.meta as any).glob === 'function'
-		) {
-			const modules = (import.meta as any).glob(
-				[
-					'/Modules/**/resources/js/routes/route.{ts,tsx}',
-					'/modules/**/resources/js/routes/route.{ts,tsx}',
-				],
-				{ eager: true },
-			);
+		if (typeof import.meta !== 'undefined' && typeof (import.meta as any).glob === 'function') {
+			const modules = (import.meta as any).glob(['/Modules/**/resources/js/routes/route.{ts,tsx}', '/modules/**/resources/js/routes/route.{ts,tsx}'], { eager: true });
 
 			for (const path in modules) {
 				const mod = modules[path];
 				if (mod && mod.default) {
 					if (Array.isArray(mod.default)) {
 						registerRoutes(mod.default);
-					} else if (
-						typeof mod.default === 'object' &&
-						'path' in mod.default
-					) {
+					} else if (typeof mod.default === 'object' && 'path' in mod.default) {
 						registerRoute(mod.default as RouteDef);
 					}
 				}
 			}
 		}
 	} catch (e) {
-		console.warn(
-			'[RouteRegistry] Auto-registration encountered an issue:',
-			e,
-		);
+		console.warn('[RouteRegistry] Auto-registration encountered an issue:', e);
 	}
 }

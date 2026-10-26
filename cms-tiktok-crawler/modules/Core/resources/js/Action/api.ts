@@ -55,6 +55,17 @@ http.interceptors.request.use((config) => {
     if (token) {
         config.headers.set('X-CSRF-TOKEN', token);
     }
+
+    // Attach Bearer token if stored by Auth module
+    const authToken =
+        localStorage.getItem('cms_tiktok_token') ||
+        localStorage.getItem('token') ||
+        localStorage.getItem('access_token');
+    if (authToken) {
+        const cleanToken = authToken.startsWith('"') ? JSON.parse(authToken) : authToken;
+        config.headers.set('Authorization', `Bearer ${cleanToken}`);
+    }
+
     return config;
 });
 
@@ -64,6 +75,15 @@ http.interceptors.response.use(
         if (error instanceof AxiosError) {
             const payload = (error.response?.data ?? {}) as { message?: string; errors?: Record<string, string[]> };
             const status = error.response?.status ?? 0;
+
+            // Handle unauthorized access
+            if (status === 401) {
+                localStorage.removeItem('cms_tiktok_token');
+                localStorage.removeItem('cms_tiktok_user');
+                localStorage.removeItem('token');
+                localStorage.removeItem('access_token');
+            }
+
             const message =
                 payload.message ??
                 (status === 419 ? 'CSRF token mismatch. Please reload the page.' : error.message);
@@ -73,9 +93,28 @@ http.interceptors.response.use(
     }
 );
 
+/**
+ * Auth token helpers for Auth module integration
+ */
+export const setAuthToken = (token: string): void => {
+    localStorage.setItem('token', token);
+};
+
+export const getAuthToken = (): string | null => {
+    const token = localStorage.getItem('token') || localStorage.getItem('access_token');
+    if (!token) return null;
+    return token.startsWith('"') ? JSON.parse(token) : token;
+};
+
+export const clearAuthToken = (): void => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('access_token');
+};
+
 export async function api<T = any>(url: string, config: AxiosRequestConfig = {}): Promise<T> {
     const response = await http<T>({ url, ...config });
     return response.data;
 }
 
 export default http;
+

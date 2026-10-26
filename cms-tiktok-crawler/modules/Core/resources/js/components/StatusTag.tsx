@@ -1,7 +1,7 @@
 import React from 'react';
 import { Tag } from 'antd';
 
-export type StatusType = 'pending' | 'in_progress' | 'running' | 'completed' | 'success' | 'failed' | 'inactive' | 'active' | string;
+export type StatusType = 'pending' | 'in_progress' | 'running' | 'completed' | 'success' | 'failed' | 'inactive' | 'active' | 'blocked' | 'disabled' | string;
 
 const statusConfig: Record<string, { color: string; label?: string }> = {
 	pending: { color: 'default', label: 'Pending' },
@@ -12,6 +12,8 @@ const statusConfig: Record<string, { color: string; label?: string }> = {
 	failed: { color: 'error', label: 'Failed' },
 	inactive: { color: 'default', label: 'Inactive' },
 	active: { color: 'success', label: 'Active' },
+	blocked: { color: 'error', label: 'Blocked' },
+	disabled: { color: 'default', label: 'Disabled' },
 };
 
 export interface StatusTagProps {
