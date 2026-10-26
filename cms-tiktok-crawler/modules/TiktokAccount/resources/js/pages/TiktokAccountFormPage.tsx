@@ -1,7 +1,8 @@
 import React from 'react';
 import { Form } from 'antd';
 import tiktokAccountAPI from '../Action/tiktokAccount';
-import { ResourceForm, UploadComponent } from '@core/components';
+import ResourceForm from '@core/components/ResourceForm';
+import UploadComponent from '@core/components/UploadComponent';
 import AccountFields from '../components/AccountField';
 
 const initialFormValues = {

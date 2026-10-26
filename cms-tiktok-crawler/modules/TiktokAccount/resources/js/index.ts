@@ -7,7 +7,3 @@ import tiktokAccountRoutes from './routes/route';
 
 // Automatically register routes into Core when the script is loaded in DOM
 registerRoutes(tiktokAccountRoutes);
-
-export default tiktokAccountRoutes;
-export * from './routes/route';
-export * from './Action/tiktokAccount';

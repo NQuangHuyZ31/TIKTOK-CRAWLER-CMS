@@ -4,7 +4,8 @@ import { Space, Button, Popconfirm, Tooltip, App as AntdApp, InputNumber, Form }
 import { EyeOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useDispatch, useSelector } from '@core/store';
 import ListLayout from '@/components/ListLayout';
-import { PermissionGate, StatusDropdown } from '@core/components';
+import PermissionGate from '@core/components/PermissionGate';
+import StatusDropdown from '@core/components/StatusDropdown';
 import usePermission from '@core/hooks/usePermission';
 import { formatNumber } from '@core/utils/formatNumber';
 import { formatDateTime } from '@core/utils/formatDate';
@@ -13,6 +14,8 @@ import { setParams, resetParams } from '../store/tiktokAccount/tiktokAccountSlic
 import tiktokAccountAPI from '../Action/tiktokAccount';
 import columnConfig from '../configs/columnConfig';
 import AccountColumn from '../components/AccountColumn';
+import dayjs from 'dayjs';
+import { FOLLOWER_PRESETS, FOLLOWING_PRESETS, LIKE_PRESETS } from '../configs/filterPresets';
 
 export default function TiktokAccountPage() {
 	const { message } = AntdApp.useApp();
@@ -67,6 +70,43 @@ export default function TiktokAccountPage() {
 					],
 					initialValue: params.status,
 					onChange: (val) => dispatch(setParams({ status: val, page: 1 })),
+				},
+				{
+					key: 'followers_count',
+					placeholder: 'Followers',
+					type: 'numberRange',
+					presets: FOLLOWER_PRESETS,
+					initialValue: params.followers_count,
+					onChange: (val) => dispatch(setParams({ followers_count: val, page: 1 })),
+				},
+				{
+					key: 'following_count',
+					placeholder: 'Following',
+					type: 'numberRange',
+					presets: FOLLOWING_PRESETS,
+					initialValue: params.following_count,
+					onChange: (val) => dispatch(setParams({ following_count: val, page: 1 })),
+				},
+				{
+					key: 'likes_count',
+					placeholder: 'Likes',
+					type: 'numberRange',
+					presets: LIKE_PRESETS,
+					initialValue: params.likes_count,
+					onChange: (val) => dispatch(setParams({ likes_count: val, page: 1 })),
+				},
+				{
+					key: 'crawled_at',
+					placeholder: 'Crawled at',
+					type: 'date',
+					initialValue: params.crawled_at ? dayjs(params.crawled_at) : undefined,
+					onChange: (val) =>
+						dispatch(
+							setParams({
+								crawled_at: val && dayjs(val).isValid() ? dayjs(val).format('YYYY-MM-DD HH:mm:ss') : undefined,
+								page: 1,
+							}),
+						),
 				},
 			]}
 			onResetFilters={() => dispatch(resetParams())}

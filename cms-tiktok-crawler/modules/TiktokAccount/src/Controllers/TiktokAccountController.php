@@ -17,7 +17,34 @@ class TiktokAccountController extends BaseController
     protected string $modelClass = TiktokAccount::class;
     protected ?string $resourceClass = TiktokAccountResource::class;
     protected array $searchableColumns = ['username', 'nickname', 'bio'];
-    protected array $filterableColumns = ['status'];
+    protected array $filterableColumns = [
+        'status',
+        'crawled_at',
+        'followers_count',
+        'following_count',
+        'likes_count',
+        'followers',
+        'following',
+        'likes',
+        'is_verified',
+    ];
+    protected array $filterRelationMap = [
+        'followers' => 'followers_count',
+        'following' => 'following_count',
+        'likes' => 'likes_count',
+    ];
+    protected array $sortableColumns = [
+        'id',
+        'username',
+        'nickname',
+        'followers_count',
+        'following_count',
+        'likes_count',
+        'video_count',
+        'crawled_at',
+        'created_at',
+        'updated_at',
+    ];
     protected array $defaultSort = ['id', 'desc'];
 
     public function __construct(
