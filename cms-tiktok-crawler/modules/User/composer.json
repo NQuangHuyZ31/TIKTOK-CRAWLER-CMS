@@ -1,0 +1,23 @@
+{
+    "name": "cms-tiktok-crawler/module-user",
+    "description": "User & Access Management module for CMS TikTok Crawler",
+    "version": "1.0.0",
+    "type": "library",
+    "require": {
+        "php": "^8.3",
+        "laravel/framework": "^13.17"
+    },
+    "autoload": {
+        "psr-4": {
+            "Modules\\User\\": "src/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Modules\\User\\Providers\\UserServiceProvider"
+            ]
+        }
+    },
+    "minimum-stability": "dev"
+}
