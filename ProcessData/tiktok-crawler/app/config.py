@@ -5,7 +5,7 @@ from urllib.parse import urlparse, urlunparse
 # Backend endpoint nhận callback account và trạng thái hoàn tất crawl.
 BACKEND_CALLBACK_URL = os.getenv(
     "BACKEND_CALLBACK_URL",
-    "http://localhost:8000/api/public/crawler",
+    "http://localhost:8000/admin/api/public/crawler",
 ).rstrip("/")
 
 # Có thể truyền token qua biến môi trường nếu backend bảo vệ callback endpoint.
