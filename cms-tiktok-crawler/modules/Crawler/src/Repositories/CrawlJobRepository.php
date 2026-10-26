@@ -23,12 +23,12 @@ class CrawlJobRepository extends BaseRepository implements CrawlJobRepositoryInt
     public function getStatisticsSummary(): array
     {
         return [
-            'total_jobs' => CrawlJob::count(),
-            'total_accounts' => (int) CrawlJob::sum('total_accounts'),
-            'total_success_accounts' => (int) CrawlJob::sum('success_count'),
-            'total_failed_accounts' => (int) CrawlJob::sum('failed_count'),
-            'total_completed_jobs' => CrawlJob::where('status', 'completed')->count(),
-            'total_failed_jobs' => CrawlJob::where('status', 'failed')->count(),
+            'total_jobs' => $this->model->count(),
+            'total_accounts' => (int) $this->model->sum('total_accounts'),
+            'total_success_accounts' => (int) $this->model->sum('success_count'),
+            'total_failed_accounts' => (int) $this->model->sum('failed_count'),
+            'total_completed_jobs' => $this->model->where('status', 'completed')->count(),
+            'total_failed_jobs' => $this->model->where('status', 'failed')->count(),
         ];
     }
 
