@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { Form, Input, Button, Alert, message } from 'antd';
+import React, { useState } from 'react';
+import { Form, Input, Button, Alert } from 'antd';
 import { LockOutlined, MailOutlined, KeyOutlined, CheckCircleOutlined, ArrowLeftOutlined } from '@ant-design/icons';
+import useAction from '@core/hooks/useAction';
 import { resetPassword } from '../Action/auth';
 
 interface ResetPasswordFormProps {
@@ -11,28 +12,26 @@ interface ResetPasswordFormProps {
 
 export default function ResetPasswordForm({ initialEmail = '', initialToken = '', onBackToLogin }: ResetPasswordFormProps) {
 	const [form] = Form.useForm();
-	const [loading, setLoading] = useState(false);
+	const { act, loading } = useAction();
 	const [error, setError] = useState<string | null>(null);
 	const [isSuccess, setIsSuccess] = useState(false);
 
 	const handleSubmit = async (values: any) => {
 		setError(null);
-		setLoading(true);
-		try {
-			await resetPassword({
-				email: initialEmail,
-				token: initialToken,
-				password: values.password,
-				password_confirmation: values.password_confirmation,
-			});
-
-			setIsSuccess(true);
-			message.success('Password reset successfully! Please sign in with your new password.');
-		} catch (e: any) {
-			setError(e.message || 'Failed to reset password. Please verify your token.');
-		} finally {
-			setLoading(false);
-		}
+		await act(
+			() =>
+				resetPassword({
+					email: initialEmail,
+					token: initialToken,
+					password: values.password,
+					password_confirmation: values.password_confirmation,
+				}),
+			{
+				successMessage: 'Password reset successfully! Please sign in with your new password.',
+				onSuccess: () => setIsSuccess(true),
+				onError: (e) => setError(e?.message || 'Failed to reset password. Please verify your token.'),
+			}
+		);
 	};
 
 	if (isSuccess) {

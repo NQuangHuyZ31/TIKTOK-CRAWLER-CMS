@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, Form, Input, Modal, App as AntdApp } from 'antd';
+import { Alert, Form, Input, Modal } from 'antd';
 import { SafetyCertificateOutlined } from '@ant-design/icons';
+import useAction from '@core/hooks/useAction';
 import PermissionMatrix from '@core/components/PermissionMatrix';
 import { createRole, updateRole, type PermissionItem, type RoleItem } from '../Action/role';
 
@@ -15,9 +16,8 @@ export interface RoleFormModalProps {
 }
 
 export default function RoleFormModal({ open, onClose, onSuccess, role, availablePermissions }: RoleFormModalProps) {
-	const { message } = AntdApp.useApp();
 	const [form] = Form.useForm();
-	const [submitting, setSubmitting] = useState(false);
+	const { act, loading: submitting } = useAction();
 	const [errorMsg, setErrorMsg] = useState<string | null>(null);
 	const [selectedPermissions, setSelectedPermissions] = useState<number[]>([]);
 
@@ -55,32 +55,26 @@ export default function RoleFormModal({ open, onClose, onSuccess, role, availabl
 	};
 
 	const handleSubmit = async () => {
-		try {
-			const values = await form.validateFields();
-			setSubmitting(true);
-			setErrorMsg(null);
+		const values = await form.validateFields();
+		setErrorMsg(null);
 
-			const payload = {
-				...values,
-				permissions: selectedPermissions,
-			};
+		const payload = {
+			...values,
+			permissions: selectedPermissions,
+		};
 
-			if (isEdit && role) {
-				await updateRole(role.id, payload);
-				message.success(`Role '${values.name}' updated successfully.`);
-			} else {
-				await createRole(payload);
-				message.success(`Role '${values.name}' created successfully.`);
+		await act(
+			() => (isEdit && role ? updateRole(role.id, payload) : createRole(payload)),
+			{
+				successMessage: isEdit ? `Role '${values.name}' updated successfully.` : `Role '${values.name}' created successfully.`,
+				errorMessage: 'Failed to save role. Please check the inputs.',
+				onSuccess: () => {
+					onSuccess();
+					onClose();
+				},
+				onError: (err) => setErrorMsg(err?.response?.data?.message || err?.message),
 			}
-
-			onSuccess();
-			onClose();
-		} catch (err: any) {
-			const msg = err?.response?.data?.message || err?.message || 'Failed to save role. Please check the inputs.';
-			setErrorMsg(msg);
-		} finally {
-			setSubmitting(false);
-		}
+		);
 	};
 
 	return (

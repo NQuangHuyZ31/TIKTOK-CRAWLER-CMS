@@ -1,12 +1,13 @@
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Space, Button, Popconfirm, Tooltip, App as AntdApp, InputNumber, Form } from 'antd';
+import { Space, Button, Popconfirm, Tooltip, InputNumber, Form } from 'antd';
 import { EyeOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useDispatch, useSelector } from '@core/store';
 import ListLayout from '@/components/ListLayout';
 import PermissionGate from '@core/components/PermissionGate';
 import StatusDropdown from '@core/components/StatusDropdown';
 import usePermission from '@core/hooks/usePermission';
+import useAction from '@core/hooks/useAction';
 import { formatNumber } from '@core/utils/formatNumber';
 import { formatDateTime } from '@core/utils/formatDate';
 import { fetchAllTiktokAccounts } from '../store/tiktokAccount/tiktokAccountThunks';
@@ -18,33 +19,22 @@ import dayjs from 'dayjs';
 import { FOLLOWER_PRESETS, FOLLOWING_PRESETS, LIKE_PRESETS } from '../configs/filterPresets';
 
 export default function TiktokAccountPage() {
-	const { message } = AntdApp.useApp();
 	const { can } = usePermission();
 	const dispatch = useDispatch();
 	const { data: accounts, loading, pagination, params } = useSelector((state) => state.tiktokAccount);
+
+	const { act } = useAction(() => dispatch(fetchAllTiktokAccounts(params)));
 
 	useEffect(() => {
 		dispatch(fetchAllTiktokAccounts(params));
 	}, [dispatch, params]);
 
-	const handleDelete = async (id: number | string) => {
-		try {
-			const res = await tiktokAccountAPI.deleteTiktokAccount(id);
-			message.success(res?.message || 'TikTok account deleted successfully');
-			dispatch(fetchAllTiktokAccounts(params));
-		} catch (err: any) {
-			message.error(err?.response?.data?.message ?? err?.message ?? 'Failed to delete TikTok account');
-		}
+	const handleDelete = (id: number | string) => {
+		act(() => tiktokAccountAPI.deleteTiktokAccount(id), 'TikTok account deleted successfully');
 	};
 
-	const handleStatusChange = async (id: number | string, newStatus: string) => {
-		try {
-			const res = await tiktokAccountAPI.updateTiktokAccountStatus(id, newStatus);
-			message.success(res?.message || `Account status updated to ${newStatus}`);
-			dispatch(fetchAllTiktokAccounts(params));
-		} catch (err: any) {
-			message.error(err?.response?.data?.message ?? err?.message ?? 'Failed to update account status');
-		}
+	const handleStatusChange = (id: number | string, newStatus: string) => {
+		act(() => tiktokAccountAPI.updateTiktokAccountStatus(id, newStatus), `Account status updated to ${newStatus}`);
 	};
 
 	return (

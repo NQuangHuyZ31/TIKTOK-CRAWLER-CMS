@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, AutoComplete, Form, Input, Modal, Select, Space, Typography, App as AntdApp } from 'antd';
+import { Alert, AutoComplete, Form, Input, Modal, Select, Space, Typography } from 'antd';
 import { KeyOutlined, CheckCircleOutlined } from '@ant-design/icons';
+import useAction from '@core/hooks/useAction';
 import { createPermission, CreatePermissionPayload } from '../Action/permission';
 
 const { Text } = Typography;
@@ -26,9 +27,8 @@ const COMMON_ACTIONS = [
 ];
 
 export default function CreatePermissionModal({ open, modulesList, onClose, onSuccess }: CreatePermissionModalProps) {
-	const { message } = AntdApp.useApp();
 	const [form] = Form.useForm();
-	const [submitting, setSubmitting] = useState(false);
+	const { act, loading: submitting } = useAction();
 	const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
 	const watchedModule = Form.useWatch('module', form) || '';
@@ -71,36 +71,35 @@ export default function CreatePermissionModal({ open, modulesList, onClose, onSu
 	}, [watchedModule, watchedAction, open, form]);
 
 	const handleSubmit = async () => {
-		try {
-			const values = await form.validateFields();
-			setSubmitting(true);
-			setErrorMsg(null);
+		const values = await form.validateFields();
+		setErrorMsg(null);
 
-			const payload: CreatePermissionPayload = {
-				module: values.module
-					.trim()
-					.toLowerCase()
-					.replace(/[^a-z0-9_]+/g, '_'),
-				action: values.action
-					.trim()
-					.toLowerCase()
-					.replace(/[^a-z0-9_]+/g, '_'),
-				name: values.name?.trim(),
-				slug: values.slug?.trim(),
-				description: values.description?.trim() || undefined,
-			};
+		const payload: CreatePermissionPayload = {
+			module: values.module
+				.trim()
+				.toLowerCase()
+				.replace(/[^a-z0-9_]+/g, '_'),
+			action: values.action
+				.trim()
+				.toLowerCase()
+				.replace(/[^a-z0-9_]+/g, '_'),
+			name: values.name?.trim(),
+			slug: values.slug?.trim(),
+			description: values.description?.trim() || undefined,
+		};
 
-			await createPermission(payload);
-			message.success(`Permission '${payload.slug || `${payload.module}.${payload.action}`}' created successfully.`);
-
-			onSuccess();
-			onClose();
-		} catch (err: any) {
-			const msg = err?.response?.data?.message || err?.message || 'Failed to create permission. Please check inputs.';
-			setErrorMsg(msg);
-		} finally {
-			setSubmitting(false);
-		}
+		await act(
+			() => createPermission(payload),
+			{
+				successMessage: `Permission '${payload.slug || `${payload.module}.${payload.action}`}' created successfully.`,
+				errorMessage: 'Failed to create permission. Please check inputs.',
+				onSuccess: () => {
+					onSuccess();
+					onClose();
+				},
+				onError: (err) => setErrorMsg(err?.response?.data?.message || err?.message),
+			}
+		);
 	};
 
 	const moduleOptions = modulesList.map((mod) => ({ value: mod, label: mod }));

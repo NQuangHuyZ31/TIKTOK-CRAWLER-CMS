@@ -1,7 +1,8 @@
 import { useEffect, useState, useCallback } from 'react';
-import { Alert, Button, Card, Descriptions, Space, Typography, Popconfirm, App as AntdApp } from 'antd';
+import { Alert, Button, Card, Descriptions, Space, Typography, Popconfirm } from 'antd';
 import { PlayCircleOutlined, DeleteOutlined, EditOutlined, ArrowLeftOutlined } from '@ant-design/icons';
 import { useNavigate, useParams } from 'react-router-dom';
+import useAction from '@core/hooks/useAction';
 import crawlJobAPI from '../Action/crawlJob';
 import StatusTag from '@core/components/StatusTag';
 import SpinComponent from '@core/components/SpinComponent';
@@ -10,7 +11,6 @@ import PermissionGate from '@core/components/PermissionGate';
 import CrawlResultTable from '../components/CrawlResultTable';
 
 export default function CrawlJobDetailPage() {
-	const { message } = AntdApp.useApp();
 	const { id } = useParams();
 	const navigate = useNavigate();
 
@@ -18,8 +18,8 @@ export default function CrawlJobDetailPage() {
 	const [job, setJob] = useState<any>(null);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
-	const [starting, setStarting] = useState(false);
-	const [deleting, setDeleting] = useState(false);
+	const { act: actStart, loading: starting } = useAction();
+	const { act: actDelete, loading: deleting } = useAction();
 
 	// Local states for Crawl Results
 	const [results, setResults] = useState<any[]>([]);
@@ -67,32 +67,15 @@ export default function CrawlJobDetailPage() {
 	}, [loadJobDetail, loadResults]);
 
 	// 3. Start Crawl Job directly via API
-	const handleStartCrawlJob = async () => {
+	const handleStartCrawlJob = () => {
 		if (!id) return;
-		setStarting(true);
-		try {
-			const res: any = await crawlJobAPI.startCrawlJobByID(id);
-			message.success(res?.message || 'Crawl job started successfully');
-			loadJobDetail();
-		} catch (err: any) {
-			message.error(err?.response?.data?.message ?? err?.message ?? 'Failed to start crawl job');
-		} finally {
-			setStarting(false);
-		}
+		actStart(() => crawlJobAPI.startCrawlJobByID(id), 'Crawl job started successfully', loadJobDetail);
 	};
 
 	// 4. Delete Crawl Job directly via API
-	const handleDelete = async () => {
+	const handleDelete = () => {
 		if (!id) return;
-		setDeleting(true);
-		try {
-			const res: any = await crawlJobAPI.deleteCrawlJobByID(id);
-			message.success(res?.message || 'Crawl job deleted successfully');
-			navigate('/crawler/crawl-job');
-		} catch (err: any) {
-			message.error(err?.response?.data?.message ?? err?.message ?? 'Failed to delete crawl job');
-			setDeleting(false);
-		}
+		actDelete(() => crawlJobAPI.deleteCrawlJobByID(id), 'Crawl job deleted successfully', () => navigate('/crawler/crawl-job'));
 	};
 
 	if (loading) {

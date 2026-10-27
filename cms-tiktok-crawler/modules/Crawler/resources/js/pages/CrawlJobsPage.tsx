@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import dayjs from 'dayjs';
-import { Space, Button, Popconfirm, Tooltip, App as AntdApp } from 'antd';
+import { Space, Button, Popconfirm, Tooltip } from 'antd';
 import { EyeOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useDispatch, useSelector } from '@core/store';
 import ListLayout from '@/components/ListLayout';
@@ -12,27 +12,25 @@ import { formatDateTime } from '@core/utils/formatDate';
 import { fetchCrawlJobs, fetchStatisticsSummary } from '../store/crawlJob/crawlJobThunks';
 import { setParams, resetParams } from '../store/crawlJob/crawlJobSlice';
 import crawlJobAPI from '../Action/crawlJob';
+import useAction from '@core/hooks/useAction';
 import { crawlJobColumnConfig } from '../configs/tableConfig';
 
 export default function CrawlJobsPage() {
-	const { message } = AntdApp.useApp();
 	const dispatch = useDispatch();
 	const { data: jobs, loading, pagination, params } = useSelector((state) => state.crawlJob);
+
+	const { execute: handleDelete } = useAction(
+		(id: number | string) => crawlJobAPI.deleteCrawlJobByID(id),
+		'Crawl job deleted successfully',
+		() => {
+			dispatch(fetchCrawlJobs(params));
+			dispatch(fetchStatisticsSummary());
+		}
+	);
 
 	useEffect(() => {
 		dispatch(fetchCrawlJobs(params));
 	}, [dispatch, params]);
-
-	const handleDelete = async (id: number | string) => {
-		try {
-			const res = await crawlJobAPI.deleteCrawlJobByID(id);
-			message.success(res?.message || 'Crawl job deleted successfully');
-			dispatch(fetchCrawlJobs(params));
-			dispatch(fetchStatisticsSummary());
-		} catch (err: any) {
-			message.error(err?.response?.data?.message ?? err?.message ?? 'Failed to delete crawl job');
-		}
-	};
 
 	return (
 		<ListLayout

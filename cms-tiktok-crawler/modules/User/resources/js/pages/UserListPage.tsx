@@ -1,6 +1,6 @@
-import React, { use, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Space, Button, Popconfirm, Tooltip, App as AntdApp } from 'antd';
+import { Space, Button, Popconfirm, Tooltip } from 'antd';
 import { EyeOutlined, EditOutlined, DeleteOutlined, KeyOutlined } from '@ant-design/icons';
 import { useDispatch, useSelector } from '@core/store';
 import ListLayout from '@/components/ListLayout';
@@ -15,12 +15,10 @@ import UserKpiCards from '../components/UserKpiCards';
 import UserColumn from '../components/UserColumn';
 import PermissionGate from '@/components/PermissionGate';
 import { UserRoleTags } from '../components/UserRoleTags';
-import useAction from '@/hooks/useAction';
+import useAction from '@core/hooks/useAction';
 
 export default function UserListPage() {
-	const { message } = AntdApp.useApp();
 	const dispatch = useDispatch();
-	const { execute, loading: executeLoading } = useAction();
 	const { user } = useSelector((state) => state.auth);
 	const { data: users, loading, statistics, statisticsLoading, pagination, params } = useSelector((state) => state.user);
 
@@ -29,20 +27,22 @@ export default function UserListPage() {
 		dispatch(fetchUserStatistics());
 	};
 
+	const { act } = useAction(refreshData);
+
 	useEffect(() => {
 		refreshData();
 	}, [dispatch, params]);
 
-	const handleDelete = async (id: number | string) => {
-		execute(() => userAPI.deleteUser(id), 'User account deleted successfully', refreshData);
+	const handleDelete = (id: number | string) => {
+		act(() => userAPI.deleteUser(id), 'User account deleted successfully');
 	};
 
-	const handleStatusChange = async (id: number | string, status: string) => {
-		execute(() => userAPI.updateUserStatus(id, status), `User status updated to ${status}`, refreshData);
+	const handleStatusChange = (id: number | string, status: string) => {
+		act(() => userAPI.updateUserStatus(id, status), `User status updated to ${status}`);
 	};
 
-	const handleResetPassword = async (id: number | string) => {
-		execute(() => userAPI.resetPassword(id), 'Reset password has sent to email');
+	const handleResetPassword = (id: number | string) => {
+		act(() => userAPI.resetPassword(id), 'Reset password has sent to email');
 	};
 
 	return (

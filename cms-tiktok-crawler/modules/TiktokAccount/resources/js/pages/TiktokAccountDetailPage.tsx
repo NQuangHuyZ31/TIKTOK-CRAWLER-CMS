@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { Alert, App as AntdApp, Avatar, Button, Card, Col, Descriptions, Popconfirm, Row, Space, Tag, Typography } from 'antd';
+import { Alert, Avatar, Button, Card, Col, Descriptions, Popconfirm, Row, Space, Tag, Typography } from 'antd';
 import { CalendarOutlined, CheckCircleFilled, DeleteOutlined, EditOutlined, HeartOutlined, LinkOutlined, UserAddOutlined, UserOutlined, VideoCameraOutlined } from '@ant-design/icons';
+import useAction from '@core/hooks/useAction';
 import tiktokAccountAPI from '../Action/tiktokAccount';
 import SpinComponent from '@core/components/SpinComponent';
 import PageHeader from '@core/components/PageHeader';
@@ -15,7 +16,6 @@ import CrawlResultTable from '@modules/Crawler/resources/js/components/CrawlResu
 const { Text, Title, Paragraph } = Typography;
 
 export default function TiktokAccountDetailPage() {
-	const { message } = AntdApp.useApp();
 	const { id } = useParams();
 	const navigate = useNavigate();
 
@@ -23,7 +23,7 @@ export default function TiktokAccountDetailPage() {
 	const [accountData, setAccountData] = useState<any>(null);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
-	const [deleting, setDeleting] = useState(false);
+	const { act, loading: deleting } = useAction();
 	const [showCrawlHistory, setShowCrawlHistory] = useState(true);
 
 	// Local states for crawl results
@@ -72,17 +72,9 @@ export default function TiktokAccountDetailPage() {
 	}, [loadAccountDetail, loadResults]);
 
 	// Handle delete account
-	const handleDelete = async () => {
+	const handleDelete = () => {
 		if (!id) return;
-		setDeleting(true);
-		try {
-			const result: any = await tiktokAccountAPI.deleteTiktokAccount(id);
-			message.success(result?.message || 'Account deleted successfully');
-			navigate('/tiktok-account');
-		} catch (deleteError: any) {
-			message.error(deleteError?.response?.data?.message ?? deleteError?.message ?? 'Failed to delete account');
-			setDeleting(false);
-		}
+		act(() => tiktokAccountAPI.deleteTiktokAccount(id), 'Account deleted successfully', () => navigate('/tiktok-account'));
 	};
 
 	// Toggle the visibility of the crawl history section

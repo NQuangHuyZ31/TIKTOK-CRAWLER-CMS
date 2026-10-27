@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, Button, Checkbox, Form, Input, Modal, Space, Typography, App as AntdApp } from 'antd';
+import { Alert, Button, Checkbox, Form, Input, Modal, Space, Typography } from 'antd';
 import { AppstoreAddOutlined, CheckOutlined } from '@ant-design/icons';
+import useAction from '@core/hooks/useAction';
 import { createModulePermissions } from '../Action/permission';
 
 const { Text } = Typography;
@@ -20,9 +21,8 @@ const BASIC_ACTIONS = [
 ];
 
 export default function CreateModuleModal({ open, onClose, onSuccess }: CreateModuleModalProps) {
-	const { message } = AntdApp.useApp();
 	const [form] = Form.useForm();
-	const [submitting, setSubmitting] = useState(false);
+	const { act, loading: submitting } = useAction();
 	const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
 	const watchedModule = Form.useWatch('module', form) || '';
@@ -47,32 +47,31 @@ export default function CreateModuleModal({ open, onClose, onSuccess }: CreateMo
 	};
 
 	const handleSubmit = async () => {
-		try {
-			const values = await form.validateFields();
-			setSubmitting(true);
-			setErrorMsg(null);
+		const values = await form.validateFields();
+		setErrorMsg(null);
 
-			const payload = {
-				module: values.module
-					.trim()
-					.toLowerCase()
-					.replace(/[^a-z0-9_]+/g, '_'),
-				name: values.name?.trim() || undefined,
-				actions: values.actions,
-				description: values.description?.trim() || undefined,
-			};
+		const payload = {
+			module: values.module
+				.trim()
+				.toLowerCase()
+				.replace(/[^a-z0-9_]+/g, '_'),
+			name: values.name?.trim() || undefined,
+			actions: values.actions,
+			description: values.description?.trim() || undefined,
+		};
 
-			await createModulePermissions(payload);
-			message.success(`Module '${payload.module}' with ${payload.actions.length} permissions created successfully.`);
-
-			onSuccess();
-			onClose();
-		} catch (err: any) {
-			const msg = err?.response?.data?.message || err?.message || 'Failed to create module permissions. Please check inputs.';
-			setErrorMsg(msg);
-		} finally {
-			setSubmitting(false);
-		}
+		await act(
+			() => createModulePermissions(payload),
+			{
+				successMessage: `Module '${payload.module}' with ${payload.actions.length} permissions created successfully.`,
+				errorMessage: 'Failed to create module permissions. Please check inputs.',
+				onSuccess: () => {
+					onSuccess();
+					onClose();
+				},
+				onError: (err) => setErrorMsg(err?.response?.data?.message || err?.message),
+			}
+		);
 	};
 
 	return (

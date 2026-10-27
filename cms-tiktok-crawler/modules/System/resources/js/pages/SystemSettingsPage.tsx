@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Button, Form, Space, Tabs, App as AntdApp } from 'antd';
+import { Button, Form, Space, Tabs } from 'antd';
 import {
     CloudServerOutlined,
     LockOutlined,
@@ -9,6 +9,7 @@ import {
     SettingOutlined,
 } from '@ant-design/icons';
 import PageHeader from '@core/components/PageHeader';
+import useAction from '@core/hooks/useAction';
 import {
     batchUpdateSettings,
     getGroupedSettings,
@@ -21,11 +22,10 @@ import SecuritySettingsTab from '../components/SecuritySettingsTab';
 import SystemInfoTab from '../components/SystemInfoTab';
 
 export default function SystemSettingsPage() {
-    const { message } = AntdApp.useApp();
     const [form] = Form.useForm();
     const [activeTab, setActiveTab] = useState('general');
     const [loading, setLoading] = useState(false);
-    const [saving, setSaving] = useState(false);
+    const { act, loading: saving } = useAction();
     const [systemInfo, setSystemInfo] = useState<SystemInfoData | null>(null);
 
     const loadSettings = async () => {
@@ -61,22 +61,11 @@ export default function SystemSettingsPage() {
     }, []);
 
     const handleSave = async () => {
-        try {
-            const values = await form.validateFields();
-            setSaving(true);
-
-            // Group fields by current active tab
-            await batchUpdateSettings(values, activeTab);
-            message.success('System configuration saved successfully.');
-        } catch (err: any) {
-            const msg =
-                err?.response?.data?.message ||
-                err?.message ||
-                'Failed to save configuration. Please review fields.';
-            message.error(msg);
-        } finally {
-            setSaving(false);
-        }
+        const values = await form.validateFields();
+        await act(
+            () => batchUpdateSettings(values, activeTab),
+            'System configuration saved successfully.'
+        );
     };
 
     const tabItems = [

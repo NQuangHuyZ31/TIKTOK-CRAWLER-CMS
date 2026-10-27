@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Card, Form, Input, Select, Button, Space, Typography, Row, Col, Divider, Alert, Spin, Result, App as AntdApp, Flex } from 'antd';
+import { Card, Form, Input, Select, Button, Space, Typography, Row, Col, Divider, Alert, Spin, Result, Flex } from 'antd';
 import { ArrowLeftOutlined, SaveOutlined, UserOutlined, MailOutlined, PhoneOutlined, LockOutlined, LinkOutlined } from '@ant-design/icons';
 import { useDispatch, useSelector } from '@core/store';
+import useAction from '@core/hooks/useAction';
 import PageHeader from '@core/components/PageHeader';
 import { fetchUserDetail, fetchRolesAndPermissions } from '../store/user/userThunks';
 import userAPI from '../Action/user';
@@ -18,10 +19,9 @@ export default function UserFormPage() {
 	const isEdit = Boolean(id);
 	const navigate = useNavigate();
 	const dispatch = useDispatch();
-	const { message } = AntdApp.useApp();
 	const [form] = Form.useForm();
+	const { act, loading: submitting } = useAction();
 
-	const [submitting, setSubmitting] = useState(false);
 	const [formError, setFormError] = useState<string | null>(null);
 
 	const { currentUser: user, detailLoading, rolesCatalog, permissionsCatalog, groupedPermissionsCatalog, error } = useSelector((state) => state.user);
@@ -59,7 +59,6 @@ export default function UserFormPage() {
 	}, [isEdit, user, form]);
 
 	const handleSubmit = async (values: any) => {
-		setSubmitting(true);
 		setFormError(null);
 
 		const payload: Record<string, any> = {
@@ -76,22 +75,15 @@ export default function UserFormPage() {
 			payload.password = values.password;
 		}
 
-		try {
-			if (isEdit && id) {
-				await userAPI.updateUser(id, payload);
-				message.success('User account updated successfully');
-			} else {
-				await userAPI.createUser(payload);
-				message.success('User account created successfully');
+		await act(
+			() => (isEdit && id ? userAPI.updateUser(id, payload) : userAPI.createUser(payload)),
+			{
+				successMessage: isEdit ? 'User account updated successfully' : 'User account created successfully',
+				errorMessage: 'Failed to save user account. Please check your permissions.',
+				onSuccess: () => navigate('/user'),
+				onError: (err) => setFormError(err?.response?.data?.message || err?.message),
 			}
-			navigate('/user');
-		} catch (err: any) {
-			const errorMsg = err?.response?.data?.message || err?.message || 'Failed to save user account. Please check your permissions.';
-			setFormError(errorMsg);
-			message.error(errorMsg);
-		} finally {
-			setSubmitting(false);
-		}
+		);
 	};
 
 	if (isEdit && error && (error.includes('Forbidden') || error.includes('403'))) {
