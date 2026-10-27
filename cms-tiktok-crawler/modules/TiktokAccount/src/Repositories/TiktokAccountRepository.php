@@ -40,15 +40,7 @@ class TiktokAccountRepository extends BaseRepository implements TiktokAccountRep
 			return false;
 		}
 
-		$query = $account->crawlResults();
-
-		if (!empty($params['username'])) {
-			$query->where('username', 'like', '%' . $params['username'] . '%');
-		}
-
-		if (!empty($params['status'])) {
-			$query->where('status', $params['status']);
-		}
+		$query = $account->results();
 
 		return $query->paginate($perPage);
 	}

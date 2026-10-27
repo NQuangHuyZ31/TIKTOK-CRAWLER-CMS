@@ -41,6 +41,7 @@ export default function TiktokAccountPage() {
 		<ListLayout
 			title="TikTok Accounts"
 			subtitle="Manage and monitor accounts collected from TikTok."
+			breadcrumbs={[{ title: 'Dashboard', href: '/admin/dashboard' }, { title: 'Tiktok Account' }]}
 			onAdd={can({ module: 'tiktok_account', action: 'create' }) ? '/tiktok-account/create' : undefined}
 			addText="Create Account"
 			cardTitle="TikTok Accounts List"

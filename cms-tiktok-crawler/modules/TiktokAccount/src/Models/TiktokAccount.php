@@ -33,7 +33,7 @@ class TiktokAccount extends Model
     /**
      * Relationship to CrawlResults.
      */
-    public function crawlResults(): HasMany
+    public function results(): HasMany
     {
         return $this->hasMany(CrawlResult::class, 'tiktok_account_id');
     }
