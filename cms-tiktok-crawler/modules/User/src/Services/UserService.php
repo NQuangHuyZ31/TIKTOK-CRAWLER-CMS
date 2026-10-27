@@ -14,17 +14,12 @@ class UserService
 {
     public function __construct(
         protected UserRepositoryInterface $userRepository,
-        protected ?RoleRepositoryInterface $roleRepository = null,
-        protected ?PermissionRepositoryInterface $permissionRepository = null
-    ) {
-        $this->roleRepository = $roleRepository ?? app(RoleRepositoryInterface::class);
-        $this->permissionRepository = $permissionRepository ?? app(PermissionRepositoryInterface::class);
-    }
+        protected RoleRepositoryInterface $roleRepository,
+        protected PermissionRepositoryInterface $permissionRepository
+    ) {}
 
     /**
      * Create a new user with role and permission assignments.
-     *
-     * @param array<string, mixed> $data
      */
     public function createUser(array $data): User
     {
@@ -33,8 +28,6 @@ class UserService
 
     /**
      * Update an existing user with role and permission assignments.
-     *
-     * @param array<string, mixed> $data
      */
     public function updateUser(int|string $id, array $data, \App\Models\User|User|null $currentUser = null): User
     {
@@ -154,9 +147,6 @@ class UserService
 
     /**
      * Retrieve aggregated roles and permissions catalog for assignment UI.
-     * All role queries pass through RoleRepository and permission queries pass through PermissionRepository.
-     *
-     * @return array<string, mixed>
      */
     public function getRolesAndPermissionsCatalog(): array
     {
@@ -208,7 +198,7 @@ class UserService
 
         try {
             $token = Password::createToken($user);
-            $resetUrl = config('app.url') . '/admin/login?reset-password=1&token=' . $token . '&email=' . $user->email;
+            $resetUrl = config('app.url') . '/admin/auth/login?reset-password=1&token=' . $token . '&email=' . $user->email;
 
             PasswordResetNotification::dispatch($user->email, $resetUrl, $user->name);
         } catch (\Throwable $th) {

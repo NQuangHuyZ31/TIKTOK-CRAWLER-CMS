@@ -118,19 +118,6 @@ class UserRepository extends BaseRepository implements UserRepositoryInterface
     }
 
     /**
-     * Delete user record.
-     */
-    public function deleteUser(int|string $id): bool
-    {
-        $user = $this->findById($id, []);
-        if (!$user) {
-            return false;
-        }
-
-        return (bool) $user->delete();
-    }
-
-    /**
      * Update user account status (active, inactive, blocked).
      */
     public function updateStatus(int|string $id, string $status): ?User

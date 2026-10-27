@@ -77,6 +77,11 @@ trait HasRolesAndPermissions
             return true;
         }
 
+        $ignoreModule = config('modules.ignore_check_permission', []);
+        if (in_array($module, $ignoreModule)) {
+            return true;
+        }
+
         $slug = strtolower($module) . '.' . strtolower($action);
 
         // Check direct permission

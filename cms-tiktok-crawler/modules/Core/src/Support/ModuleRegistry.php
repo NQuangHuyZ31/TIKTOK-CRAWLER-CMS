@@ -14,6 +14,9 @@ class ModuleRegistry
     /** @var array<string, mixed>|null Memory cache for parsed entrypoints.json */
     private ?array $entrypointsCache = null;
 
+    /** @var array<string, string>|null Memory cache for parsed mix-manifest.json */
+    private ?array $mixManifestCache = null;
+
     /** @var array<string, bool> Tracks rendered CSS file URLs to avoid duplicate DOM tags */
     private array $dommedCss = [];
 
@@ -185,7 +188,7 @@ class ModuleRegistry
         // Filter out already DOM-ed files via cache
         $html = [];
         foreach ($cssFiles as $file) {
-            $url = asset(ltrim($file, '/'));
+            $url = $this->resolveAssetUrl($file);
             if (isset($this->dommedCss[$url])) {
                 continue; // Skip already rendered file
             }
@@ -245,7 +248,7 @@ class ModuleRegistry
         // Filter out already DOM-ed files via cache
         $html = [];
         foreach ($jsFiles as $file) {
-            $url = asset(ltrim($file, '/'));
+            $url = $this->resolveAssetUrl($file);
             if (isset($this->dommedJs[$url])) {
                 continue; // Skip already rendered file
             }
@@ -271,7 +274,7 @@ class ModuleRegistry
      * Check if a specific asset file URL has already been DOM-ed.
      */
     public function isDommed(string $url): bool {
-        $fullUrl = str_starts_with($url, 'http') ? $url : asset(ltrim($url, '/'));
+        $fullUrl = str_starts_with($url, 'http') ? $url : $this->resolveAssetUrl($url);
         return isset($this->dommedCss[$fullUrl]) || isset($this->dommedJs[$fullUrl]);
     }
 
@@ -294,6 +297,47 @@ class ModuleRegistry
         $this->dommedCss = [];
         $this->dommedJs = [];
         $this->entrypointsCache = null;
+        $this->mixManifestCache = null;
+    }
+
+    /**
+     * Resolve asset URL with mix-manifest cache-busting (?id=...) if not already present.
+     */
+    public function resolveAssetUrl(string $file): string {
+        // If file already has query string (e.g. ?id=... from entrypoints.json), respect it
+        if (str_contains($file, '?')) {
+            return asset(ltrim($file, '/'));
+        }
+
+        // Check if mix-manifest has versioned asset
+        $manifest = $this->getMixManifest();
+        $cleanPath = '/' . ltrim($file, '/');
+        if (isset($manifest[$cleanPath])) {
+            return asset(ltrim($manifest[$cleanPath], '/'));
+        }
+
+        return asset(ltrim($file, '/'));
+    }
+
+    /**
+     * Get and cache the mix-manifest.json content.
+     *
+     * @return array<string, string>
+     */
+    public function getMixManifest(): array {
+        if ($this->mixManifestCache !== null) {
+            return $this->mixManifestCache;
+        }
+
+        $manifestPath = public_path('mix-manifest.json');
+        if (!file_exists($manifestPath)) {
+            return $this->mixManifestCache = [];
+        }
+
+        $content = (string) file_get_contents($manifestPath);
+        $decoded = json_decode($content, true);
+
+        return $this->mixManifestCache = (is_array($decoded) ? $decoded : []);
     }
 
     /**

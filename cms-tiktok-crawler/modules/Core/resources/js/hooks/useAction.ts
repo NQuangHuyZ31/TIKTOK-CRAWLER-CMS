@@ -12,14 +12,21 @@ export type UseActionOptions<TParams = any, TResult = any> = ActionConfig<TResul
 
 /**
  * Concise action execution hook.
- * Supports both pre-bound style:
- *   const { execute, loading } = useAction((item) => deleteItem(item.id), options);
- * And call-site style:
- *   const { execute, loading } = useAction();
- *   execute(() => deleteItem(id), options);
+ *
+ * Supports 3 flexible usage patterns:
+ * 1. Pre-bound API action:
+ *    const { execute: handleDelete } = useAction((user: User) => deleteUser(user.id), 'User deleted', loadUsers);
+ *
+ * 2. Pre-bound reload action (Ureka act style):
+ *    const { act, loading } = useAction(loadUsers);
+ *    act(() => deleteUser(id), 'User deleted');
+ *
+ * 3. Call-site execution:
+ *    const { act, loading } = useAction();
+ *    act(() => deleteUser(id), 'User deleted', loadUsers);
  */
 export function useAction<TParams = any, TResult = any>(
-    boundApi?: (params: TParams) => Promise<TResult>,
+    boundApiOrReload?: ((params: TParams) => Promise<TResult>) | (() => any),
     boundOptions?: string | ActionConfig<TResult, TParams>,
     boundCallback?: (result: TResult, params?: TParams) => any
 ) {
@@ -39,18 +46,28 @@ export function useAction<TParams = any, TResult = any>(
             options?: string | ActionConfig<any>,
             callback?: (result: any) => any
         ): Promise<any> => {
-            // Determine if called with (params) using boundApi, or (api, options, callback)
             let apiFn: () => Promise<any>;
             let config: ActionConfig<any> = {};
 
-            if (boundApi) {
+            // Case 1: Pre-bound API: useAction(deleteItem, 'Success', reload) -> execute(item)
+            if (boundApiOrReload && typeof boundApiOrReload === 'function' && (boundOptions || boundCallback)) {
                 const params = apiOrParams;
-                apiFn = () => boundApi(params);
+                apiFn = () => (boundApiOrReload as (p: any) => Promise<any>)(params);
                 config =
                     typeof boundOptions === 'string'
                         ? { successMessage: boundOptions, onSuccess: boundCallback }
                         : boundOptions || {};
-            } else if (typeof apiOrParams === 'function') {
+            }
+            // Case 2: Pre-bound reload: const { act } = useAction(reload) -> act(() => deleteItem(id), 'Success')
+            else if (boundApiOrReload && typeof boundApiOrReload === 'function' && typeof apiOrParams === 'function') {
+                apiFn = apiOrParams;
+                config =
+                    typeof options === 'string'
+                        ? { successMessage: options, onSuccess: callback || boundApiOrReload }
+                        : { onSuccess: boundApiOrReload, ...options };
+            }
+            // Case 3: Call-site: const { act } = useAction() -> act(() => deleteItem(id), 'Success', callback)
+            else if (typeof apiOrParams === 'function') {
                 apiFn = apiOrParams;
                 config =
                     typeof options === 'string'
@@ -67,7 +84,7 @@ export function useAction<TParams = any, TResult = any>(
                 const msg =
                     typeof config.successMessage === 'function'
                         ? (config.successMessage as any)(result, apiOrParams)
-                        : config.successMessage ?? (result as any)?.message ?? 'Action executed successfully';
+                        : config.successMessage ?? (result as any)?.message;
 
                 if (msg) {
                     messageApi?.success(msg);
@@ -93,10 +110,11 @@ export function useAction<TParams = any, TResult = any>(
                 setLoading(false);
             }
         },
-        [boundApi, boundOptions, boundCallback, messageApi]
+        [boundApiOrReload, boundOptions, boundCallback, messageApi]
     );
 
-    return { execute, loading };
+    return { execute, act: execute, loading };
 }
 
+export const useAct = useAction;
 export default useAction;

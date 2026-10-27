@@ -2,11 +2,13 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { Alert, Row, Col, Card, Space, Flex, Tag, Button, Tooltip, Badge } from 'antd';
 import { ReloadOutlined, PlusOutlined, HistoryOutlined, ArrowRightOutlined, EyeOutlined } from '@ant-design/icons';
 import { useNavigate, Link } from 'react-router-dom';
-import { api } from '../Action/api';
+import { getDashboardOverview } from '../Action/dashboard';
 import PageHeader from '../components/PageHeader';
 import TableComponent, { TableColumn } from '../components/Table';
 import StatusTag from '../components/StatusTag';
 import EmptyState from '../components/EmptyState';
+import PermissionGate from '../components/PermissionGate';
+import usePermission from '../hooks/usePermission';
 import type { CrawlerStatistics, TiktokStatistics, CrawlJobItem } from './ui/types';
 import DashboardKpiCards from './ui/DashboardKpiCards';
 import CrawlEngineOverview from './ui/CrawlEngineOverview';
@@ -44,17 +46,20 @@ const recentJobColumns: TableColumn<CrawlJobItem>[] = [
 		title: 'Action',
 		key: 'action',
 		width: 80,
+		align: 'center',
 		fixed: 'right',
 	},
 ];
 
 /**
  * Modern Dashboard Overview Page
- * Directly reuses core components (PageHeader, TableComponent, StatusTag, EmptyState, CardKPI)
- * and focuses sub-components on domain-specific analytical cards.
+ * Consumes dedicated core dashboard overview endpoint (/core/dashboard)
+ * allowing users with only dashboard access to view metrics without requiring
+ * direct crawler or tiktok_account module permissions.
  */
 export default function DashboardPage() {
 	const navigate = useNavigate();
+	const { canDoModule } = usePermission();
 
 	const [crawlerStats, setCrawlerStats] = useState<CrawlerStatistics | null>(null);
 	const [tiktokStats, setTiktokStats] = useState<TiktokStatistics | null>(null);
@@ -64,7 +69,7 @@ export default function DashboardPage() {
 	const [error, setError] = useState<string>('');
 	const [lastUpdated, setLastUpdated] = useState<string>('');
 
-	// Load metrics in parallel from Crawler and TiktokAccount modules
+	// Load metrics in a single aggregated request from Core Dashboard API
 	const loadDashboardData = useCallback(async (isRefresh = false) => {
 		if (isRefresh) {
 			setRefreshing(true);
@@ -74,42 +79,35 @@ export default function DashboardPage() {
 		setError('');
 
 		try {
-			const [crawlerRes, tiktokRes, jobsRes] = await Promise.allSettled([
-				api('/crawler/crawl-job/statistics-summary'),
-				api('/tiktok-account/tiktok-account/statistic-summary'),
-				api('/crawler/crawl-job', { params: { per_page: 5 } }),
-			]);
+			const res = await getDashboardOverview();
+			const overview = res?.data;
 
-			// 1. Process Crawler statistics
-			if (crawlerRes.status === 'fulfilled') {
-				const cData = crawlerRes.value?.data ?? crawlerRes.value ?? {};
-				setCrawlerStats({
-					total_jobs: Number(cData.total_jobs || 0),
-					total_accounts: Number(cData.total_accounts || 0),
-					total_success_accounts: Number(cData.total_success_accounts || 0),
-					total_failed_accounts: Number(cData.total_failed_accounts || 0),
-					total_completed_jobs: Number(cData.total_completed_jobs || 0),
-					total_failed_jobs: Number(cData.total_failed_jobs || 0),
-				});
-			}
+			if (overview) {
+				if (overview.crawler_statistics) {
+					setCrawlerStats({
+						total_jobs: Number(overview.crawler_statistics.total_jobs || 0),
+						total_accounts: Number(overview.crawler_statistics.total_accounts || 0),
+						total_success_accounts: Number(overview.crawler_statistics.total_success_accounts || 0),
+						total_failed_accounts: Number(overview.crawler_statistics.total_failed_accounts || 0),
+						total_completed_jobs: Number(overview.crawler_statistics.total_completed_jobs || 0),
+						total_failed_jobs: Number(overview.crawler_statistics.total_failed_jobs || 0),
+					});
+				}
 
-			// 2. Process TikTok statistics
-			if (tiktokRes.status === 'fulfilled') {
-				const tData = tiktokRes.value?.data ?? tiktokRes.value ?? {};
-				setTiktokStats({
-					total_accounts: Number(tData.total_accounts || 0),
-					total_followers: Number(tData.total_followers || 0),
-					total_following: Number(tData.total_following || 0),
-					total_likes: Number(tData.total_likes || 0),
-					total_active_accounts: Number(tData.total_active_accounts || 0),
-					total_inactive_accounts: Number(tData.total_inactive_accounts || 0),
-				});
-			}
+				if (overview.tiktok_statistics) {
+					setTiktokStats({
+						total_accounts: Number(overview.tiktok_statistics.total_accounts || 0),
+						total_followers: Number(overview.tiktok_statistics.total_followers || 0),
+						total_following: Number(overview.tiktok_statistics.total_following || 0),
+						total_likes: Number(overview.tiktok_statistics.total_likes || 0),
+						total_active_accounts: Number(overview.tiktok_statistics.total_active_accounts || 0),
+						total_inactive_accounts: Number(overview.tiktok_statistics.total_inactive_accounts || 0),
+					});
+				}
 
-			// 3. Process Recent Jobs list
-			if (jobsRes.status === 'fulfilled') {
-				const jData = jobsRes.value?.data ?? jobsRes.value ?? [];
-				setRecentJobs(Array.isArray(jData) ? jData : []);
+				if (Array.isArray(overview.recent_jobs)) {
+					setRecentJobs(overview.recent_jobs);
+				}
 			}
 
 			setLastUpdated(new Date().toLocaleTimeString('en-US'));
@@ -132,6 +130,8 @@ export default function DashboardPage() {
 	// Calculate TikTok Active Profile rate
 	const totalTiktokAccounts = tiktokStats?.total_accounts ?? 0;
 	const activeAccountRate = totalTiktokAccounts > 0 ? Math.round(((tiktokStats?.total_active_accounts ?? 0) / totalTiktokAccounts) * 100) : 0;
+
+	const canViewCrawler = canDoModule('crawler', 'view');
 
 	return (
 		<div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
@@ -156,9 +156,11 @@ export default function DashboardPage() {
 							Refresh
 						</Button>
 
-						<Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/crawler/crawl-job/form')}>
-							Create Crawl Job
-						</Button>
+						<PermissionGate module="crawler" action="create">
+							<Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/crawler/crawl-job/form')}>
+								Create Crawl Job
+							</Button>
+						</PermissionGate>
 					</Space>
 				}
 			/>
@@ -194,9 +196,11 @@ export default function DashboardPage() {
 							</Space>
 						}
 						extra={
-							<Link to="/crawler/crawl-job" style={{ fontSize: 13, color: '#1677ff' }}>
-								View all ({crawlerStats?.total_jobs ?? 0}) <ArrowRightOutlined />
-							</Link>
+							canViewCrawler ? (
+								<Link to="/crawler/crawl-job" style={{ fontSize: 13, color: '#1677ff' }}>
+									View all ({crawlerStats?.total_jobs ?? 0}) <ArrowRightOutlined />
+								</Link>
+							) : null
 						}
 						style={{
 							borderRadius: 14,
@@ -213,11 +217,14 @@ export default function DashboardPage() {
 							loading={loading}
 							size="middle"
 							renderColumns={{
-								id: (id) => (
-									<Link to={`/crawler/crawl-job/${id}`} style={{ fontWeight: 600, color: '#1677ff' }}>
-										#{id}
-									</Link>
-								),
+								id: (id) =>
+									canViewCrawler ? (
+										<Link to={`/crawler/crawl-job/${id}`} style={{ fontWeight: 600, color: '#1677ff' }}>
+											#{id}
+										</Link>
+									) : (
+										<span style={{ fontWeight: 600, color: '#595959' }}>#{id}</span>
+									),
 								source_type: (sourceType) => {
 									const type = String(sourceType || 'usernames').toLowerCase();
 									const color = type.includes('url') ? 'geekblue' : type.includes('tag') ? 'purple' : 'blue';
@@ -248,16 +255,25 @@ export default function DashboardPage() {
 										return dateStr;
 									}
 								},
-								action: (_, record) => (
-									<Tooltip title="View Details">
-										<Link to={`/crawler/crawl-job/${record.id}`}>
-											<Button size="small" type="text" icon={<EyeOutlined style={{ color: '#1677ff' }} />} />
-										</Link>
-									</Tooltip>
-								),
+								action: (_, record) =>
+									canViewCrawler ? (
+										<Tooltip title="View Details">
+											<Link to={`/crawler/crawl-job/${record.id}`}>
+												<Button size="small" type="text" icon={<EyeOutlined style={{ color: '#1677ff' }} />} />
+											</Link>
+										</Tooltip>
+									) : (
+										<span style={{ color: '#bfbfbf' }}>-</span>
+									),
 							}}
 							locale={{
-								emptyText: <EmptyState description="No crawl jobs created yet" actionText="Create First Job" onAction={() => navigate('/crawler/crawl-job/form')} />,
+								emptyText: (
+									<EmptyState
+										description="No crawl jobs created yet"
+										actionText={canDoModule('crawler', 'create') ? 'Create First Job' : undefined}
+										onAction={canDoModule('crawler', 'create') ? () => navigate('/crawler/crawl-job/form') : undefined}
+									/>
+								),
 							}}
 						/>
 					</Card>

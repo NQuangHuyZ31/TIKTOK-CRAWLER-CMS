@@ -3,7 +3,7 @@
 return [
     'path' => 'modules',
 
-    'routes' => [
+    'routes' => env('ROUTE_MAPPING', [
         'crawler' => 'Crawler',
         'tiktok-account' => 'TiktokAccount',
         'auth' => 'Auth',
@@ -11,10 +11,9 @@ return [
         'system' => 'System',
         'role' => 'Role',
         'permission' => 'Permission',
-    ],
-
-    'modules' => ['core', 'auth', 'system', 'role', 'permission', 'user', 'tiktok_account', 'crawler'],
+    ]),
     'permission_action' => ['view', 'create', 'edit', 'delete'],
+    'modules' => ['core', 'auth', 'system', 'role', 'permission', 'user', 'tiktok_account', 'crawler'],
     'ignore_check_permission' => ['core', 'auth'],
-    'ignore_group' => ['auth', 'role', 'permission'],
+    'ignore_group' => ['auth'],
 ];

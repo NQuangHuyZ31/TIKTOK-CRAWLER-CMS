@@ -5,6 +5,7 @@ import tiktokAccountReducer from '@modules/TiktokAccount/resources/js/store/tikt
 import authReducer from '@modules/Auth/resources/js/store/auth/authSlice';
 import userReducer from '@modules/User/resources/js/store/user/userSlice';
 import roleReducer from '@modules/Role/resources/js/store/role/roleSlice';
+import permissionReducer from '@modules/Permission/resources/js/store/permission/permissionSlice';
 
 export const store = configureStore({
 	reducer: {
@@ -13,6 +14,7 @@ export const store = configureStore({
 		tiktokAccount: tiktokAccountReducer,
 		user: userReducer,
 		role: roleReducer,
+		permission: permissionReducer,
 	}
 });
 

@@ -1,7 +1,8 @@
 import React, { ReactNode, useEffect, useState } from 'react';
-import { Alert, Button, Card, Flex, Form, FormInstance, Space, Spin, App as AntdApp } from 'antd';
+import { Alert, Button, Card, Flex, Form, FormInstance, Space, Spin } from 'antd';
 import { ArrowLeftOutlined, ReloadOutlined, SaveOutlined } from '@ant-design/icons';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import useAction from '../hooks/useAction';
 import PageHeader from './PageHeader';
 
 export interface ResourceFormRenderContext<T = any> {
@@ -87,10 +88,10 @@ export default function ResourceForm<T = any>({
 	extraActions,
 	children,
 }: ResourceFormProps<T>) {
-	const { message } = AntdApp.useApp();
 	const navigate = useNavigate();
 	const location = useLocation();
 	const params = useParams<{ id?: string }>();
+	const { act, loading: submitting } = useAction();
 
 	// Normalize ID: discard literal string "create" if captured by greedy routing
 	const rawId = propId !== undefined ? String(propId) : params.id;
@@ -106,7 +107,6 @@ export default function ResourceForm<T = any>({
 
 	const [record, setRecord] = useState<T | null>(null);
 	const [loading, setLoading] = useState<boolean>(isEdit && Boolean(fetchRecord));
-	const [submitting, setSubmitting] = useState<boolean>(false);
 	const [fetchError, setFetchError] = useState<string | null>(null);
 
 	// Load existing record for Edit mode
@@ -155,37 +155,38 @@ export default function ResourceForm<T = any>({
 
 	// Form Submission
 	const handleFinish = async (values: any) => {
-		setSubmitting(true);
-		try {
-			let result: any = null;
-
+		const submitFn = async () => {
 			if (onSubmit) {
-				result = await onSubmit(values, isEdit, id);
-			} else if (isEdit && onUpdate && id) {
-				result = await onUpdate(id, values, record);
-			} else if (!isEdit && onCreate) {
-				result = await onCreate(values);
+				return await onSubmit(values, isEdit, id);
 			}
+			if (isEdit && onUpdate && id) {
+				return await onUpdate(id, values, record);
+			}
+			if (!isEdit && onCreate) {
+				return await onCreate(values);
+			}
+			return null;
+		};
 
-			const defaultSuccess = isEdit ? `${resourceName} updated successfully` : `${resourceName} created successfully`;
-			message.success(result?.message || defaultSuccess);
+		const defaultSuccess = isEdit ? `${resourceName} updated successfully` : `${resourceName} created successfully`;
+		const defaultError = isEdit ? `Failed to update ${resourceName.toLowerCase()}` : `Failed to create ${resourceName.toLowerCase()}`;
 
-			onSuccess?.(result);
+		await act(submitFn, {
+			successMessage: defaultSuccess,
+			errorMessage: defaultError,
+			onSuccess: (result) => {
+				onSuccess?.(result);
 
-			if (redirectUrl) {
-				const target = typeof redirectUrl === 'function' ? redirectUrl(result, isEdit, id) : redirectUrl;
-				if (target) {
-					navigate(target);
+				if (redirectUrl) {
+					const target = typeof redirectUrl === 'function' ? redirectUrl(result, isEdit, id) : redirectUrl;
+					if (target) {
+						navigate(target);
+					}
+				} else if (backUrl) {
+					navigate(backUrl);
 				}
-			} else if (backUrl) {
-				navigate(backUrl);
-			}
-		} catch (err: any) {
-			const defaultError = isEdit ? `Failed to update ${resourceName.toLowerCase()}` : `Failed to create ${resourceName.toLowerCase()}`;
-			message.error(err?.response?.data?.message || err?.message || defaultError);
-		} finally {
-			setSubmitting(false);
-		}
+			},
+		});
 	};
 
 	const resolvedTitle = title ?? (isEdit ? `Edit ${resourceName} #${id}` : `Create ${resourceName}`);

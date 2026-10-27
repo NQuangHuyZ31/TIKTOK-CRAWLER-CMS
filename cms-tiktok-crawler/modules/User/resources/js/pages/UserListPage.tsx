@@ -1,11 +1,9 @@
-import React, { useEffect } from 'react';
+import React, { use, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Space, Button, Popconfirm, Tooltip, Tag, Popover, App as AntdApp, Dropdown, Alert, Result } from 'antd';
-import type { MenuProps } from 'antd';
-import { EyeOutlined, EditOutlined, DeleteOutlined, PlusOutlined, SafetyCertificateOutlined, CrownOutlined, LockOutlined, DownOutlined, CheckCircleOutlined, StopOutlined } from '@ant-design/icons';
+import { Space, Button, Popconfirm, Tooltip, App as AntdApp } from 'antd';
+import { EyeOutlined, EditOutlined, DeleteOutlined, KeyOutlined } from '@ant-design/icons';
 import { useDispatch, useSelector } from '@core/store';
 import ListLayout from '@/components/ListLayout';
-import StatusTag from '@core/components/StatusTag';
 import StatusDropdown from '@core/components/StatusDropdown';
 import { formatDateTime } from '@core/utils/formatDate';
 import { fetchAllUsers, fetchUserStatistics } from '../store/user/userThunks';
@@ -13,77 +11,38 @@ import { setParams, resetParams } from '../store/user/userSlice';
 import userAPI from '../Action/user';
 import type { UserItem } from '../Action/user';
 import userColumnConfig from '../configs/columnConfig';
-import { ROLE_CONFIGS, STATUS_CONFIGS } from '../configs/userConstants';
 import UserKpiCards from '../components/UserKpiCards';
 import UserColumn from '../components/UserColumn';
-import AccessDeny from '@/components/AccessDeny';
+import PermissionGate from '@/components/PermissionGate';
+import { UserRoleTags } from '../components/UserRoleTags';
+import useAction from '@/hooks/useAction';
 
 export default function UserListPage() {
 	const { message } = AntdApp.useApp();
 	const dispatch = useDispatch();
-	const navigate = useNavigate();
+	const { execute, loading: executeLoading } = useAction();
+	const { user } = useSelector((state) => state.auth);
+	const { data: users, loading, statistics, statisticsLoading, pagination, params } = useSelector((state) => state.user);
 
-	const { data: users, loading, error, statistics, statisticsLoading, pagination, params } = useSelector((state) => state.user);
-
-	useEffect(() => {
+	const refreshData = () => {
 		dispatch(fetchAllUsers(params));
 		dispatch(fetchUserStatistics());
+	};
+
+	useEffect(() => {
+		refreshData();
 	}, [dispatch, params]);
 
 	const handleDelete = async (id: number | string) => {
-		try {
-			const res = await userAPI.deleteUser(id);
-			message.success(res?.message || 'User account deleted successfully');
-			dispatch(fetchAllUsers(params));
-			dispatch(fetchUserStatistics());
-		} catch (err: any) {
-			message.error(err?.response?.data?.message ?? err?.message ?? 'Failed to delete user account');
-		}
+		execute(() => userAPI.deleteUser(id), 'User account deleted successfully', refreshData);
 	};
 
 	const handleStatusChange = async (id: number | string, status: string) => {
-		try {
-			const res = await userAPI.updateUserStatus(id, status);
-			message.success(res?.message || `User status updated to ${status}`);
-			dispatch(fetchAllUsers(params));
-			dispatch(fetchUserStatistics());
-		} catch (err: any) {
-			message.error(err?.response?.data?.message ?? err?.message ?? 'Failed to update user status');
-		}
+		execute(() => userAPI.updateUserStatus(id, status), `User status updated to ${status}`, refreshData);
 	};
 
-	const renderRoleBadge = (roles: any[] = []) => {
-		if (!roles || roles.length === 0) {
-			return <Tag color="default">No Role</Tag>;
-		}
-
-		return (
-			<Space size={4} wrap>
-				{roles.map((r) => {
-					const slug = typeof r === 'string' ? r : r.slug;
-					const cfg = ROLE_CONFIGS[slug] || ROLE_CONFIGS.viewer;
-					const icon = slug === 'admin' ? <CrownOutlined /> : <SafetyCertificateOutlined />;
-
-					return (
-						<Tag
-							key={slug}
-							icon={icon}
-							style={{
-								color: cfg.color,
-								background: cfg.bg,
-								borderColor: cfg.border,
-								fontWeight: 600,
-								fontSize: 11,
-								padding: '2px 8px',
-								borderRadius: 4,
-							}}
-						>
-							{cfg.name}
-						</Tag>
-					);
-				})}
-			</Space>
-		);
+	const handleResetPassword = async (id: number | string) => {
+		execute(() => userAPI.resetPassword(id), 'Reset password has sent to email');
 	};
 
 	return (
@@ -143,7 +102,7 @@ export default function UserListPage() {
 				renderColumns={{
 					id: (id) => <span style={{ fontWeight: 600, color: '#1677ff' }}>#{id}</span>,
 					name: (_, record: UserItem) => <UserColumn id={record.id} name={record.name} email={record.email} avatarUrl={record.avatar_url} />,
-					roles: (_, record: UserItem) => renderRoleBadge(record.roles),
+					roles: (_, record: UserItem) => <UserRoleTags roles={record.roles} />,
 					status: (status: string, record: UserItem) => (
 						<StatusDropdown
 							status={status}
@@ -160,28 +119,48 @@ export default function UserListPage() {
 					created_at: (val: string) => <span style={{ fontSize: 13, color: '#595959' }}>{formatDateTime(val)}</span>,
 					action: (_, record: UserItem) => (
 						<Space size={4}>
-							<Tooltip title="View Details">
-								<Link to={`/user/${record.id}`}>
-									<Button size="small" type="text" icon={<EyeOutlined style={{ color: '#1677ff' }} />} />
-								</Link>
-							</Tooltip>
-							<Tooltip title="Edit User">
-								<Link to={`/user/${record.id}/edit`}>
-									<Button size="small" type="text" icon={<EditOutlined style={{ color: '#52c41a' }} />} />
-								</Link>
-							</Tooltip>
-							<Popconfirm
-								title="Delete user account"
-								description={`Are you sure you want to delete ${record.name}?`}
-								onConfirm={() => handleDelete(record.id)}
-								okText="Delete"
-								cancelText="Cancel"
-								okButtonProps={{ danger: true }}
-							>
-								<Tooltip title="Delete">
-									<Button type="text" danger size="small" icon={<DeleteOutlined />} />
+							<PermissionGate module="user" action="view">
+								<Tooltip title="View Details">
+									<Link to={`/user/${record.id}`}>
+										<Button size="small" type="text" icon={<EyeOutlined style={{ color: '#1677ff' }} />} />
+									</Link>
 								</Tooltip>
-							</Popconfirm>
+							</PermissionGate>
+							<PermissionGate module="user" action="edit">
+								<Tooltip title="Edit User">
+									<Link to={`/user/${record.id}/edit`}>
+										<Button size="small" type="text" icon={<EditOutlined style={{ color: '#52c41a' }} />} />
+									</Link>
+								</Tooltip>
+							</PermissionGate>
+							<PermissionGate module="user" action="delete">
+								<Popconfirm
+									title="Delete user account"
+									description={`Are you sure you want to delete ${record.name}?`}
+									onConfirm={() => handleDelete(record.id)}
+									okText="Delete"
+									cancelText="Cancel"
+									okButtonProps={{ danger: true }}
+								>
+									<Tooltip title="Delete">
+										<Button type="text" danger size="small" icon={<DeleteOutlined />} />
+									</Tooltip>
+								</Popconfirm>
+							</PermissionGate>
+							<PermissionGate module="user" roles={'admin'}>
+								<Popconfirm
+									title="Reset password user"
+									description={`Are you sure you want to reset password ${record.name}?`}
+									onConfirm={() => handleResetPassword(record.id)}
+									okText="Reset"
+									cancelText="Cancel"
+									okButtonProps={{ danger: true }}
+								>
+									<Tooltip title="Reset Password">
+										<Button type="text" size="small" icon={<KeyOutlined />} disabled={user.id === record.id} />
+									</Tooltip>
+								</Popconfirm>
+							</PermissionGate>
 						</Space>
 					),
 				}}

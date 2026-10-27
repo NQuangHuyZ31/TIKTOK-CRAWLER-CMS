@@ -2,7 +2,7 @@ import React, { isValidElement, useEffect, useMemo, useState } from 'react';
 import { Button, Flex, Layout, Menu, Tag, Tooltip } from 'antd';
 import type { MenuProps } from 'antd';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { AppstoreOutlined, DashboardOutlined, MenuFoldOutlined, MenuUnfoldOutlined, RobotOutlined, SafetyCertificateOutlined, SettingOutlined, TeamOutlined, UserOutlined, VideoCameraOutlined } from '@ant-design/icons';
+import { AppstoreOutlined, DashboardOutlined, KeyOutlined, MenuFoldOutlined, MenuUnfoldOutlined, RobotOutlined, SafetyCertificateOutlined, SettingOutlined, TeamOutlined, UserOutlined, VideoCameraOutlined } from '@ant-design/icons';
 import { useMenuRoutes, useCurrentRoute, type RouteDef } from '../routes/registry';
 import { useLayout } from '../contexts/LayoutContext';
 import usePermission from '../hooks/usePermission';
@@ -17,9 +17,11 @@ function resolveMenuIcon(item: RouteDef): React.ReactNode {
 		if (isValidElement(item.icon)) {
 			return item.icon;
 		}
-		if (typeof item.icon === 'function') {
-			const IconComponent = item.icon as React.ComponentType;
+		const IconComponent = item.icon as any;
+		try {
 			return <IconComponent />;
+		} catch {
+			// fallback to path-based matching below
 		}
 	}
 
@@ -27,8 +29,9 @@ function resolveMenuIcon(item: RouteDef): React.ReactNode {
 	if (path.includes('dashboard')) return <DashboardOutlined />;
 	if (path.includes('crawler') || path.includes('crawl')) return <RobotOutlined />;
 	if (path.includes('tiktok')) return <VideoCameraOutlined />;
+	if (path.includes('permission')) return <KeyOutlined />;
+	if (path.includes('role')) return <SafetyCertificateOutlined />;
 	if (path.includes('user')) return <TeamOutlined />;
-	if (path.includes('role') || path.includes('permission')) return <SafetyCertificateOutlined />;
 	if (path.includes('system') || path.includes('setting')) return <SettingOutlined />;
 	if (path.includes('profile')) return <UserOutlined />;
 
@@ -41,7 +44,7 @@ export default function Sidebar() {
 	const menuRoutes = useMenuRoutes();
 	const currentRoute = useCurrentRoute();
 	const { collapsed, toggleCollapsed, setCollapsed } = useLayout();
-	const { isAdmin, canDoModule, hasRole } = usePermission();
+	const { isAdmin, can } = usePermission();
 
 	const [openKeys, setOpenKeys] = useState<string[]>([]);
 
@@ -49,9 +52,12 @@ export default function Sidebar() {
 	const menuItems = useMemo(() => {
 		const isAccessible = (route: RouteDef): boolean => {
 			if (isAdmin) return true;
-			if (route.roles && !hasRole(route.roles)) return false;
-			if (route.module && !canDoModule(route.module, 'view')) return false;
-			return true;
+			return can({
+				role: route.roles,
+				slug: route.slug,
+				module: route.module,
+				action: route.action || 'view',
+			});
 		};
 
 		const transformRoutes = (routes: RouteDef[]): any[] => {
@@ -59,57 +65,90 @@ export default function Sidebar() {
 
 			for (const route of routes) {
 				const hasChildren = Boolean(route.subMenu && route.subMenu.length > 0);
+				const accessibleChildren = hasChildren ? transformRoutes(route.subMenu!) : [];
 
-				if (hasChildren) {
-					const accessibleChildren = transformRoutes(route.subMenu!);
-					if (accessibleChildren.length > 0) {
-						// Determine if current pathname matches the parent route specifically
-						const isChildActive = route.subMenu!.some((child) => child.path && (pathname === child.path || pathname.startsWith(`${child.path}/`)));
-						const isParentActive = Boolean(route.path && (pathname === route.path || pathname.startsWith(`${route.path}/`)) && !isChildActive);
-
+				// When sidebar is collapsed to icon rail:
+				// Flatten all accessible items into direct menu items on the rail.
+				// This ensures:
+				// 1. Role and Permission icons remain visible on the rail with their unique icons and tooltips.
+				// 2. Clicking any icon (e.g. Users, Roles, Permissions) directly navigates to that page.
+				if (collapsed) {
+					if (isAccessible(route) && route.path) {
 						items.push({
-							key: `sub-${route.path || route.label}`,
-							className: isParentActive ? 'cms-parent-active' : undefined,
+							key: route.path,
+							title: route.label,
 							icon: resolveMenuIcon(route),
-							label: route.path ? (
+							label: (
 								<NavLink
-									to={route.path}
+									to={route.path!}
 									style={{ display: 'inline-block', width: '100%', color: 'inherit' }}
 									onClick={(e) => {
-										// Prevent Ant Design from closing the submenu when clicking the link text
 										e.stopPropagation();
-										const parentKey = `sub-${route.path || route.label}`;
-										setOpenKeys((prev) => (prev.includes(parentKey) ? prev : [...prev, parentKey]));
 									}}
 								>
 									{route.label}
 								</NavLink>
-							) : (
-								route.label
 							),
-							onTitleClick: ({ domEvent }: { domEvent: React.MouseEvent<HTMLElement> | React.KeyboardEvent<HTMLElement> }) => {
-								if (!route.path || collapsed) return;
-								const target = domEvent.target as HTMLElement | null;
-								// If user clicked specifically on the expand/collapse arrow, let Ant Design toggle open/close
-								if (target?.closest('.ant-menu-submenu-arrow')) {
-									return;
-								}
-								// Otherwise (clicked on icon, padding, or title), navigate to parent path
-								if (pathname !== route.path) {
-									navigate(route.path);
-								}
-								const parentKey = `sub-${route.path || route.label}`;
-								setOpenKeys((prev) => (prev.includes(parentKey) ? prev : [...prev, parentKey]));
-							},
-							children: accessibleChildren,
 						});
+					}
+					if (accessibleChildren.length > 0) {
+						items.push(...accessibleChildren);
 					}
 					continue;
 				}
 
-				if (isAccessible(route)) {
+				// When sidebar is expanded:
+				// Render hierarchical SubMenu
+				if (accessibleChildren.length > 0) {
+					// Determine if current pathname matches the parent route specifically
+					const isChildActive = route.subMenu!.some((child) => child.path && (pathname === child.path || pathname.startsWith(`${child.path}/`)));
+					const isParentActive = Boolean(route.path && (pathname === route.path || pathname.startsWith(`${route.path}/`)) && !isChildActive);
+					const parentAccessible = isAccessible(route);
+
+					items.push({
+						key: `sub-${route.path || route.label}`,
+						title: route.label,
+						className: isParentActive ? 'cms-parent-active' : undefined,
+						icon: resolveMenuIcon(route),
+						label: (route.path && parentAccessible) ? (
+							<NavLink
+								to={route.path}
+								style={{ display: 'inline-block', width: '100%', color: 'inherit' }}
+								onClick={(e) => {
+									// Prevent Ant Design from closing the submenu when clicking the link text
+									e.stopPropagation();
+									const parentKey = `sub-${route.path || route.label}`;
+									setOpenKeys((prev) => (prev.includes(parentKey) ? prev : [...prev, parentKey]));
+								}}
+							>
+								{route.label}
+							</NavLink>
+						) : (
+							route.label
+						),
+						onTitleClick: ({ domEvent }: { domEvent: React.MouseEvent<HTMLElement> | React.KeyboardEvent<HTMLElement> }) => {
+							if (!route.path || !parentAccessible) return;
+							const target = domEvent.target as HTMLElement | null;
+							// If user clicked specifically on the expand/collapse arrow, let Ant Design toggle open/close
+							if (target?.closest('.ant-menu-submenu-arrow')) {
+								return;
+							}
+							// Otherwise (clicked on icon, padding, or title), navigate to parent path
+							if (pathname !== route.path) {
+								navigate(route.path);
+							}
+							const parentKey = `sub-${route.path || route.label}`;
+							setOpenKeys((prev) => (prev.includes(parentKey) ? prev : [...prev, parentKey]));
+						},
+						children: accessibleChildren,
+					});
+					continue;
+				}
+
+				if (isAccessible(route) && route.path) {
 					items.push({
 						key: route.path,
+						title: route.label,
 						icon: resolveMenuIcon(route),
 						label: (
 							<NavLink
@@ -130,7 +169,7 @@ export default function Sidebar() {
 		};
 
 		return transformRoutes(menuRoutes);
-	}, [menuRoutes, isAdmin, hasRole, canDoModule, pathname, collapsed, navigate]);
+	}, [menuRoutes, isAdmin, can, pathname, collapsed, navigate]);
 
 	// Auto-calculate best matching selected key using current route or longest prefix
 	const selectedKey = useMemo(() => {

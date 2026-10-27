@@ -8,10 +8,12 @@ import SpinComponent from './components/SpinComponent';
 import NotFound from './pages/NotFound';
 import PermissionGate from './components/PermissionGate';
 import AccessDeny from './components/AccessDeny';
+import { useSelector } from './store';
 
 export default function AppRouter() {
 	const adminRoutes = useAdminRoutes();
 	const bareRoutes = useBareRoutes();
+	const { isAuthenticated } = useSelector((state: any) => state.auth);
 	const adminPath = '/admin';
 	return (
 		<ConfigProvider
@@ -49,6 +51,9 @@ export default function AppRouter() {
 							{/* Bare / Standalone / Public Routes */}
 							{bareRoutes.map((route) => {
 								const Component = route.component;
+								if (isAuthenticated) {
+									return <Route key={route.path} path={route.path} element={<Navigate to="/dashboard" replace />} />;
+								}
 								return <Route key={route.path} path={route.path} element={<Component />} />;
 							})}
 

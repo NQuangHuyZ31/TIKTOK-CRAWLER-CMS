@@ -54,6 +54,7 @@ export interface ListLayoutProps<T = any> {
 	// Primary Action: Add / Create
 	onAdd?: (() => void) | string;
 	addText?: string;
+	extra?: ReactNode;
 
 	// 2. Search Props
 	showSearch?: boolean;
@@ -98,6 +99,7 @@ export default function ListLayout<T = any>({
 	onBack,
 	onAdd,
 	addText = 'Add New',
+	extra,
 
 	// Search props
 	showSearch = true,
@@ -184,7 +186,7 @@ export default function ListLayout<T = any>({
 	return (
 		<div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 			{/* 1. Page Header */}
-			<PageHeader title={title} subtitle={subtitle} breadcrumbs={breadcrumbs} onBack={onBack} extra={primaryAddButton} />
+			<PageHeader title={title} subtitle={subtitle} breadcrumbs={breadcrumbs} onBack={onBack} extra={extra ?? primaryAddButton} />
 
 			{/* 2. Main List Card */}
 			<Card

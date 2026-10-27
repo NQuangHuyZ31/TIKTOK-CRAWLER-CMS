@@ -53,22 +53,18 @@ export default function RoleTableList({ data, loading = false, pagination, onPag
 			key: 'actions',
 			width: 140,
 			align: 'center',
+			fixed: 'right',
 			render: (_: any, record: RoleItem) => {
-				const isSuperAdmin = record.slug === 'admin';
 				return (
 					<Space size={4}>
-						<PermissionGate module="user" action="edit">
-							<Tooltip title="Edit">
-								<Button size="small" type="text" icon={<EditOutlined style={{ color: '#52c41a' }} />} onClick={() => onEdit(record)} />
+						<Tooltip title="Edit">
+							<Button size="small" type="text" icon={<EditOutlined style={{ color: '#52c41a' }} />} onClick={() => onEdit(record)} />
+						</Tooltip>
+						<Popconfirm title="Delete role" description="Are you sure you want to delete this role?" onConfirm={() => onDelete(record)} okText="Delete" cancelText="Cancel" okButtonProps={{ danger: true }}>
+							<Tooltip title="Delete">
+								<Button type="text" danger size="small" icon={<DeleteOutlined />} />
 							</Tooltip>
-						</PermissionGate>
-						<PermissionGate module="user" action="delete">
-							<Popconfirm title="Delete role" description="Are you sure you want to delete this role?" onConfirm={() => onDelete(record)} okText="Delete" cancelText="Cancel" okButtonProps={{ danger: true }}>
-								<Tooltip title="Delete">
-									<Button type="text" danger size="small" icon={<DeleteOutlined />} />
-								</Tooltip>
-							</Popconfirm>
-						</PermissionGate>
+						</Popconfirm>
 					</Space>
 				);
 			},

@@ -8,7 +8,6 @@ import StatusTag from '@core/components/StatusTag';
 import { formatDateTime } from '@core/utils/formatDate';
 import { fetchUserDetail } from '../store/user/userThunks';
 import { ROLE_CONFIGS } from '../configs/userConstants';
-import AccessDeny from '@/components/AccessDeny';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -34,30 +33,6 @@ export default function UserDetailPage() {
 		);
 	}
 
-	if (error) {
-		const isForbidden = error.includes('Forbidden') || error.includes('403');
-		if (isForbidden) {
-			return <AccessDeny />;
-		}
-
-		return (
-			<div>
-				<Alert
-					type="error"
-					showIcon
-					message="Failed to load user details"
-					description={error}
-					action={
-						<Button type="primary" onClick={() => navigate('/user')}>
-							Back to Users
-						</Button>
-					}
-					style={{ borderRadius: 8, margin: 20 }}
-				/>
-			</div>
-		);
-	}
-
 	if (!user) {
 		return null;
 	}
@@ -66,32 +41,12 @@ export default function UserDetailPage() {
 	const roleCfg = ROLE_CONFIGS[primaryRole] || ROLE_CONFIGS.viewer;
 	const matrix = user.permissions_matrix || {};
 
-	const matrixDataSource = [
-		{
-			key: 'crawler',
-			module: 'Crawler Module',
-			view: matrix.crawler?.view,
-			edit: matrix.crawler?.edit,
-		},
-		{
-			key: 'tiktok_account',
-			module: 'TikTok Accounts',
-			view: matrix.tiktok_account?.view,
-			edit: matrix.tiktok_account?.edit,
-		},
-		{
-			key: 'core',
-			module: 'Core System',
-			view: matrix.core?.view,
-			edit: matrix.core?.edit,
-		},
-		{
-			key: 'user',
-			module: 'User Management',
-			view: matrix.user?.view,
-			edit: matrix.user?.edit,
-		},
-	];
+	const matrixDataSource = Object.entries(matrix).map(([moduleKey, perm]: [string, any]) => ({
+		key: perm.id ?? moduleKey,
+		module: perm.module ?? moduleKey,
+		view: Boolean(perm.view),
+		edit: Boolean(perm.edit),
+	}));
 
 	const matrixColumns = [
 		{

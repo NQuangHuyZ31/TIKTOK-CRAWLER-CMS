@@ -32,12 +32,6 @@ export const userColumnConfig: TableColumn[] = [
         width: 130,
     },
     {
-        title: 'Permissions',
-        dataIndex: 'permissions_matrix',
-        key: 'permissions_matrix',
-        width: 180,
-    },
-    {
         title: 'Created At',
         dataIndex: 'created_at',
         key: 'created_at',
