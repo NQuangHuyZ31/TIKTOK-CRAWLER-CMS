@@ -2,6 +2,7 @@
 
 namespace Modules\Core\Repositories;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -16,6 +17,11 @@ abstract class BaseRepository implements BaseRepositoryInterface
     public function __construct()
     {
         $this->model = $this->getModel();
+    }
+
+    public function query(): Builder
+    {
+        return $this->model->newQuery();
     }
 
     public function all(array $columns = ['*']): Collection
