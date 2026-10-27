@@ -25,7 +25,7 @@ export default function CrawlJobsPage() {
 		() => {
 			dispatch(fetchCrawlJobs(params));
 			dispatch(fetchStatisticsSummary());
-		}
+		},
 	);
 
 	useEffect(() => {

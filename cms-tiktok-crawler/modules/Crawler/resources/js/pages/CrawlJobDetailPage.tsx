@@ -75,7 +75,11 @@ export default function CrawlJobDetailPage() {
 	// 4. Delete Crawl Job directly via API
 	const handleDelete = () => {
 		if (!id) return;
-		actDelete(() => crawlJobAPI.deleteCrawlJobByID(id), 'Crawl job deleted successfully', () => navigate('/crawler/crawl-job'));
+		actDelete(
+			() => crawlJobAPI.deleteCrawlJobByID(id),
+			'Crawl job deleted successfully',
+			() => navigate('/crawler/crawl-job'),
+		);
 	};
 
 	if (loading) {
@@ -101,7 +105,7 @@ export default function CrawlJobDetailPage() {
 										Edit
 									</Button>
 								</PermissionGate>
-								<PermissionGate module="crawler" action="edit">
+								<PermissionGate module="crawler" action="create">
 									<Button type="primary" icon={<PlayCircleOutlined />} loading={starting} onClick={handleStartCrawlJob}>
 										Start
 									</Button>

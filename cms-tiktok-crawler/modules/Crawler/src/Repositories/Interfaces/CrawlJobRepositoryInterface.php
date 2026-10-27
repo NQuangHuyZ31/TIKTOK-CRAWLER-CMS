@@ -8,6 +8,9 @@ use Modules\Core\Repositories\Interfaces\BaseRepositoryInterface;
 
 interface CrawlJobRepositoryInterface extends BaseRepositoryInterface
 {
+    /** Get lasted Created Job */
+    public function getLastestJob(int $limit = 10, array $columns = ['*']) : Collection;
+    
     /**
      * Retrieve aggregate KPI dashboard statistics across all crawl jobs.
      */

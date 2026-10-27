@@ -17,6 +17,12 @@ class CrawlJobRepository extends BaseRepository implements CrawlJobRepositoryInt
         return new CrawlJob();
     }
 
+    /** Get Lastest Created Job */
+    public function getLastestJob(int $limit = 10, array $columns = ['*']) : Collection
+    {
+        return $this->model->orderBy('id', 'desc')->limit($limit)->get($columns);
+    }
+
     /**
      * Retrieve aggregate KPI dashboard statistics across all crawl jobs.
      */
