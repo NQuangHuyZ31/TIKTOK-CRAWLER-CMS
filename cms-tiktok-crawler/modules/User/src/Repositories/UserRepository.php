@@ -2,10 +2,7 @@
 
 namespace Modules\User\Repositories;
 
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
 use Modules\Core\Repositories\BaseRepository;
 use Modules\User\Models\User;
 use Modules\User\Repositories\Interfaces\UserRepositoryInterface;
@@ -30,91 +27,21 @@ class UserRepository extends BaseRepository implements UserRepositoryInterface
     }
 
     /**
-     * Create user record and synchronize roles and direct permissions.
+     * Synchronize role IDs for a user entity.
      */
-    public function createUserWithRolesAndPermissions(array $data): User
+    public function syncRoles(User $user, array $roleIds): array
     {
-        return DB::transaction(function () use ($data) {
-            $userData = [
-                'name' => $data['name'],
-                'email' => $data['email'],
-                'password' => Hash::make($data['password']),
-                'phone' => $data['phone'] ?? null,
-                'avatar' => $data['avatar'] ?? null,
-                'status' => $data['status'] ?? 'active',
-                'is_admin' => !empty($data['is_admin']),
-            ];
-
-            /** @var User $user */
-            $user = $this->model->create($userData);
-
-            if (isset($data['roles']) && is_array($data['roles'])) {
-                $user->syncRoles($data['roles']);
-            } elseif (isset($data['role']) && !empty($data['role'])) {
-                $user->syncRoles([$data['role']]);
-            }
-
-            if (isset($data['permissions']) && is_array($data['permissions'])) {
-                $user->syncPermissions($data['permissions']);
-            }
-
-            return $user->load(['roles.permissions', 'permissions']);
-        });
+        $ids = array_filter(array_map('intval', $roleIds));
+        return $user->roles()->sync($ids);
     }
 
     /**
-     * Update user record and synchronize roles and direct permissions.
-     *
-     * @param array<string, mixed> $data
+     * Synchronize permission IDs for a user entity.
      */
-    public function updateUserWithRolesAndPermissions(int|string $id, array $data): ?User
+    public function syncPermissions(User $user, array $permissionIds): array
     {
-        $user = $this->findById($id, []);
-        if (!$user) {
-            return null;
-        }
-
-        return DB::transaction(function () use ($user, $data) {
-            $updateData = [];
-
-            if (isset($data['name'])) {
-                $updateData['name'] = $data['name'];
-            }
-            if (isset($data['email'])) {
-                $updateData['email'] = $data['email'];
-            }
-            if (!empty($data['password'])) {
-                $updateData['password'] = Hash::make($data['password']);
-            }
-            if (array_key_exists('phone', $data)) {
-                $updateData['phone'] = $data['phone'];
-            }
-            if (array_key_exists('avatar', $data)) {
-                $updateData['avatar'] = $data['avatar'];
-            }
-            if (isset($data['status'])) {
-                $updateData['status'] = $data['status'];
-            }
-            if (array_key_exists('is_admin', $data)) {
-                $updateData['is_admin'] = (bool) $data['is_admin'];
-            }
-
-            if (!empty($updateData)) {
-                $user->update($updateData);
-            }
-
-            if (isset($data['roles']) && is_array($data['roles'])) {
-                $user->syncRoles($data['roles']);
-            } elseif (isset($data['role']) && !empty($data['role'])) {
-                $user->syncRoles([$data['role']]);
-            }
-
-            if (isset($data['permissions']) && is_array($data['permissions'])) {
-                $user->syncPermissions($data['permissions']);
-            }
-
-            return $user->load(['roles.permissions', 'permissions']);
-        });
+        $ids = array_filter(array_map('intval', $permissionIds));
+        return $user->permissions()->sync($ids);
     }
 
     /**
@@ -133,23 +60,21 @@ class UserRepository extends BaseRepository implements UserRepositoryInterface
 
     /**
      * Retrieve aggregate KPI statistics for user management.
-     *
-     * @return array<string, int>
      */
     public function getStatisticsSummary(): array
     {
         return [
-            'total_users' => User::count(),
-            'active_users' => User::where('status', 'active')->count(),
-            'inactive_users' => User::where('status', 'inactive')->count(),
-            'blocked_users' => User::where('status', 'blocked')->count(),
-            'admin_users' => User::where(function ($q) {
+            'total_users' => $this->model->count(),
+            'active_users' => $this->model->where('status', 'active')->count(),
+            'inactive_users' => $this->model->where('status', 'inactive')->count(),
+            'blocked_users' => $this->model->where('status', 'blocked')->count(),
+            'admin_users' => $this->model->where(function ($q) {
                 $q->where('is_admin', 1)
                     ->orWhereHas('roles', fn($r) => $r->where('roles.slug', 'admin'));
             })->count(),
-            'manager_users' => User::whereHas('roles', fn($q) => $q->where('slug', 'manager'))->count(),
-            'editor_users' => User::whereHas('roles', fn($q) => $q->where('slug', 'editor'))->count(),
-            'viewer_users' => User::whereHas('roles', fn($q) => $q->where('slug', 'viewer'))->count(),
+            'manager_users' => $this->model->whereHas('roles', fn($q) => $q->where('slug', 'manager'))->count(),
+            'editor_users' => $this->model->whereHas('roles', fn($q) => $q->where('slug', 'editor'))->count(),
+            'viewer_users' => $this->model->whereHas('roles', fn($q) => $q->where('slug', 'viewer'))->count(),
         ];
     }
 }

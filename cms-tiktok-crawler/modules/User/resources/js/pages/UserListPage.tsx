@@ -113,6 +113,7 @@ export default function UserListPage() {
 								{ value: 'inactive', label: 'Set as Inactive' },
 								{ value: 'blocked', label: 'Block Account', danger: true },
 							]}
+							disabled={user.id === record.id}
 						/>
 					),
 					phone: (phone: string) => phone || <span style={{ color: '#bfbfbf' }}>—</span>,
@@ -143,7 +144,7 @@ export default function UserListPage() {
 									okButtonProps={{ danger: true }}
 								>
 									<Tooltip title="Delete">
-										<Button type="text" danger size="small" icon={<DeleteOutlined />} />
+										<Button type="text" danger size="small" disabled={user.id === record.id} icon={<DeleteOutlined />} />
 									</Tooltip>
 								</Popconfirm>
 							</PermissionGate>

@@ -57,9 +57,9 @@ class PermissionController extends BaseController
      * Create a module with basic permissions (view, create, edit, delete).
      * api: POST /admin/api/user/permission/create-module
      */
-    public function createModule(Request $request): JsonResponse
+    public function createModule(CreateModulePermissionsRequest $request): JsonResponse
     {
-        $validated = app(CreateModulePermissionsRequest::class)->validated();
+        $validated = $request->validated();
 
         try {
             $permissions = $this->permissionService->createModulePermissions(

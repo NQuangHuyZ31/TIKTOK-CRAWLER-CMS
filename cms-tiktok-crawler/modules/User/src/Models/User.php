@@ -65,54 +65,22 @@ class User extends BaseUser
     }
 
     /**
-     * Synchronize roles by slugs or IDs.
-     *
-     * @param array<int|string> $roles
+     * Synchronize roles by integer IDs on the relation.
+     * Slug resolution is delegated to RoleService / UserService via Dependency Injection.
      */
-    public function syncRoles(array $roles): array
+    public function syncRoles(array $roleIds): array
     {
-        $ids = [];
-        $slugs = [];
-
-        foreach ($roles as $item) {
-            if (is_numeric($item)) {
-                $ids[] = (int) $item;
-            } elseif (is_string($item) && !empty($item)) {
-                $slugs[] = $item;
-            }
-        }
-
-        if (!empty($slugs)) {
-            $resolvedIds = app(\Modules\Role\Repositories\RoleRepositoryInterface::class)->resolveIdsBySlugs($slugs);
-            $ids = array_unique(array_merge($ids, $resolvedIds));
-        }
-
+        $ids = array_filter(array_map('intval', $roleIds));
         return $this->roles()->sync($ids);
     }
 
     /**
-     * Synchronize direct permissions by slugs or IDs.
-     *
-     * @param array<int|string> $permissions
+     * Synchronize direct permissions by integer IDs on the relation.
+     * Slug resolution is delegated to PermissionService / UserService via Dependency Injection.
      */
-    public function syncPermissions(array $permissions): array
+    public function syncPermissions(array $permissionIds): array
     {
-        $ids = [];
-        $slugs = [];
-
-        foreach ($permissions as $item) {
-            if (is_numeric($item)) {
-                $ids[] = (int) $item;
-            } elseif (is_string($item) && !empty($item)) {
-                $slugs[] = $item;
-            }
-        }
-
-        if (!empty($slugs)) {
-            $resolvedIds = app(\Modules\Permission\Repositories\PermissionRepositoryInterface::class)->resolveIdsBySlugs($slugs);
-            $ids = array_unique(array_merge($ids, $resolvedIds));
-        }
-
+        $ids = array_filter(array_map('intval', $permissionIds));
         return $this->permissions()->sync($ids);
     }
 

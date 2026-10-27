@@ -2,6 +2,8 @@
 
 namespace Modules\User\Services;
 
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use InvalidArgumentException;
 use Modules\Auth\Jobs\PasswordResetNotification;
@@ -19,113 +21,255 @@ class UserService
     ) {}
 
     /**
-     * Create a new user with role and permission assignments.
+     * Create a new user with role and permission assignments via injected repositories.
+     *
+     * @param array<string, mixed> $data
      */
     public function createUser(array $data): User
     {
-        return $this->userRepository->createUserWithRolesAndPermissions($data);
+        return DB::transaction(function () use ($data) {
+            $userData = [
+                'name' => $data['name'],
+                'email' => $data['email'],
+                'password' => Hash::make($data['password']),
+                'phone' => $data['phone'] ?? null,
+                'avatar' => $data['avatar'] ?? null,
+                'status' => $data['status'] ?? 'active',
+                'is_admin' => !empty($data['is_admin']),
+            ];
+            
+            $user = $this->userRepository->create($userData);
+
+            // Handle role assignments via injected RoleRepository
+            $roles = $data['roles'] ?? (isset($data['role']) ? [$data['role']] : []);
+            if (!empty($roles) && is_array($roles)) {
+                $roleIds = $this->resolveRoleIds($roles);
+                $this->userRepository->syncRoles($user, $roleIds);
+            }
+
+            // Handle direct permission assignments via injected PermissionRepository
+            if (isset($data['permissions']) && is_array($data['permissions'])) {
+                $permissionIds = $this->resolvePermissionIds($data['permissions']);
+                $this->userRepository->syncPermissions($user, $permissionIds);
+            }
+
+            return $user->load(['roles.permissions', 'permissions']);
+        });
     }
 
     /**
-     * Update an existing user with role and permission assignments.
+     * Update an existing user with role and permission assignments via injected repositories.
      */
-    public function updateUser(int|string $id, array $data, \App\Models\User|User|null $currentUser = null): User
+    public function updateUser(int|string $id, array $data, User|null $currentUser = null): User
     {
         $targetUser = $this->userRepository->findById($id, []);
         if (!$targetUser) {
             throw new InvalidArgumentException('User account not found.');
         }
 
-        // Check if removing admin privilege from the only remaining admin
-        if ($targetUser->isAdmin()) {
-            $willHaveAdminRole = false;
-            if (isset($data['roles'])) {
-                foreach ($data['roles'] as $r) {
-                    if ($r === 'admin' || (is_numeric($r) && (int) $r === 1)) {
-                        $willHaveAdminRole = true;
-                        break;
-                    }
-                }
-            } else {
-                $willHaveAdminRole = $targetUser->hasRole('admin');
+        // Business safeguard: prevent removing admin privilege from the only remaining admin
+        $this->assertNotDemotingLastAdmin($targetUser, $data);
+
+        return DB::transaction(function () use ($targetUser, $data) {
+            $allowed = ['name', 'email', 'phone', 'avatar', 'status', 'is_admin'];
+            $updateData = array_intersect_key($data, array_flip($allowed));
+
+            if (!empty($data['password'])) {
+                $updateData['password'] = Hash::make($data['password']);
+            }
+            if (array_key_exists('is_admin', $updateData)) {
+                $updateData['is_admin'] = (bool) $updateData['is_admin'];
             }
 
-            $willHaveIsAdmin = array_key_exists('is_admin', $data)
-                ? (bool) $data['is_admin']
-                : (bool) $targetUser->is_admin;
+            if (!empty($updateData)) {
+                $this->userRepository->update($targetUser->id, $updateData);
+            }
 
-            if (!$willHaveAdminRole && !$willHaveIsAdmin) {
-                $adminCount = User::where(function ($q) {
-                    $q->where('is_admin', 1)
-                        ->orWhereHas('roles', fn($r) => $r->where('roles.slug', 'admin'));
-                })->count();
+            // Sync roles if provided
+            $roles = $data['roles'] ?? (isset($data['role']) ? [$data['role']] : null);
+            if ($roles !== null && is_array($roles)) {
+                $roleIds = $this->resolveRoleIds($roles);
+                $this->userRepository->syncRoles($targetUser, $roleIds);
+            }
 
-                if ($adminCount <= 1) {
-                    throw new InvalidArgumentException('Cannot revoke admin privileges from the only remaining administrator.');
-                }
+            // Sync permissions if provided
+            if (isset($data['permissions']) && is_array($data['permissions'])) {
+                $permissionIds = $this->resolvePermissionIds($data['permissions']);
+                $this->userRepository->syncPermissions($targetUser, $permissionIds);
+            }
+
+            return $targetUser->fresh(['roles.permissions', 'permissions']);
+        });
+    }
+
+    /**
+     * Resolve mixed role identifiers (slugs or IDs) via injected RoleRepository.
+     */
+    public function resolveRoleIds(array $roles): array
+    {
+        $ids = [];
+        $slugs = [];
+
+        foreach ($roles as $item) {
+            if (is_numeric($item)) {
+                $ids[] = (int) $item;
+            } elseif (is_string($item) && trim($item) !== '') {
+                $slugs[] = trim($item);
             }
         }
 
-        $updated = $this->userRepository->updateUserWithRolesAndPermissions($id, $data);
+        if (!empty($slugs)) {
+            $resolved = $this->roleRepository->resolveIdsBySlugs($slugs);
+            $ids = array_merge($ids, $resolved);
+        }
+
+        return array_values(array_unique($ids));
+    }
+
+    /**
+     * Resolve mixed permission identifiers (slugs or IDs) via injected PermissionRepository.
+     */
+    public function resolvePermissionIds(array $permissions): array
+    {
+        $ids = [];
+        $slugs = [];
+
+        foreach ($permissions as $item) {
+            if (is_numeric($item)) {
+                $ids[] = (int) $item;
+            } elseif (is_string($item) && trim($item) !== '') {
+                $slugs[] = trim($item);
+            }
+        }
+
+        if (!empty($slugs)) {
+            $resolved = $this->permissionRepository->resolveIdsBySlugs($slugs);
+            $ids = array_merge($ids, $resolved);
+        }
+
+        return array_values(array_unique($ids));
+    }
+
+    /**
+     * Count total administrators in the system.
+     */
+    protected function countTotalAdministrators(): int
+    {
+        return $this->userRepository->query()
+            ->where(function ($q) {
+                $q->where('is_admin', 1)
+                    ->orWhereHas('roles', fn($r) => $r->where('roles.slug', 'admin'));
+            })
+            ->count();
+    }
+
+    /**
+     * Delete user with safeguards against self-deletion and last admin deletion.
+     */
+    public function deleteUser(int|string $id, User|null $currentUser = null): bool
+    {
+        $targetUser = $this->userRepository->findById($id, []);
+        if (!$targetUser) {
+            throw new InvalidArgumentException('User account not found.');
+        }
+
+        $this->assertNotDeletingSelf($currentUser, $id);
+        $this->assertNotDeletingLastAdmin($targetUser);
+
+        return $this->userRepository->delete($id);
+    }
+
+    /**
+     * Update user account status with domain safeguards.
+     */
+    public function updateStatus(int|string $id, string $status, User|null $currentUser = null): User
+    {
+        $targetUser = $this->userRepository->findById($id, []);
+        if (!$targetUser) {
+            throw new InvalidArgumentException('User account not found.');
+        }
+
+        $this->assertNotBlockingSelf($currentUser, $id, $status);
+        $this->assertNotDeactivatingLastAdmin($targetUser, $status);
+
+        $updated = $this->userRepository->updateStatus($id, $status);
         if (!$updated) {
-            throw new InvalidArgumentException('Failed to update user account.');
+            throw new InvalidArgumentException('Failed to update user status.');
         }
 
         return $updated;
     }
 
     /**
-     * Delete user with safeguards against self-deletion and last admin deletion.
+     * Safeguard: Prevent revoking admin status from the only remaining administrator.
      */
-    public function deleteUser(int|string $id, \App\Models\User|User|null $currentUser = null): bool
+    protected function assertNotDemotingLastAdmin(User $targetUser, array $data): void
     {
-        $targetUser = $this->userRepository->findById($id, []);
-        if (!$targetUser) {
-            throw new InvalidArgumentException('User account not found.');
+        if (!$targetUser->isAdmin()) {
+            return;
         }
 
-        // Prevent self deletion
-        if ($currentUser && (int) $currentUser->id === (int) $id) {
-            throw new InvalidArgumentException('You cannot delete your own account.');
+        $willHaveAdminRole = false;
+        if (isset($data['roles'])) {
+            foreach ($data['roles'] as $r) {
+                if ($r === 'admin' || (is_numeric($r) && (int) $r === 1)) {
+                    $willHaveAdminRole = true;
+                    break;
+                }
+            }
+        } else {
+            $willHaveAdminRole = $targetUser->hasRole('admin');
         }
 
-        // Prevent deletion of the last administrator
-        if ($targetUser->isAdmin()) {
-            $adminCount = User::where(function ($q) {
-                $q->where('is_admin', 1)
-                    ->orWhereHas('roles', fn($r) => $r->where('roles.slug', 'admin'));
-            })->count();
+        $willHaveIsAdmin = array_key_exists('is_admin', $data)
+            ? (bool) $data['is_admin']
+            : (bool) $targetUser->is_admin;
 
-            if ($adminCount <= 1) {
-                throw new InvalidArgumentException('Cannot delete the last remaining administrator.');
+        if (!$willHaveAdminRole && !$willHaveIsAdmin) {
+            if ($this->countTotalAdministrators() <= 1) {
+                throw new InvalidArgumentException('Cannot revoke admin privileges from the only remaining administrator.');
             }
         }
-
-        return $this->userRepository->delete($id);
     }
 
     /**
-     * Update user account status with safeguards.
+     * Safeguard: Prevent self-deletion.
      */
-    public function updateStatus(int|string $id, string $status, \App\Models\User|User|null $currentUser = null): User
+    protected function assertNotDeletingSelf(User|null $currentUser, int|string $id): void
     {
-        if (!in_array($status, ['active', 'inactive', 'blocked'], true)) {
-            throw new InvalidArgumentException('Status must be active, inactive, or blocked.');
+        if ($currentUser && (int) $currentUser->id === (int) $id) {
+            throw new InvalidArgumentException('You cannot delete your own account.');
         }
+    }
 
-        $targetUser = $this->userRepository->findById($id, []);
-        if (!$targetUser) {
-            throw new InvalidArgumentException('User account not found.');
+    /**
+     * Safeguard: Prevent deleting the last administrator.
+     */
+    protected function assertNotDeletingLastAdmin(User $targetUser): void
+    {
+        if ($targetUser->isAdmin() && $this->countTotalAdministrators() <= 1) {
+            throw new InvalidArgumentException('Cannot delete the last remaining administrator.');
         }
+    }
 
-        // Prevent blocking self
+    /**
+     * Safeguard: Prevent self-blocking.
+     */
+    protected function assertNotBlockingSelf(User|null $currentUser, int|string $id, string $status): void
+    {
         if ($currentUser && (int) $currentUser->id === (int) $id && $status === 'blocked') {
             throw new InvalidArgumentException('You cannot block your own account.');
         }
+    }
 
-        // Prevent deactivating/blocking last admin
+    /**
+     * Safeguard: Prevent deactivating or blocking the last active administrator.
+     */
+    protected function assertNotDeactivatingLastAdmin(User $targetUser, string $status): void
+    {
         if ($targetUser->isAdmin() && $status !== 'active') {
-            $activeAdminCount = User::where('status', 'active')
+            $activeAdminCount = $this->userRepository->query()
+                ->where('status', 'active')
                 ->where(function ($q) {
                     $q->where('is_admin', 1)
                         ->orWhereHas('roles', fn($r) => $r->where('roles.slug', 'admin'));
@@ -136,13 +280,6 @@ class UserService
                 throw new InvalidArgumentException('Cannot deactivate or block the only active administrator.');
             }
         }
-
-        $updated = $this->userRepository->updateStatus($id, $status);
-        if (!$updated) {
-            throw new InvalidArgumentException('Failed to update user status.');
-        }
-
-        return $updated;
     }
 
     /**

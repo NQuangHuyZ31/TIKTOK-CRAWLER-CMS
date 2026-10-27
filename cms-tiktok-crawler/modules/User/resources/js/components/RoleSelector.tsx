@@ -1,4 +1,3 @@
-import React from 'react';
 import { Radio, Space, Typography, Tag, Card } from 'antd';
 import { CrownOutlined, SafetyCertificateOutlined, ToolOutlined, EyeOutlined } from '@ant-design/icons';
 import { ROLE_CONFIGS } from '../configs/userConstants';
@@ -29,15 +28,7 @@ export default function RoleSelector({ value, onChange, availableRoles = [], dis
 		}
 	};
 
-	const rolesList =
-		availableRoles.length > 0
-			? availableRoles
-			: [
-					{ id: 1, name: 'Super Administrator', slug: 'admin', description: ROLE_CONFIGS.admin.description },
-					{ id: 2, name: 'Operations Manager', slug: 'manager', description: ROLE_CONFIGS.manager.description },
-					{ id: 3, name: 'Crawler Specialist', slug: 'editor', description: ROLE_CONFIGS.editor.description },
-					{ id: 4, name: 'Data Viewer', slug: 'viewer', description: ROLE_CONFIGS.viewer.description },
-				];
+	const rolesList = availableRoles.length > 0 ? availableRoles : [];
 
 	return (
 		<Radio.Group value={selectedSlug} onChange={(e) => onChange?.([e.target.value])} disabled={disabled} style={{ width: '100%' }}>
@@ -82,7 +73,7 @@ export default function RoleSelector({ value, onChange, availableRoles = [], dis
 									</Space>
 									<div style={{ marginTop: 4 }}>
 										<Text type="secondary" style={{ fontSize: 12 }}>
-											{r.description || cfg.description}
+											{r.description ?? ''}
 										</Text>
 									</div>
 								</div>

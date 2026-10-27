@@ -19,14 +19,14 @@ interface UserRepositoryInterface extends BaseRepositoryInterface
     public function findById(int|string $id, array $relations = ['roles.permissions', 'permissions']): ?User;
 
     /**
-     * Create user record and synchronize roles and direct permissions.
+     * Synchronize role IDs for a user entity.
      */
-    public function createUserWithRolesAndPermissions(array $data): User;
+    public function syncRoles(User $user, array $roleIds): array;
 
     /**
-     * Update user record and synchronize roles and direct permissions.
+     * Synchronize permission IDs for a user entity.
      */
-    public function updateUserWithRolesAndPermissions(int|string $id, array $data): ?User;
+    public function syncPermissions(User $user, array $permissionIds): array;
 
     /**
      * Update user account status (active, inactive, blocked).
