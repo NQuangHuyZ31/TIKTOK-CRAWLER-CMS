@@ -157,7 +157,7 @@ export default function DashboardPage() {
 						</Button>
 
 						<PermissionGate module="crawler" action="create">
-							<Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/crawler/crawl-job/form')}>
+							<Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/crawler/crawl-job/create')}>
 								Create Crawl Job
 							</Button>
 						</PermissionGate>

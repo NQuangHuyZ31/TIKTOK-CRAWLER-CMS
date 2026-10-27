@@ -1,8 +1,8 @@
 import React, { isValidElement, useEffect, useMemo, useState } from 'react';
-import { Button, Flex, Layout, Menu, Tag, Tooltip } from 'antd';
+import { Flex, Layout, Menu, Tag, Tooltip } from 'antd';
 import type { MenuProps } from 'antd';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { AppstoreOutlined, DashboardOutlined, KeyOutlined, MenuFoldOutlined, MenuUnfoldOutlined, RobotOutlined, SafetyCertificateOutlined, SettingOutlined, TeamOutlined, UserOutlined, VideoCameraOutlined } from '@ant-design/icons';
+import { AppstoreOutlined, DashboardOutlined, KeyOutlined, RobotOutlined, SafetyCertificateOutlined, SettingOutlined, TeamOutlined, UserOutlined, VideoCameraOutlined } from '@ant-design/icons';
 import { useMenuRoutes, useCurrentRoute, type RouteDef } from '../routes/registry';
 import { useLayout } from '../contexts/LayoutContext';
 import usePermission from '../hooks/usePermission';
@@ -110,22 +110,23 @@ export default function Sidebar() {
 						title: route.label,
 						className: isParentActive ? 'cms-parent-active' : undefined,
 						icon: resolveMenuIcon(route),
-						label: (route.path && parentAccessible) ? (
-							<NavLink
-								to={route.path}
-								style={{ display: 'inline-block', width: '100%', color: 'inherit' }}
-								onClick={(e) => {
-									// Prevent Ant Design from closing the submenu when clicking the link text
-									e.stopPropagation();
-									const parentKey = `sub-${route.path || route.label}`;
-									setOpenKeys((prev) => (prev.includes(parentKey) ? prev : [...prev, parentKey]));
-								}}
-							>
-								{route.label}
-							</NavLink>
-						) : (
-							route.label
-						),
+						label:
+							route.path && parentAccessible ? (
+								<NavLink
+									to={route.path}
+									style={{ display: 'inline-block', width: '100%', color: 'inherit' }}
+									onClick={(e) => {
+										// Prevent Ant Design from closing the submenu when clicking the link text
+										e.stopPropagation();
+										const parentKey = `sub-${route.path || route.label}`;
+										setOpenKeys((prev) => (prev.includes(parentKey) ? prev : [...prev, parentKey]));
+									}}
+								>
+									{route.label}
+								</NavLink>
+							) : (
+								route.label
+							),
 						onTitleClick: ({ domEvent }: { domEvent: React.MouseEvent<HTMLElement> | React.KeyboardEvent<HTMLElement> }) => {
 							if (!route.path || !parentAccessible) return;
 							const target = domEvent.target as HTMLElement | null;

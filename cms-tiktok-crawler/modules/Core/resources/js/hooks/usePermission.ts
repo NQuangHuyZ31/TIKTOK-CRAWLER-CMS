@@ -10,6 +10,8 @@ interface CanCheckOptions {
 	role?: string | string[];
 }
 
+const IGNORE_MODULES = ['auth'];
+
 export default function usePermission() {
 	const { roles, modulePermissions, permissions } = useSelector((state: any) => state.auth);
 	const isAdmin = useMemo(() => roles?.includes('admin'), [roles]);
@@ -35,21 +37,13 @@ export default function usePermission() {
 	/** Check CRUD for module */
 	const canDoModule = useCallback((module: string, action: PermissionAction = 'view'): boolean => {
 		if (isAdmin) return true;
-		if (module === 'core' || module === 'auth') return true;
+		if (IGNORE_MODULES.includes(module)) return true;
 
 		const targetPerms = modulePermissions?.[module];
 
 		if (!targetPerms) return false;
 
 		if (targetPerms[action] === true) return true;
-		if (action === 'edit' && targetPerms.edit === true) {
-			return true;
-		}
-
-		if (action === 'view' && (targetPerms.edit === true || targetPerms.create === true)) {
-			return true;
-		}
-
 		return false;
 	}, [isAdmin, modulePermissions]);
 

@@ -14,6 +14,6 @@ return [
     ]),
     'permission_action' => ['view', 'create', 'edit', 'delete'],
     'modules' => ['core', 'auth', 'system', 'role', 'permission', 'user', 'tiktok_account', 'crawler'],
-    'ignore_check_permission' => ['core', 'auth'],
+    'ignore_check_permission' => ['auth'],
     'ignore_group' => ['auth'],
 ];

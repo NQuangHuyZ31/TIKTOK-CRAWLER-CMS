@@ -89,16 +89,10 @@ class DashboardService
      * @param int $limit
      * @return array<int, array<string, mixed>>
      */
-    public function getRecentCrawlJobs(int $limit = 5): array
+    public function getRecentCrawlJobs(int $limit = 4): array
     {
-        if (!$this->crawlJobRepository) {
-            return [];
-        }
-
         try {
-            $jobs = $this->crawlJobRepository->all()
-                ->orderBy('id', 'desc')
-                ->limit($limit);
+            $jobs = $this->crawlJobRepository->getLastestJob($limit);
 
             return $jobs->map(function ($job) {
                 return [

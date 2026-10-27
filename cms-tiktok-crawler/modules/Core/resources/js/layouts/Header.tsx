@@ -14,9 +14,7 @@ export default function Header() {
 	const { collapsed, toggleCollapsed, toggleMobileDrawer, isMobile } = useLayout();
 	const currentRoute = useCurrentRoute();
 
-	const accountMenuItems: MenuProps['items'] = [
-		{ key: 'logout', icon: <LogoutOutlined />, label: 'Sign out', danger: true },
-	];
+	const accountMenuItems: MenuProps['items'] = [{ key: 'logout', icon: <LogoutOutlined />, label: 'Sign out', danger: true }];
 
 	const handleMenuClick: MenuProps['onClick'] = async ({ key }) => {
 		if (key === 'logout') {
@@ -45,21 +43,13 @@ export default function Header() {
 				<Button
 					type="text"
 					shape="circle"
-					icon={
-						collapsed ? (
-							<MenuUnfoldOutlined style={{ fontSize: 17, color: '#344054' }} />
-						) : (
-							<MenuFoldOutlined style={{ fontSize: 17, color: '#344054' }} />
-						)
-					}
+					icon={collapsed ? <MenuUnfoldOutlined style={{ fontSize: 17, color: '#344054' }} /> : <MenuFoldOutlined style={{ fontSize: 17, color: '#344054' }} />}
 					onClick={toggleCollapsed}
 					aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
 					style={{ width: 38, height: 38 }}
 				/>
 
-				<span style={{ fontWeight: 600, fontSize: 15, color: '#172033' }}>
-					{headerTitle}
-				</span>
+				<span style={{ fontWeight: 600, fontSize: 15, color: '#172033' }}>{headerTitle}</span>
 			</Flex>
 
 			{/* Right section: User profile & Logout dropdown */}
