@@ -4,6 +4,7 @@ from extractor import extract_profile
 from models import TikTokAccount
 from services.avatar_service import AvatarService
 from utils.browser_utils import open_url
+from utils.tiktok_utils import normalize_username
 
 
 logger = logging.getLogger(__name__)
@@ -31,6 +32,11 @@ class ProfileCrawler:
             html=await page.content(),
             profile_url=profile_url,
         )
+
+        if profile.username:
+            profile.username = normalize_username(profile.username)
+        elif username:
+            profile.username = normalize_username(username)
 
         if not profile.username:
             raise RuntimeError(

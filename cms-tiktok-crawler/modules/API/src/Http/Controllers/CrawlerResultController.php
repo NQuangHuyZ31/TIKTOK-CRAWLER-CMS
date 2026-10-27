@@ -44,39 +44,55 @@ class CrawlerResultController extends Controller
     {
         $accountData = $data['account'] ?? [];
         $isSuccess = $data['status'] === 'success';
-        $username = $isSuccess
-            ? $accountData['username']
-            : $data['username'];
 
-        $currentAccount = $this->tiktokAccountRepository->getAccountByField('username', $username);
+        $rawUsername = $isSuccess
+            ? ($accountData['username'] ?? $data['username'] ?? '')
+            : ($data['username'] ?? $accountData['username'] ?? '');
+
+        $username = ltrim(trim((string) $rawUsername), '@');
+
+        // Look up existing account in tiktok_accounts by clean username or with @ prefix
+        $currentAccount = null;
+        if (!empty($username)) {
+            $currentAccount = $this->tiktokAccountRepository->getAccountByField('username', $username)
+                ?? $this->tiktokAccountRepository->getAccountByField('username', '@' . $username);
+        }
 
         // Save account data to tiktok_accounts table
         $saveAccountData = [
-                    'followers_count' => $accountData['followers'] ?? 0,
-                    'following_count' => $accountData['following'] ?? 0,
-                    'likes_count' => $accountData['likes'] ?? 0,
-                    'profile_url' => $accountData['profile_url'] ?? null,
-                    'avatar_url' => $accountData['avatar_url'] ?? null,
-                    'avatar_path' => $accountData['avatar_path'] ?? null,
-                    'status' => $accountData['status'] ?? 'active',
-                    'last_crawled_at' => $accountData['last_crawled_at'] ?? now(),
+            'followers_count' => $accountData['followers'] ?? 0,
+            'following_count' => $accountData['following'] ?? 0,
+            'likes_count' => $accountData['likes'] ?? 0,
+            'profile_url' => $accountData['profile_url'] ?? $data['profile_url'] ?? null,
+            'avatar_url' => $accountData['avatar_url'] ?? null,
+            'avatar_path' => $accountData['avatar_path'] ?? null,
+            'status' => $accountData['status'] ?? 'active',
+            'last_crawled_at' => $accountData['last_crawled_at'] ?? now(),
         ];
 
-        // Update the crawl job's crawled_at timestamp if it hasn't been set yet.
-        if (empty($currentAccount->crawled_at)) {
+        // Update the account's crawled_at timestamp if it hasn't been set yet.
+        if ($currentAccount && empty($currentAccount->crawled_at)) {
+            $saveAccountData['crawled_at'] = $accountData['crawled_at'] ?? now();
+        } elseif (!$currentAccount) {
             $saveAccountData['crawled_at'] = $accountData['crawled_at'] ?? now();
         }
 
-        $account = null;
-        if ($isSuccess) {
-            $account = $this->tiktokAccountRepository->updateOrCreateAccount(
-                ['username' => $username], $saveAccountData
-            );
+        $account = $currentAccount;
+        if ($isSuccess && !empty($username)) {
+            if ($currentAccount) {
+                $this->tiktokAccountRepository->update($currentAccount->id, $saveAccountData);
+                $account = $this->tiktokAccountRepository->findById($currentAccount->id);
+            } else {
+                $account = $this->tiktokAccountRepository->create(array_merge(
+                    ['username' => $username],
+                    $saveAccountData
+                ));
+            }
         }
 
         $result = $this->crawlResultRepository->create([
             'crawl_job_id' => $jobId,
-            'tiktok_account_id' => $account?->id,
+            'tiktok_account_id' => $account?->id ?? $currentAccount?->id,
             'username' => $username,
             'followers_count' => $accountData['followers'] ?? 0,
             'following_count' => $accountData['following'] ?? 0,
@@ -92,7 +108,7 @@ class CrawlerResultController extends Controller
         return response()->json([
             'message' => 'Crawler result stored successfully.',
             'result_id' => $result->id,
-            'tiktok_account_id' => $account?->id,
+            'tiktok_account_id' => $result->tiktok_account_id,
             'data' => [
                 'event' => 'account',
                 'job_id' => $jobId,
