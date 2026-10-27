@@ -56,6 +56,13 @@ export const deleteCrawlJobByID = (id: string | number) =>
 export const startCrawlJobByID = (id: string | number) =>
     api(`/crawler/crawl-job/${id}/start`, { method: 'POST' });
 
+/**
+ * Retry execution of a failed crawl job.
+ * API: POST /crawler/crawl-job/{id}/retry
+ */
+export const retryCrawlJobByID = (id: string | number) =>
+    api(`/crawler/crawl-job/${id}/retry`, { method: 'POST' });
+
 export default {
     getCrawlJobs,
     getCrawlJobByID,
@@ -64,5 +71,6 @@ export default {
     getStatisticsSummary,
     deleteCrawlJobByID,
     startCrawlJobByID,
+    retryCrawlJobByID,
     getResults,
 };

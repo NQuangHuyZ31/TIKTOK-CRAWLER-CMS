@@ -146,7 +146,7 @@ export default function CrawlJobFormPage() {
 					const newId = result?.id ?? result?.data?.id;
 					return newId ? `/crawler/crawl-job/${newId}` : '/crawler/crawl-job';
 				}
-				return `/crawler/crawl-job/${id}`;
+				return `/crawler/crawl-job`;
 			}}
 		>
 			{(ctx) => <CrawlJobFormFields {...ctx} />}

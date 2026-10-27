@@ -146,6 +146,25 @@ class CrawlJobController extends BaseController
     }
 
     /**
+     * REST Custom Action: retry (POST /{module}/crawl-job/{id}/retry)
+     * Complex orchestration logic: delegated to CrawlJobService.
+     */
+    public function retry(int $id): JsonResponse
+    {
+        try {
+            $result = $this->crawlJobService->retry((int) $id);
+            if (!$result) {
+                return $this->respondError('Crawl job not found or cannot be retried.', 404);
+            }
+            return $this->respondSuccess(new CrawlJobResource($result), 'Crawl job retried successfully.');
+        } catch (\DomainException $e) {
+            return $this->respondError($e->getMessage(), 422);
+        } catch (\Throwable $e) {
+            return $this->respondError($e->getMessage(), 500);
+        }
+    }
+
+    /**
      * REST Custom Query: statisticsSummary (GET /{module}/crawl-job/statistics-summary)
      * Pure database aggregation: queries CrawlJobRepository directly without service layer.
      */

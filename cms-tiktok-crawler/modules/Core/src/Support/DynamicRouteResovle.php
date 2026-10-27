@@ -294,6 +294,7 @@ class DynamicRouteResovle {
             'delete'       => 'delete',
             'remove'       => 'delete',
             'start'        => 'edit',
+            'retry'        => 'edit',
         ];
 
         $actionLower = strtolower($actionMethod);

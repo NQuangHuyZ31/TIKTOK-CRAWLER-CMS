@@ -47,16 +47,7 @@ class CrawlJobService
                 'started_at' => now(),
             ]);
 
-            $headers = [];
-            if ($token = config('services.crawler.token')) {
-                $headers['Authorization'] = "Bearer {$token}";
-            }
-
-            FetchApi::post(
-                rtrim(config('services.crawler.url', 'http://127.0.0.1:8001'), '/') . '/api/crawl-jobs/start',
-                $payload,
-                $headers
-            );
+            $this->dispatchToCrawlerEngine($payload);
 
             $startedJob = $this->crawlJobRepository->findById($id);
             return $startedJob;
@@ -64,6 +55,71 @@ class CrawlJobService
             $this->markCrawlJobAsFailed($id, $exception->getMessage());
             throw $exception;
         }
+    }
+
+    /**
+     * Domain logic: Retry a failed crawl job.
+     * Rules:
+     * - Only 'failed' jobs can be retried.
+     * - Only 1 active running job is allowed system-wide at any given time.
+     * - Cleans up previous crawl results of this job and resets counts & error message.
+     * - Dispatches API call to external Python Crawler Engine. Marks job 'failed' with error_message upon exception.
+     */
+    public function retry(int $id): ?CrawlJob
+    {
+        $crawlJob = $this->crawlJobRepository->findById($id);
+
+        if (!$crawlJob) {
+            return null;
+        }
+
+        if ($crawlJob->status !== 'failed') {
+            throw new \DomainException("Crawl job #{$id} is in status '{$crawlJob->status}', only 'failed' jobs can be retried.");
+        }
+
+        if ($this->crawlJobRepository->hasRunningJob($id)) {
+            throw new \DomainException('Another crawl job is currently running, please wait for it to complete.');
+        }
+
+        try {
+            $payload = $this->buildCrawlerPayload($id, $crawlJob);
+
+            // Clean up existing results from previous failed attempt
+            $crawlJob->results()->delete();
+
+            $this->crawlJobRepository->update($id, [
+                'status' => 'running',
+                'error_message' => null,
+                'started_at' => now(),
+                'finished_at' => null,
+                'success_count' => 0,
+                'failed_count' => 0,
+            ]);
+
+            $this->dispatchToCrawlerEngine($payload);
+
+            return $this->crawlJobRepository->findById($id);
+        } catch (\Throwable $exception) {
+            $this->markCrawlJobAsFailed($id, $exception->getMessage());
+            throw $exception;
+        }
+    }
+
+    /**
+     * Dispatch payload to external Python Crawler Engine.
+     */
+    protected function dispatchToCrawlerEngine(array $payload): void
+    {
+        $headers = [];
+        if ($token = config('services.crawler.token')) {
+            $headers['Authorization'] = "Bearer {$token}";
+        }
+
+        FetchApi::post(
+            rtrim(config('services.crawler.url', 'http://127.0.0.1:8001'), '/') . '/api/crawl-jobs/start',
+            $payload,
+            $headers
+        );
     }
 
     /**

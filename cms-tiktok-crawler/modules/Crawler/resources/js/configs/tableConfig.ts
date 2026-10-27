@@ -51,7 +51,7 @@ export const crawlJobColumnConfig: TableColumn[] = [
 	{
 		key: 'action',
 		title: '',
-		width: 120,
+		width: 140,
 		fixed: 'right',
 	},
 ];

@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
-import { Alert, Button, Card, Descriptions, Space, Typography, Popconfirm } from 'antd';
-import { PlayCircleOutlined, DeleteOutlined, EditOutlined, ArrowLeftOutlined } from '@ant-design/icons';
+import { Alert, Button, Card, Descriptions, Popconfirm, Space } from 'antd';
+import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
 import { useNavigate, useParams } from 'react-router-dom';
 import useAction from '@core/hooks/useAction';
 import crawlJobAPI from '../Action/crawlJob';
@@ -18,7 +18,6 @@ export default function CrawlJobDetailPage() {
 	const [job, setJob] = useState<any>(null);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
-	const { act: actStart, loading: starting } = useAction();
 	const { act: actDelete, loading: deleting } = useAction();
 
 	// Local states for Crawl Results
@@ -66,13 +65,7 @@ export default function CrawlJobDetailPage() {
 		loadResults(1, 10);
 	}, [loadJobDetail, loadResults]);
 
-	// 3. Start Crawl Job directly via API
-	const handleStartCrawlJob = () => {
-		if (!id) return;
-		actStart(() => crawlJobAPI.startCrawlJobByID(id), 'Crawl job started successfully', loadJobDetail);
-	};
-
-	// 4. Delete Crawl Job directly via API
+	// 3. Delete Crawl Job directly via API
 	const handleDelete = () => {
 		if (!id) return;
 		actDelete(
@@ -97,24 +90,14 @@ export default function CrawlJobDetailPage() {
 				subtitle="Track progress and results of the crawl session."
 				onBack={() => navigate('/crawler/crawl-job')}
 				extra={
-					<Space align="center" style={{ gap: 8 }}>
-						{job?.status === 'pending' ? (
-							<>
-								<PermissionGate module="crawler" action="edit">
-									<Button icon={<EditOutlined />} onClick={() => navigate(`/crawler/crawl-job/${id}/edit`)}>
-										Edit
-									</Button>
-								</PermissionGate>
-								<PermissionGate module="crawler" action="create">
-									<Button type="primary" icon={<PlayCircleOutlined />} loading={starting} onClick={handleStartCrawlJob}>
-										Start
-									</Button>
-								</PermissionGate>
-							</>
-						) : (
-							<Button disabled>{job?.status}</Button>
+					<Space>
+						{job?.status === 'pending' && (
+							<PermissionGate module="crawler" action="edit">
+								<Button icon={<EditOutlined />} onClick={() => navigate(`/crawler/crawl-job/${job.id}/edit`)}>
+									Edit
+								</Button>
+							</PermissionGate>
 						)}
-
 						<PermissionGate module="crawler" action="delete">
 							<Popconfirm
 								title="Delete crawl job"
