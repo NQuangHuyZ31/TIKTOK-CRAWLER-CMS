@@ -238,7 +238,7 @@ class DynamicRouteResovle {
         // Default RESTful actions based on HTTP method
         $restDefaults = [
             'GET' => $hasId ? ['show', 'getDetails', 'get'] : ['index', 'getAll', 'all'],
-            'POST' => ['store', 'add', 'create'],
+            'POST' => $hasId ? ['update', 'edit', 'store', 'add', 'create'] : ['store', 'add', 'create'],
             'PUT' => ['update', 'edit'],
             'PATCH' => ['updateStatus', 'update', 'patch'],
             'DELETE' => ['destroy', 'delete', 'remove'],
