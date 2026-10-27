@@ -27,8 +27,15 @@ export const createTiktokAccount = (data: any) =>
  * Update TikTok account details (supports JSON or multipart FormData for avatar uploads).
  * API: POST or PUT /tiktok-account/tiktok-account/{id}
  */
-export const updateTiktokAccount = (id: string | number, data: any) =>
-	api(`${baseURL}/${id}`, { method: 'PUT', data });
+export const updateTiktokAccount = (id: string | number, data: any) => {
+	if (data instanceof FormData) {
+		if (!data.has('_method')) {
+			data.append('_method', 'PUT');
+		}
+		return api(`${baseURL}/${id}`, { method: 'POST', data });
+	}
+	return api(`${baseURL}/${id}`, { method: 'PUT', data });
+};
 
 /**
  * Delete TikTok account by ID.

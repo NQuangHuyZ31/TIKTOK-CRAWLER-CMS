@@ -24,9 +24,13 @@ class UpdateTiktokAccountRequest extends FormRequest
     public function rules(): array
     {
         $id = $this->route('id') ?? $this->id;
+        if (is_numeric($id)) {
+            $id = (int) $id;
+        }
 
         return [
             'username' => [
+                'sometimes',
                 'required',
                 'string',
                 'max:255',
@@ -42,6 +46,19 @@ class UpdateTiktokAccountRequest extends FormRequest
             'is_verified' => 'nullable|boolean',
             'status' => 'sometimes|in:active,inactive,banned',
             'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
+        ];
+    }
+
+    /**
+     * Get custom messages for validator errors.
+     *
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'username.required' => 'TikTok username is required.',
+            'username.unique' => 'This TikTok username is already taken.',
         ];
     }
 }
