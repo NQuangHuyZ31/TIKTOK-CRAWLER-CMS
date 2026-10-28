@@ -83,7 +83,7 @@ services:
     dockerContext: .
     plan: starter
     region: singapore
-    startCommand: php artisan queue:work --sleep=3 --tries=3 --max-time=3600 --queue=default,crawler,system
+    dockerCommand: php artisan queue:work --sleep=3 --tries=3 --max-time=3600 --queue=default,crawler,system
     envVars:
       - key: APP_ENV
         value: production
@@ -116,7 +116,7 @@ services:
     dockerContext: .
     schedule: "* * * * *"
     region: singapore
-    startCommand: php artisan schedule:run
+    dockerCommand: php artisan schedule:run
     envVars:
       - key: APP_ENV
         value: production
