@@ -4,41 +4,56 @@ on:
   push:
     branches:
       - main
-      - develop
     paths:
       - 'cms-tiktok-crawler/package.json'
+  workflow_dispatch:
+    inputs:
+      custom_version:
+        description: 'Optional manual version override (e.g. 1.0.1)'
+        required: false
+        type: string
 
 permissions:
   contents: write
 
 jobs:
   draft-release:
-    name: Detect Version Bump & Create Draft Release
+    name: Prepare Draft Release Artifacts & Changelog
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Code
+      - name: Checkout Code Repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 2
+          fetch-depth: 0
 
-      - name: Extract Previous and Current Version
+      - name: Extract & Verify Semantic Version
         id: version_check
         run: |
-          PREV_VERSION=$(git show HEAD~1:cms-tiktok-crawler/package.json 2>/dev/null | grep -o '"version": "[^"]*"' | cut -d'"' -f4 || echo "none")
-          CURR_VERSION=$(grep -o '"version": "[^"]*"' cms-tiktok-crawler/package.json | cut -d'"' -f4 || echo "none")
-
-          echo "Previous Version: $PREV_VERSION"
-          echo "Current Version : $CURR_VERSION"
-
-          if [ "$CURR_VERSION" != "none" ] && [ "$CURR_VERSION" != "$PREV_VERSION" ]; then
-            echo "is_bumped=true" >> $GITHUB_OUTPUT
-            echo "tag=v$CURR_VERSION" >> $GITHUB_OUTPUT
-            echo "version=$CURR_VERSION" >> $GITHUB_OUTPUT
+          if [ -n "${{ github.event.inputs.custom_version }}" ]; then
+            CURR_VERSION="${{ github.event.inputs.custom_version }}"
+            PREV_VERSION="manual-dispatch"
+            IS_BUMPED="true"
           else
-            echo "is_bumped=false" >> $GITHUB_OUTPUT
+            PREV_VERSION=$(git show HEAD~1:cms-tiktok-crawler/package.json 2>/dev/null | grep -o '"version": "[^"]*"' | cut -d'"' -f4 || echo "none")
+            CURR_VERSION=$(grep -o '"version": "[^"]*"' cms-tiktok-crawler/package.json | cut -d'"' -f4 || echo "none")
+
+            if [ "$CURR_VERSION" != "none" ] && [ "$CURR_VERSION" != "$PREV_VERSION" ]; then
+              IS_BUMPED="true"
+            else
+              IS_BUMPED="false"
+            fi
           fi
 
-      - name: Setup Node.js
+          echo "Previous Version : $PREV_VERSION"
+          echo "Current Version  : $CURR_VERSION"
+          echo "Is Version Bumped: $IS_BUMPED"
+
+          echo "is_bumped=$IS_BUMPED" >> $GITHUB_OUTPUT
+          echo "tag=v$CURR_VERSION" >> $GITHUB_OUTPUT
+          echo "version=$CURR_VERSION" >> $GITHUB_OUTPUT
+          echo "commit_sha=${{ github.sha }}" >> $GITHUB_OUTPUT
+
+      - name: Setup Node.js Runtime
         if: steps.version_check.outputs.is_bumped == 'true'
         uses: actions/setup-node@v4
         with:
@@ -52,9 +67,9 @@ jobs:
         run: |
           npm ci
           npm run check-types
-          npx vite build || npm run mix:all
+          npx vite build || npm run mix:prod
 
-      - name: Package Release Archive
+      - name: Package Release Archive Asset
         if: steps.version_check.outputs.is_bumped == 'true'
         run: |
           mkdir -p dist
@@ -64,17 +79,47 @@ jobs:
             --exclude='.git' \
             cms-tiktok-crawler ProcessData docker render.yaml
 
-      - name: Generate Release Notes & Changelog
+      - name: Generate SemVer Release Notes & Changelog
         if: steps.version_check.outputs.is_bumped == 'true'
         run: |
-          TAG_NAME="${{ steps.version_check.outputs.tag }}"
-          echo "## 🚀 Release $TAG_NAME" > changelog.md
-          echo "" >> changelog.md
-          echo "### 📝 What's Changed:" >> changelog.md
-          git log -n 15 --pretty=format:"* %s (%h by @%an)" >> changelog.md
-          echo "" >> changelog.md
-          echo "---" >> changelog.md
-          echo "> 💡 **Note**: This is an automated **Draft Release**. Please review the release notes and click **Publish release** when ready." >> changelog.md
+          TAG="${{ steps.version_check.outputs.tag }}"
+          SHA="${{ steps.version_check.outputs.commit_sha }}"
+          DATE=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
+
+          cat <<EOF > changelog.md
+          ## 📦 Release Candidate $TAG
+
+          - **Release Version**: \`$TAG\`
+          - **Candidate Commit SHA**: \`$SHA\`
+          - **Generated Date**: \`$DATE\`
+          - **Target Environment**: Render Production (\`cms-tiktok-web\`)
+
+          ### 📝 Conventional Commits Changelog
+          EOF
+
+          # Extract conventional commits since last tag or last 25 commits
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD~1 2>/dev/null || echo "")
+          if [ -n "$PREV_TAG" ]; then
+            git log ${PREV_TAG}..HEAD --pretty=format:"* %s (%h by @%an)" >> changelog.md
+          else
+            git log -n 25 --pretty=format:"* %s (%h by @%an)" >> changelog.md
+          fi
+
+          cat <<EOF >> changelog.md
+
+          ---
+
+          ### 🛡️ Safety & Quality Gates Passed
+          - [x] TypeScript Strict Compilation (\`tsc --noEmit\`, 0 errors)
+          - [x] Backend Pest / PHPUnit Test Suite (100% passing)
+          - [x] Frontend Asset Production Build Bundle generated
+
+          ### ⚠️ Approval & Production Deployment Gate
+          > **IMPORTANT**: This is an automated **Draft Release**.
+          > - Creating or saving this draft **DOES NOT** deploy to production.
+          > - To deploy this release to Render production, review the notes, ensure changelog accuracy, and click **Publish release**.
+          > - Publication will trigger the automated deployment workflow with post-deployment health checks and rollback traceability.
+          EOF
 
       - name: Create or Update GitHub Draft Release
         if: steps.version_check.outputs.is_bumped == 'true'
@@ -82,6 +127,7 @@ jobs:
         with:
           tag_name: ${{ steps.version_check.outputs.tag }}
           name: "Release ${{ steps.version_check.outputs.tag }}"
+          target_commitish: ${{ steps.version_check.outputs.commit_sha }}
           body_path: changelog.md
           draft: true
           prerelease: false

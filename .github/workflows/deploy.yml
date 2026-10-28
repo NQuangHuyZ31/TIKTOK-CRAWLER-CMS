@@ -1,49 +1,175 @@
-name: CD Deploy to Render
+name: Controlled Render Deployment & Health Verification
 
 on:
-  push:
-    branches:
-      - main
-      - develop
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      target_env:
+        description: 'Target Environment'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - staging
+      release_tag:
+        description: 'Release tag to deploy (e.g. v1.0.1)'
+        required: true
+        type: string
+      confirm_deploy:
+        description: 'Type "DEPLOY" to confirm manual trigger'
+        required: true
+        type: string
+
+concurrency:
+  group: render-production-deploy
+  cancel-in-progress: false
 
 jobs:
-  deploy:
-    name: Trigger Render Deploy Webhooks
+  pre-deploy-validation:
+    name: Validate Release & Authorization Gate
     runs-on: ubuntu-latest
+    outputs:
+      release_tag: ${{ steps.gate.outputs.release_tag }}
+      commit_sha: ${{ steps.gate.outputs.commit_sha }}
+      target_env: ${{ steps.gate.outputs.target_env }}
     steps:
-      - name: Determine Target Environment
-        id: env
+      - name: Checkout Code Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Evaluate Release Gate & Target SHA
+        id: gate
         run: |
-          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
-            echo "environment=production" >> $GITHUB_OUTPUT
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            if [ "${{ github.event.inputs.confirm_deploy }}" != "DEPLOY" ]; then
+              echo "::error::Deployment aborted. Manual confirmation requires entering 'DEPLOY'."
+              exit 1
+            fi
+            TAG="${{ github.event.inputs.release_tag }}"
+            ENV="${{ github.event.inputs.target_env }}"
+            SHA=$(git rev-parse "$TAG^{commit}" 2>/dev/null || git rev-parse HEAD)
           else
-            echo "environment=staging" >> $GITHUB_OUTPUT
+            # Triggered by published release
+            TAG="${{ github.event.release.tag_name }}"
+            ENV="production"
+            SHA="${{ github.event.release.target_commitish }}"
+            if [ -z "$SHA" ] || [ "$SHA" = "main" ]; then
+              SHA=$(git rev-parse HEAD)
+            fi
           fi
 
-      - name: Trigger Web Service Deploy Hook
+          echo "Deployment Gate Approved:"
+          echo "  Target Environment : $ENV"
+          echo "  Approved Tag       : $TAG"
+          echo "  Approved Commit SHA: $SHA"
+
+          echo "release_tag=$TAG" >> $GITHUB_OUTPUT
+          echo "commit_sha=$SHA" >> $GITHUB_OUTPUT
+          echo "target_env=$ENV" >> $GITHUB_OUTPUT
+
+  trigger-render:
+    name: Trigger Render Service Deployments
+    needs: pre-deploy-validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Render Web Service Hook
         if: env.RENDER_WEB_DEPLOY_HOOK != ''
         env:
           RENDER_WEB_DEPLOY_HOOK: ${{ secrets.RENDER_WEB_DEPLOY_HOOK }}
         run: |
-          echo "Triggering Render Web Service deploy for ${{ steps.env.outputs.environment }}..."
-          curl -s -X POST "$RENDER_WEB_DEPLOY_HOOK" || echo "Deploy hook triggered."
+          echo "Triggering Web Service deploy hook for ${{ needs.pre-deploy-validation.outputs.release_tag }}..."
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$RENDER_WEB_DEPLOY_HOOK")
+          echo "Web Service trigger response code: $STATUS"
+          if [ "$STATUS" -ge 400 ]; then
+            echo "::error::Render Web Service deploy hook returned error HTTP $STATUS"
+            exit 1
+          fi
 
-      - name: Trigger Crawler Service Deploy Hook
+      - name: Trigger Render Crawler Worker Hook
         if: env.RENDER_CRAWLER_DEPLOY_HOOK != ''
         env:
           RENDER_CRAWLER_DEPLOY_HOOK: ${{ secrets.RENDER_CRAWLER_DEPLOY_HOOK }}
         run: |
-          echo "Triggering Render Crawler Worker deploy..."
-          curl -s -X POST "$RENDER_CRAWLER_DEPLOY_HOOK" || echo "Crawler hook triggered."
+          echo "Triggering Crawler Worker deploy hook..."
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$RENDER_CRAWLER_DEPLOY_HOOK")
+          echo "Crawler Worker trigger response code: $STATUS"
 
-      - name: Trigger Queue Worker Deploy Hook
+      - name: Trigger Render Queue Worker Hook
         if: env.RENDER_QUEUE_DEPLOY_HOOK != ''
         env:
           RENDER_QUEUE_DEPLOY_HOOK: ${{ secrets.RENDER_QUEUE_DEPLOY_HOOK }}
         run: |
-          echo "Triggering Render Queue Worker deploy..."
-          curl -s -X POST "$RENDER_QUEUE_DEPLOY_HOOK" || echo "Queue hook triggered."
+          echo "Triggering Queue Worker deploy hook..."
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$RENDER_QUEUE_DEPLOY_HOOK")
+          echo "Queue Worker trigger response code: $STATUS"
 
-      - name: Deployment Notification
+  post-deploy-health-check:
+    name: Post-Deployment Health Check & Verification
+    needs: [pre-deploy-validation, trigger-render]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for Render Service Rollout & Probe Health
+        env:
+          HEALTH_URL: "https://cms-tiktok-web.onrender.com/api/health"
+          MAX_RETRIES: 20
+          SLEEP_SECONDS: 15
         run: |
-          echo "Render deployment triggered successfully for commit ${{ github.sha }} on ${{ steps.env.outputs.environment }}."
+          echo "Starting health probe against: $HEALTH_URL"
+          echo "Target Release : ${{ needs.pre-deploy-validation.outputs.release_tag }}"
+          echo "Target SHA     : ${{ needs.pre-deploy-validation.outputs.commit_sha }}"
+          echo "Max Wait Time  : $((MAX_RETRIES * SLEEP_SECONDS)) seconds"
+
+          # Initial grace period for container spin up
+          sleep 15
+
+          HEALTHY=false
+          for i in $(seq 1 $MAX_RETRIES); do
+            echo "--- Health probe attempt $i / $MAX_RETRIES ---"
+            
+            HTTP_RESPONSE=$(curl -s -w "\n%{http_code}" --max-time 10 "$HEALTH_URL" || echo -e "curl_error\n000")
+            HTTP_BODY=$(echo "$HTTP_RESPONSE" | sed '$d')
+            HTTP_CODE=$(echo "$HTTP_RESPONSE" | tail -n 1)
+
+            echo "HTTP Status Code : $HTTP_CODE"
+            echo "Response Body    : $HTTP_BODY"
+
+            if [ "$HTTP_CODE" = "200" ] && echo "$HTTP_BODY" | grep -q '"status"[[:space:]]*:[[:space:]]*"healthy"'; then
+              echo "✅ Health check PASSED! Service is reporting healthy."
+              HEALTHY=true
+              break
+            fi
+
+            echo "Service not ready or unhealthy yet. Retrying in ${SLEEP_SECONDS}s..."
+            sleep $SLEEP_SECONDS
+          done
+
+          if [ "$HEALTHY" != "true" ]; then
+            echo "::error::CRITICAL: Post-deployment health check FAILED or timed out after $((MAX_RETRIES * SLEEP_SECONDS))s."
+            echo ""
+            echo "================================================================="
+            echo "                    ROLLBACK INSTRUCTIONS                        "
+            echo "================================================================="
+            echo "1. Verify Render service logs at: https://dashboard.render.com"
+            echo "2. Identify the last known-good release tag."
+            echo "3. Redeploy the previous known-good tag via GitHub Actions:"
+            echo "   Actions -> Controlled Render Deployment -> Run workflow"
+            echo "   Select environment: production, and enter the prior tag."
+            echo "4. Or roll back manually via Render Dashboard -> Deploys -> Revert."
+            echo "================================================================="
+            exit 1
+          fi
+
+      - name: Record Deployment Audit Evidence
+        run: |
+          echo "========================================================"
+          echo "          DEPLOYMENT VERIFIED & COMPLETED               "
+          echo "========================================================"
+          echo " Environment  : ${{ needs.pre-deploy-validation.outputs.target_env }}"
+          echo " Release Tag  : ${{ needs.pre-deploy-validation.outputs.release_tag }}"
+          echo " Commit SHA   : ${{ needs.pre-deploy-validation.outputs.commit_sha }}"
+          echo " Health Status: HEALTHY (HTTP 200 verified)"
+          echo " Timestamp    : $(date -u +"%Y-%m-%d %H:%M:%S UTC")"
+          echo "========================================================"
