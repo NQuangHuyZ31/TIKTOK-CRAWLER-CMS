@@ -9,6 +9,7 @@ use InvalidArgumentException;
 use Modules\Auth\Jobs\PasswordResetNotification;
 use Modules\Permission\Repositories\PermissionRepositoryInterface;
 use Modules\Role\Repositories\RoleRepositoryInterface;
+use Modules\System\Events\ActivityOccurredEvent;
 use Modules\User\Models\User;
 use Modules\User\Repositories\Interfaces\UserRepositoryInterface;
 
@@ -340,7 +341,37 @@ class UserService
             $resetUrl = config('app.url') . '/admin/auth/login?reset-password=1&token=' . $token . '&email=' . $user->email;
 
             PasswordResetNotification::dispatch($user->email, $resetUrl, $user->name);
+
+            ActivityOccurredEvent::dispatch(
+                action: 'REQUEST_RESET_PASSWORD',
+                module: 'USER_MANAGEMENT',
+                recordId: (string) $user->id,
+                recordType: 'User',
+                oldData: null,
+                newData: null,
+                metadata: [
+                    'target_email' => $user->email,
+                    'trigger_by' => auth()->user()?->email ?? 'admin',
+                ],
+                status: 'SUCCESS',
+                user: $user
+            );
         } catch (\Throwable $th) {
+            ActivityOccurredEvent::dispatch(
+                action: 'REQUEST_RESET_PASSWORD',
+                module: 'USER_MANAGEMENT',
+                recordId: (string) $user->id,
+                recordType: 'User',
+                oldData: null,
+                newData: null,
+                metadata: [
+                    'target_email' => $user->email,
+                ],
+                status: 'FAILED',
+                errorMessage: $th->getMessage(),
+                user: $user
+            );
+
             throw new InvalidArgumentException('Failed to send reset password email.');
         }
     }

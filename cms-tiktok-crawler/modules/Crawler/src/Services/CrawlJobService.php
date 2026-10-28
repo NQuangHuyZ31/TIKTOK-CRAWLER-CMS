@@ -21,10 +21,6 @@ class CrawlJobService
 
     /**
      * Domain logic: Create a new crawl job.
-     * Rules:
-     * - Parses & normalizes data_crawl input (supports string JSON or array).
-     * - Calculates total_accounts based on source_type.
-     * - Initializes default state: 'pending', success_count = 0, failed_count = 0.
      */
     public function create(array $data): CrawlJob
     {
@@ -54,10 +50,6 @@ class CrawlJobService
 
     /**
      * Domain logic: Update an existing crawl job.
-     * Rules:
-     * - Job must exist (returns null if not found).
-     * - Invariant: Only 'pending' jobs can be updated (throws \DomainException if not pending).
-     * - Normalizes data_crawl and recalculates total_accounts if modified.
      */
     public function update(int $id, array $data): ?CrawlJob
     {
@@ -102,10 +94,6 @@ class CrawlJobService
 
     /**
      * Domain logic: Delete a crawl job.
-     * Rules:
-     * - Returns false if job not found.
-     * - Invariant: Cannot delete a 'running' crawl job (throws \DomainException).
-     * - Deletes record via repository.
      */
     public function delete(int $id): bool
     {
@@ -144,11 +132,6 @@ class CrawlJobService
 
     /**
      * Domain logic: Start a crawl job (complex orchestration across DB, TiktokAccount repository, and Python crawler engine).
-     * Rules:
-     * - Only 'pending' jobs can be started.
-     * - Only 1 active running job is allowed system-wide at any given time.
-     * - For 'database' sources: resolves account IDs to actual TikTok usernames via TiktokAccountRepository.
-     * - Dispatches API call to external Python Crawler Engine. Marks job 'failed' with error_message upon exception.
      */
     public function start(int $id): ?CrawlJob
     {
@@ -198,11 +181,6 @@ class CrawlJobService
 
     /**
      * Domain logic: Retry a failed crawl job.
-     * Rules:
-     * - Only 'failed' jobs can be retried.
-     * - Only 1 active running job is allowed system-wide at any given time.
-     * - Cleans up previous crawl results of this job and resets counts & error message.
-     * - Dispatches API call to external Python Crawler Engine. Marks job 'failed' with error_message upon exception.
      */
     public function retry(int $id): ?CrawlJob
     {
