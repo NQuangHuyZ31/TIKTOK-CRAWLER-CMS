@@ -16,14 +16,11 @@ class PermissionRepository extends BaseRepository implements PermissionRepositor
 
     public function findBySlug(string $slug): ?Permission
     {
-        /** @var Permission|null */
         return $this->model->where('slug', $slug)->first();
     }
 
     /**
      * Get all permissions grouped by module.
-     *
-     * @return array<string, array<int, Permission>>
      */
     public function getGroupedByModule(): array
     {

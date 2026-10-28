@@ -2,7 +2,7 @@
 
 namespace Modules\Crawler\Database\Seeders;
 
-use App\Models\User;
+use Modules\User\Models\User;
 use Illuminate\Database\Seeder;
 use Modules\Crawler\Models\CrawlJob;
 use Modules\Crawler\Models\CrawlResult;

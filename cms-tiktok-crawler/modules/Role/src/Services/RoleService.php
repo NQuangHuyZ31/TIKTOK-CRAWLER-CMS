@@ -97,9 +97,6 @@ class RoleService
 
     /**
      * Synchronize permissions into role via injected PermissionRepository.
-     *
-     * @param Role $role
-     * @param array<int|string> $permissions
      */
     public function syncRolePermissions(Role $role, array $permissions): array
     {
@@ -120,5 +117,29 @@ class RoleService
         }
 
         return $this->roleRepository->syncPermissions($role, $ids);
+    }
+
+    /**
+     * Resolve mixed role identifiers (slug strings or integer IDs) to unique database IDs.
+     */
+    public function resolveRoleIds(array $roles): array
+    {
+        $ids = [];
+        $slugs = [];
+
+        foreach ($roles as $item) {
+            if (is_numeric($item)) {
+                $ids[] = (int) $item;
+            } elseif (is_string($item) && trim($item) !== '') {
+                $slugs[] = trim($item);
+            }
+        }
+
+        if (!empty($slugs)) {
+            $resolved = $this->roleRepository->resolveIdsBySlugs($slugs);
+            $ids = array_merge($ids, $resolved);
+        }
+
+        return array_values(array_unique($ids));
     }
 }

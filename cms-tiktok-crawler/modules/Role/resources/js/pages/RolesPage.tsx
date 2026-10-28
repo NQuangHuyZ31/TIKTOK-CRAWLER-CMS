@@ -44,11 +44,7 @@ export default function RolesPage() {
 			<ListLayout
 				title="Roles & Access Control (RBAC)"
 				subtitle="Configure system user access levels and granular module permissions"
-				breadcrumbs={[
-					{ title: 'Dashboard', href: '/admin/dashboard' },
-					{ title: 'Roles', href: '/admin/role/roles' },
-					{ title: 'Role Management' },
-				]}
+				breadcrumbs={[{ title: 'Dashboard', href: '/admin/dashboard' }, { title: 'Users', href: '/admin/user' }, { title: 'Role Management' }]}
 				onAdd={handleOpenCreate}
 				addText="Create Role"
 				cardTitle="Configured System Roles"
@@ -60,23 +56,10 @@ export default function RolesPage() {
 				onRefresh={() => dispatch(fetchRoles(params))}
 				refreshing={loading}
 			>
-				<RoleTableList
-					data={roles}
-					loading={loading}
-					pagination={pagination}
-					onPageChange={(page, pageSize) => dispatch(setParams({ page, per_page: pageSize }))}
-					onEdit={handleOpenEdit}
-					onDelete={handleDelete}
-				/>
+				<RoleTableList data={roles} loading={loading} pagination={pagination} onPageChange={(page, pageSize) => dispatch(setParams({ page, per_page: pageSize }))} onEdit={handleOpenEdit} onDelete={handleDelete} />
 			</ListLayout>
 
-			<RoleFormModal
-				open={modalOpen}
-				onClose={() => dispatch(setModalOpen(false))}
-				onSuccess={() => dispatch(fetchRoles(params))}
-				role={selectedRole}
-				availablePermissions={permissions}
-			/>
+			<RoleFormModal open={modalOpen} onClose={() => dispatch(setModalOpen(false))} onSuccess={() => dispatch(fetchRoles(params))} role={selectedRole} availablePermissions={permissions} />
 		</div>
 	);
 }

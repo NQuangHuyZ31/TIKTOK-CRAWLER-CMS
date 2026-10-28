@@ -57,14 +57,18 @@ export default function RoleTableList({ data, loading = false, pagination, onPag
 			render: (_: any, record: RoleItem) => {
 				return (
 					<Space size={4}>
-						<Tooltip title="Edit">
-							<Button size="small" type="text" icon={<EditOutlined style={{ color: '#52c41a' }} />} onClick={() => onEdit(record)} />
-						</Tooltip>
-						<Popconfirm title="Delete role" description="Are you sure you want to delete this role?" onConfirm={() => onDelete(record)} okText="Delete" cancelText="Cancel" okButtonProps={{ danger: true }}>
-							<Tooltip title="Delete">
-								<Button type="text" danger size="small" icon={<DeleteOutlined />} />
+						<PermissionGate module="role" action="edit">
+							<Tooltip title="Edit">
+								<Button size="small" type="text" icon={<EditOutlined style={{ color: '#52c41a' }} />} onClick={() => onEdit(record)} />
 							</Tooltip>
-						</Popconfirm>
+						</PermissionGate>
+						<PermissionGate module="role" action="delete">
+							<Popconfirm title="Delete role" description="Are you sure you want to delete this role?" onConfirm={() => onDelete(record)} okText="Delete" cancelText="Cancel" okButtonProps={{ danger: true }}>
+								<Tooltip title="Delete">
+									<Button type="text" danger size="small" icon={<DeleteOutlined />} />
+								</Tooltip>
+							</Popconfirm>
+						</PermissionGate>
 					</Space>
 				);
 			},

@@ -6,10 +6,15 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Modules\Role\Models\Role;
+use Modules\System\Traits\LogsActivity;
 
 class Permission extends Model
 {
-    use HasFactory;
+    use HasFactory, LogsActivity;
+
+    public string $activityModule = 'PERMISSION';
+    public string $activityRecordType = 'Permission';
+    public string $activityIdentifierField = 'slug';
 
     protected $table = 'permissions';
 

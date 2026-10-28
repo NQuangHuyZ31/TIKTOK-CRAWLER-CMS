@@ -40,8 +40,6 @@ class PermissionService
 
     /**
      * Create a single permission.
-     *
-     * @param array<string, mixed> $data
      */
     public function createPermission(array $data): Permission
     {
@@ -54,15 +52,10 @@ class PermissionService
             throw new InvalidArgumentException("Permission with slug '{$slug}' already exists.");
         }
 
-        $name = !empty($data['name'])
-            ? trim($data['name'])
-            : Str::headline($action) . ' ' . Str::headline($module);
+        $name = !empty($data['name']) ? trim($data['name']) : Str::headline($action) . ' ' . Str::headline($module);
 
-        $description = !empty($data['description'])
-            ? trim($data['description'])
-            : "Can " . strtolower($action) . " " . Str::headline($module);
+        $description = !empty($data['description']) ? trim($data['description']) : "Can " . strtolower($action) . " " . Str::headline($module);
 
-        /** @var Permission */
         return $this->permissionRepository->create([
             'module'      => $module,
             'action'      => $action,
@@ -74,12 +67,6 @@ class PermissionService
 
     /**
      * Create standard basic permissions for a module.
-     *
-     * @param string $module
-     * @param array<string> $actions
-     * @param string|null $moduleLabel
-     * @param string|null $description
-     * @return array<Permission>
      */
     public function createModulePermissions(string $module, array $actions, ?string $moduleLabel = null, ?string $description = null): array
     {
@@ -101,7 +88,6 @@ class PermissionService
                 continue;
             }
 
-            /** @var Permission $permission */
             $permission = $this->permissionRepository->create([
                 'module'      => $moduleKey,
                 'action'      => $actionKey,
@@ -122,5 +108,29 @@ class PermissionService
     public function deletePermission(int|string $id): bool
     {
         return $this->permissionRepository->delete($id);
+    }
+
+    /**
+     * Resolve mixed permission identifiers (slug strings or integer IDs) to unique database IDs.
+     */
+    public function resolvePermissionIds(array $permissions): array
+    {
+        $ids = [];
+        $slugs = [];
+
+        foreach ($permissions as $item) {
+            if (is_numeric($item)) {
+                $ids[] = (int) $item;
+            } elseif (is_string($item) && trim($item) !== '') {
+                $slugs[] = trim($item);
+            }
+        }
+
+        if (!empty($slugs)) {
+            $resolved = $this->permissionRepository->resolveIdsBySlugs($slugs);
+            $ids = array_merge($ids, $resolved);
+        }
+
+        return array_values(array_unique($ids));
     }
 }

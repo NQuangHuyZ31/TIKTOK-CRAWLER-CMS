@@ -10,9 +10,6 @@ interface PermissionRepositoryInterface extends BaseRepositoryInterface
 {
     public function findBySlug(string $slug): ?Permission;
 
-    /**
-     * @return array<string, array<int, Permission>>
-     */
     public function getGroupedByModule(): array;
 
     public function getByIds(array $ids): Collection;

@@ -88,18 +88,15 @@ export default function CreatePermissionModal({ open, modulesList, onClose, onSu
 			description: values.description?.trim() || undefined,
 		};
 
-		await act(
-			() => createPermission(payload),
-			{
-				successMessage: `Permission '${payload.slug || `${payload.module}.${payload.action}`}' created successfully.`,
-				errorMessage: 'Failed to create permission. Please check inputs.',
-				onSuccess: () => {
-					onSuccess();
-					onClose();
-				},
-				onError: (err) => setErrorMsg(err?.response?.data?.message || err?.message),
-			}
-		);
+		await act(() => createPermission(payload), {
+			successMessage: `Permission '${payload.slug || `${payload.module}.${payload.action}`}' created successfully.`,
+			errorMessage: 'Failed to create permission. Please check inputs.',
+			onSuccess: () => {
+				onSuccess();
+				onClose();
+			},
+			onError: (err) => setErrorMsg(err?.response?.data?.message || err?.message),
+		});
 	};
 
 	const moduleOptions = modulesList.map((mod) => ({ value: mod, label: mod }));
@@ -188,7 +185,7 @@ export default function CreatePermissionModal({ open, modulesList, onClose, onSu
 						},
 					]}
 				>
-					<Input placeholder="e.g. user.view, crawler.export" />
+					<Input placeholder="e.g. user.view, crawler.export" disabled={true} />
 				</Form.Item>
 
 				<Form.Item name="description" label="Description">

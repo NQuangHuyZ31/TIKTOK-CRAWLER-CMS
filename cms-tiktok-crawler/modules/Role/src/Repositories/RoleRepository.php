@@ -16,13 +16,11 @@ class RoleRepository extends BaseRepository implements RoleRepositoryInterface
 
     public function findBySlug(string $slug): ?Role
     {
-        /** @var Role|null */
         return $this->model->where('slug', $slug)->first();
     }
 
     public function findWithPermissions(int|string $id): ?Role
     {
-        /** @var Role|null */
         return $this->model->with('permissions')->find($id);
     }
 

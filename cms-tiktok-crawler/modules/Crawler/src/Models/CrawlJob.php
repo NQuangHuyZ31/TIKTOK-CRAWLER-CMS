@@ -2,7 +2,7 @@
 
 namespace Modules\Crawler\Models;
 
-use App\Models\User;
+use Modules\User\Models\User;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
