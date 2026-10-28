@@ -2,7 +2,7 @@
 
 > [!IMPORTANT]
 > **MANDATORY READING FOR ALL AI AGENTS BEFORE EXECUTING ANY TASK!**
-> Adhere strictly to the Worktree protocol, English-only standard, Core reusability matrix (DO NOT REINVENT), Pull Request review gates, Draft Release lifecycle, and Render deployment security rules.
+> Adhere strictly to the Worktree protocol, English-only standard, Core reusability matrix (DO NOT REINVENT), Pull Request automation, Draft Release lifecycle, and the **Mandatory Human Approval Gate for Production Deployment**.
 
 ---
 
@@ -18,21 +18,24 @@
    - `docs/<task-id>-<description>`
    - `chore/<task-id>-<description>`
    - `ci/<task-id>-<description>`
-3. **No Direct Push to Protected Branches**: Agents and developers MUST NEVER push directly to `main` or `develop`. All integration requires opening a Pull Request with passing CI gates and human review approval.
-4. **Strict English Requirement**: All UI text (button labels, headers, placeholders, toasts, errors), code comments, docstrings, variable names, PR descriptions, and commit messages MUST be in English.
-5. **100% Strict TypeScript**: React 19 + TypeScript. No untyped `any`. Run `npm.cmd run check-types` with 0 compilation errors.
-6. **Windows PowerShell Execution**: Always invoke `npm.cmd` or `npx.cmd` in PowerShell to prevent permission blocks.
-7. **Direct Imports Only (No Barrel Files)**: Never create barrel re-export `index.ts` files (`components/index.ts`, `hooks/index.ts`). Always use direct imports: `import ListLayout from '@core/components/ListLayout'`.
-8. **Draft Release Lifecycle & Semantic Versioning**:
-   - Version bumps follow Semantic Versioning (MAJOR.MINOR.PATCH) in `cms-tiktok-crawler/package.json`.
-   - Merging a version bump into `main` automatically triggers GitHub Action `auto-draft-release.yml` to package artifacts and create a **Draft Release**.
-   - A **Draft Release NEVER deploys to production**. Production deployment requires an explicit review and publication.
-9. **Controlled Render Production Deployment**:
-   - Production deployment is triggered ONLY when a release is explicitly published (`release: types: [published]`) or via authorized manual workflow dispatch.
+3. **Automated Pull Request & Merge Workflow**:
+   - The Agent is **fully authorized** to push the task branch to remote, open a Pull Request, evaluate CI status, and merge into `main` via `.\scripts\agent-pr.ps1 -Action FullCycle -Branch <branch>`.
+4. **Automated Draft Release Generation**:
+   - Merging into `main` automatically triggers GitHub Action `auto-draft-release.yml` to build frontend assets, package `dist/*.tar.gz`, compile the changelog, and create/update a **GitHub Draft Release**.
+5. **CRITICAL: Mandatory Human Review & Manual Release Publication Gate**:
+   - **The Agent is STRICTLY FORBIDDEN from publishing a Release or triggering production deployment.**
+   - The Agent must **STOP** once the Draft Release is generated and provide the Draft Release link to the repository owner.
+   - **Only the human User may review the draft notes and manually click "Publish release"** on GitHub.
+6. **Strict English Requirement**: All UI text (button labels, headers, placeholders, toasts, errors), code comments, docstrings, variable names, PR descriptions, and commit messages MUST be in English.
+7. **100% Strict TypeScript**: React 19 + TypeScript. No untyped `any`. Run `npm.cmd run check-types` with 0 compilation errors.
+8. **Windows PowerShell Execution**: Always invoke `npm.cmd` or `npx.cmd` in PowerShell to prevent permission blocks.
+9. **Direct Imports Only (No Barrel Files)**: Never create barrel re-export `index.ts` files (`components/index.ts`, `hooks/index.ts`). Always use direct imports: `import ListLayout from '@core/components/ListLayout'`.
+10. **Controlled Render Production Deployment**:
+   - Production deployment is triggered ONLY when a release is explicitly published (`release: types: [published]`) by the human User or via authorized manual workflow dispatch.
    - Deployments execute automated post-deployment health checks against `https://cms-tiktok-web.onrender.com/api/health` and verify the commit SHA.
    - If health checks fail, the deployment is marked FAILED and rollback guidance is emitted.
-10. **Security & Secrets**: Never commit `.env`, credentials, API tokens, or secrets. Never disable security checks.
-11. **Mandatory `PROJECT_SUMMARY.md` Update**: Append a new milestone entry in [`PROJECT_SUMMARY.md`](PROJECT_SUMMARY.md) summarizing the technical solution, touched files, and test results before reporting completion.
+11. **Security & Secrets**: Never commit `.env`, credentials, API tokens, or secrets. Never disable security checks.
+12. **Mandatory `PROJECT_SUMMARY.md` Update**: Append a new milestone entry in [`PROJECT_SUMMARY.md`](PROJECT_SUMMARY.md) summarizing the technical solution, touched files, and test results before reporting completion.
 
 ---
 
@@ -66,12 +69,13 @@ flowchart TD
     B --> C[Step 2: Implement Changes & Reuse Core]
     C --> D[Step 3: Strict Local Validation]
     D --> E[Step 4: Commit with Conventional Commits]
-    E --> F[Step 5: Push Branch & Open Pull Request]
+    E --> F[Step 5: Agent Pushes Branch & Creates PR]
     F --> G[Step 6: CI Quality & Security Gates Pass]
-    G --> H[Step 7: Code Review & Merge to main]
-    H --> I[Step 8: Auto Draft Release on Bump]
-    I --> J[Step 9: Review & Publish Release]
-    J --> K[Step 10: Render Deploy & Health Check]
+    G --> H[Step 7: Agent Merges PR to main]
+    H --> I[Step 8: GitHub Action Auto Generates Draft Release]
+    I --> J["🛑 STOP & NOTIFY USER: Agent halts"]
+    J --> K["👤 USER ACTION: Review notes & click 'Publish release'"]
+    K --> L[Step 9: Render Production Deploy & Health Check]
 ```
 
 1. **Step 0 - Select Worktree Slot**:
@@ -94,16 +98,19 @@ flowchart TD
    ```powershell
    git commit -m "feat(crawler): implement exponential backoff proxy rotation"
    ```
-6. **Step 5 - Push Branch & Open Pull Request**:
-   ```powershell
-   git push -u origin feature/PROJ-101-proxy-rotation
-   ```
-   Open PR targeting `main` using `.github/pull_request_template.md`.
-7. **Step 6 - Cleanup & Reset Worktree After Merge**:
+6. **Step 5 & 6 - Automated PR Creation & Merge to `main`**:
+   Execute the automated agent PR workflow from root:
    ```powershell
    cd E:\Urekamedia\project1
-   .\scripts\agent-worktree.ps1 -Action Clean -WorktreeIndex 1
+   .\scripts\agent-pr.ps1 -Action FullCycle -Branch "feature/PROJ-101-proxy-rotation"
    ```
+7. **Step 7 - Automatic Draft Release Generation**:
+   The push to `main` automatically triggers `.github/workflows/auto-draft-release.yml`. A **GitHub Draft Release** is generated/updated with distribution assets and changelog.
+8. **Step 8 - Agent Completion & User Handoff**:
+   The Agent resets the worktree slot (`.\scripts\agent-worktree.ps1 -Action Clean -WorktreeIndex 1`) and outputs the Draft Release URL to the human User.
+   **The Agent MUST NOT publish the release.**
+9. **Step 9 - Human Manual Release Publication & Deploy**:
+   The User reviews the Draft Release at `https://github.com/NQuangHuyZ31/TIKTOK-CRAWLER-CMS/releases` and manually clicks **Publish release** to trigger Render deployment and post-deployment health check.
 
 ---
 
