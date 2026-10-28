@@ -6,6 +6,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Modules\Core\Http\Controllers\BaseController;
 use Modules\System\Http\Requests\UpdateSystemSettingRequest;
+use Modules\System\Jobs\PruneExpiredLogsJob;
 use Modules\System\Models\SystemSetting;
 use Modules\System\Repositories\SystemSettingRepository;
 use Modules\System\Services\SystemSettingService;
@@ -54,7 +55,7 @@ class SystemSettingController extends BaseController
     }
 
     /**
-     * Trigger on-demand log pruning immediately.
+     * Trigger on-demand log pruning immediately or asynchronously via Queue Job.
      * api: POST /{admin_path}/api/system/system-setting/run-cleanup
      */
     public function runCleanup(Request $request): JsonResponse
@@ -68,6 +69,16 @@ class SystemSettingController extends BaseController
         }
         if ($request->filled('login_days')) {
             $options['login_days'] = (int) $request->input('login_days');
+        }
+
+        // Asynchronous background dispatch if requested
+        if ($request->boolean('async', false)) {
+            PruneExpiredLogsJob::dispatch($options);
+
+            return $this->respondSuccess(
+                ['dispatched' => true],
+                'Log cleanup background job has been dispatched to the queue.'
+            );
         }
 
         try {

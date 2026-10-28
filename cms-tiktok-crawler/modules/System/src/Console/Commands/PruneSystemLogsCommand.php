@@ -3,6 +3,7 @@
 namespace Modules\System\Console\Commands;
 
 use Illuminate\Console\Command;
+use Modules\System\Jobs\PruneExpiredLogsJob;
 use Modules\System\Services\SystemSettingService;
 
 class PruneSystemLogsCommand extends Command
@@ -15,7 +16,8 @@ class PruneSystemLogsCommand extends Command
     protected $signature = 'system:prune-logs
                             {--activity-days= : Override activity log retention days (min: 7)}
                             {--login-days= : Override login log retention days (min: 14)}
-                            {--chunk= : Override batch chunk size (default: 500)}';
+                            {--chunk= : Override batch chunk size (default: 500)}
+                            {--queue : Dispatch pruning task as an asynchronous background Queue Job}';
 
     /**
      * The console command description.
@@ -43,6 +45,13 @@ class PruneSystemLogsCommand extends Command
         }
         if ($this->option('chunk') !== null) {
             $options['chunk_size'] = (int) $this->option('chunk');
+        }
+
+        // If --queue flag is provided, dispatch to background Queue Worker
+        if ($this->option('queue')) {
+            PruneExpiredLogsJob::dispatch($options);
+            $this->info('PruneExpiredLogsJob has been successfully dispatched to the queue.');
+            return Command::SUCCESS;
         }
 
         try {
