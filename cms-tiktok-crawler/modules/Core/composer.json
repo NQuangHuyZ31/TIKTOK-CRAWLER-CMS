@@ -5,8 +5,7 @@
 	"type": "library",
 	"require": {
 		"php": "^8.3",
-		"laravel/framework": "^13.17",
-		"cms-tiktok-crawler/module-core": "1.0.0"
+		"laravel/framework": "^13.17"
 	},
 	"autoload": {
 		"psr-4": {

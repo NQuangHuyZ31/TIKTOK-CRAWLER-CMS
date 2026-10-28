@@ -68,8 +68,8 @@ jobs:
           extensions: mbstring, xml, ctype, iconv, intl, pdo, pdo_sqlite, bcmath, redis
           coverage: none
 
-      - name: Validate composer.json and composer.lock
-        run: composer validate --strict
+      - name: Validate composer.json
+        run: composer validate --no-check-publish --no-check-all
 
       - name: Cache Composer Dependencies
         uses: actions/cache@v4

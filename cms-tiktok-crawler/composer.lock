@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "c596fb5b5a3ecc7bc9220faa1ddd4c99",
+    "content-hash": "c18d5bf04da94695d549d255f2052fc3",
     "packages": [
         {
             "name": "brick/math",
@@ -139,6 +139,285 @@
                 }
             ],
             "time": "2026-09-06T14:11:38+00:00"
+        },
+        {
+            "name": "cms-tiktok-crawler/module-auth",
+            "version": "1.0.0",
+            "dist": {
+                "type": "path",
+                "url": "modules/Auth",
+                "reference": "4bd6b8b71710e7585de1be2416ea034673c83f07"
+            },
+            "require": {
+                "laravel/framework": "^13.17",
+                "laravel/sanctum": "^4.0",
+                "php": "^8.3"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Modules\\Auth\\Providers\\AuthServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Modules\\Auth\\": "src/"
+                }
+            },
+            "description": "Authentication and RBAC module for Tiktok CMS",
+            "transport-options": {
+                "symlink": true,
+                "relative": true
+            }
+        },
+        {
+            "name": "cms-tiktok-crawler/module-core",
+            "version": "1.0.0",
+            "dist": {
+                "type": "path",
+                "url": "modules/Core",
+                "reference": "d3bcc9321c8bb51706846052a4c962e434709377"
+            },
+            "require": {
+                "laravel/framework": "^13.17",
+                "php": "^8.3"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Modules\\Core\\Providers\\CoreServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Modules\\Core\\": "src/"
+                }
+            },
+            "description": "Core module for Tiktok CMS",
+            "transport-options": {
+                "symlink": true,
+                "relative": true
+            }
+        },
+        {
+            "name": "cms-tiktok-crawler/module-crawler",
+            "version": "1.0.0",
+            "dist": {
+                "type": "path",
+                "url": "modules/Crawler",
+                "reference": "dc190a2e960ea34171bcaff984976cc88ddb7a45"
+            },
+            "require": {
+                "cms-tiktok-crawler/module-core": "1.0.0",
+                "laravel/framework": "^13.17",
+                "php": "^8.3"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Modules\\Crawler\\Providers\\CrawlerServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Modules\\Crawler\\": "src/"
+                }
+            },
+            "description": "Crawler module for Tiktok CMS",
+            "transport-options": {
+                "symlink": true,
+                "relative": true
+            }
+        },
+        {
+            "name": "cms-tiktok-crawler/module-permission",
+            "version": "1.0.0",
+            "dist": {
+                "type": "path",
+                "url": "modules/Permission",
+                "reference": "f3b4df233bb06bf0cb309a39767fb93abfdea5cf"
+            },
+            "require": {
+                "cms-tiktok-crawler/module-core": "1.0.0",
+                "laravel/framework": "^13.17",
+                "php": "^8.3"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Modules\\Permission\\Providers\\PermissionServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Modules\\Permission\\": "src/"
+                }
+            },
+            "description": "Permission and RBAC access matrix module for Tiktok CMS",
+            "transport-options": {
+                "symlink": true,
+                "relative": true
+            }
+        },
+        {
+            "name": "cms-tiktok-crawler/module-public-api",
+            "version": "1.0.0",
+            "dist": {
+                "type": "path",
+                "url": "modules/API",
+                "reference": "ed8e4d47af0a0409cfa09112b033a803b51bad9b"
+            },
+            "require": {
+                "cms-tiktok-crawler/module-public-api": "1.0.0",
+                "laravel/framework": "^13.17",
+                "php": "^8.3"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Modules\\API\\": "src/"
+                }
+            },
+            "description": "Public API module for Tiktok CMS",
+            "transport-options": {
+                "symlink": true,
+                "relative": true
+            }
+        },
+        {
+            "name": "cms-tiktok-crawler/module-role",
+            "version": "1.0.0",
+            "dist": {
+                "type": "path",
+                "url": "modules/Role",
+                "reference": "51358d24c4afccfdfd75c5051f2516ea80790ca7"
+            },
+            "require": {
+                "cms-tiktok-crawler/module-core": "1.0.0",
+                "cms-tiktok-crawler/module-permission": "1.0.0",
+                "laravel/framework": "^13.17",
+                "php": "^8.3"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Modules\\Role\\Providers\\RoleServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Modules\\Role\\": "src/"
+                }
+            },
+            "description": "Role management module for Tiktok CMS",
+            "transport-options": {
+                "symlink": true,
+                "relative": true
+            }
+        },
+        {
+            "name": "cms-tiktok-crawler/module-system",
+            "version": "dev-main",
+            "dist": {
+                "type": "path",
+                "url": "modules/System",
+                "reference": "244ecc2b0dd4f06ac3e0ea522906a1cca5a68778"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Modules\\System\\Providers\\SystemServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Modules\\System\\": "src/"
+                }
+            },
+            "license": [
+                "proprietary"
+            ],
+            "description": "System diagnostic and audit logging module",
+            "transport-options": {
+                "symlink": true,
+                "relative": true
+            }
+        },
+        {
+            "name": "cms-tiktok-crawler/module-tiktok-account",
+            "version": "1.0.0",
+            "dist": {
+                "type": "path",
+                "url": "modules/TiktokAccount",
+                "reference": "72221145e981f4403bfad298e77e0ddd051281f4"
+            },
+            "require": {
+                "cms-tiktok-crawler/module-core": "1.0.0",
+                "laravel/framework": "^13.17",
+                "php": "^8.3"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Modules\\TiktokAccount\\Providers\\TiktokAccountServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Modules\\TiktokAccount\\": "src/"
+                }
+            },
+            "description": "Tiktok account module for Tiktok CMS",
+            "transport-options": {
+                "symlink": true,
+                "relative": true
+            }
+        },
+        {
+            "name": "cms-tiktok-crawler/module-user",
+            "version": "1.0.0",
+            "dist": {
+                "type": "path",
+                "url": "modules/User",
+                "reference": "fdd381e7a7012e67ffc9e1b405310cec8e7be271"
+            },
+            "require": {
+                "cms-tiktok-crawler/module-core": "1.0.0",
+                "laravel/framework": "^13.17",
+                "php": "^8.3"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Modules\\User\\Providers\\UserServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Modules\\User\\": "src/"
+                }
+            },
+            "description": "User & Access Management module for CMS TikTok Crawler",
+            "transport-options": {
+                "symlink": true,
+                "relative": true
+            }
         },
         {
             "name": "dflydev/dot-access-data",
@@ -6061,12 +6340,12 @@
             "version": "v5.7.0",
             "source": {
                 "type": "git",
-                "url": "https://github.com/vlucas/phpdotenv.git",
+                "url": "https://github.com/phpdotenv/phpdotenv.git",
                 "reference": "301c07936b16d88628b126b01d082ba153cf4c40"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/vlucas/phpdotenv/zipball/301c07936b16d88628b126b01d082ba153cf4c40",
+                "url": "https://api.github.com/repos/phpdotenv/phpdotenv/zipball/301c07936b16d88628b126b01d082ba153cf4c40",
                 "reference": "301c07936b16d88628b126b01d082ba153cf4c40",
                 "shasum": ""
             },
@@ -10095,7 +10374,7 @@
         }
     ],
     "aliases": [],
-    "minimum-stability": "stable",
+    "minimum-stability": "dev",
     "stability-flags": [],
     "prefer-stable": true,
     "prefer-lowest": false,

@@ -12,8 +12,26 @@
 		"php": "^8.3",
 		"laravel/framework": "^13.17",
 		"laravel/sanctum": "^4.0",
-		"laravel/tinker": "^3.0"
+		"laravel/tinker": "^3.0",
+		"cms-tiktok-crawler/module-core": "*",
+		"cms-tiktok-crawler/module-crawler": "*",
+		"cms-tiktok-crawler/module-tiktok-account": "*",
+		"cms-tiktok-crawler/module-permission": "*",
+		"cms-tiktok-crawler/module-role": "*",
+		"cms-tiktok-crawler/module-auth": "*",
+		"cms-tiktok-crawler/module-user": "*",
+		"cms-tiktok-crawler/module-system": "*",
+		"cms-tiktok-crawler/module-public-api": "*"
 	},
+	"repositories": [
+		{
+			"type": "path",
+			"url": "modules/*",
+			"options": {
+				"symlink": true
+			}
+		}
+	],
 	"require-dev": {
 		"fakerphp/faker": "^1.23",
 		"laravel/boost": "^2.2",
@@ -104,6 +122,6 @@
 			"php-http/discovery": true
 		}
 	},
-	"minimum-stability": "stable",
+	"minimum-stability": "dev",
 	"prefer-stable": true
 }
