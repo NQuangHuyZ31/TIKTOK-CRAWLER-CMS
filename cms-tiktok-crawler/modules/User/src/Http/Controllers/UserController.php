@@ -30,7 +30,7 @@ class UserController extends BaseController
         protected UserService $userService
     ) {}
 
-    protected function resolveRequestUser(Request $request): \App\Models\User|User|null
+    protected function resolveRequestUser(Request $request): ?User
     {
         return $request->user() ?? auth('sanctum')->user() ?? auth()->user();
     }

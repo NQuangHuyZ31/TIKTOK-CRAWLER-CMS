@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Modules\Crawler\Models\CrawlResult;
+use Modules\System\Traits\LogsActivity;
 
 #[Fillable([
     'username',
@@ -28,7 +29,11 @@ use Modules\Crawler\Models\CrawlResult;
 ])]
 class TiktokAccount extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, LogsActivity;
+
+    public string $activityModule = 'TIKTOK';
+    public string $activityRecordType = 'TikTokChannel';
+    public string $activityIdentifierField = 'username';
 
     /**
      * Relationship to CrawlResults.

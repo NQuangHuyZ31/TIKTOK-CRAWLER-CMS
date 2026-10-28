@@ -2,14 +2,45 @@
 
 namespace Modules\User\Models;
 
-use App\Models\User as BaseUser;
+use Database\Factories\UserFactory;
+use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Builder;
-use Modules\Permission\Models\Permission;
-use Modules\Role\Models\Role;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Support\Facades\DB;
+use Modules\Core\Traits\HasRolesAndPermissions;
+use Modules\System\Events\ActivityOccurredEvent;
+use Modules\System\Traits\LogsActivity;
 
-class User extends BaseUser
+#[Fillable(['name', 'email', 'password', 'phone', 'avatar', 'status', 'is_admin'])]
+#[Hidden(['password', 'remember_token'])]
+class User extends Authenticatable
 {
+    /** @use HasFactory<UserFactory> */
+    use HasApiTokens, HasFactory, Notifiable, SoftDeletes, HasRolesAndPermissions, LogsActivity;
+
+    public string $activityModule = 'USER_MANAGEMENT';
+    public string $activityRecordType = 'User';
+
     protected $table = 'users';
+
+    /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'email_verified_at' => 'datetime',
+            'password' => 'hashed',
+            'is_admin' => 'boolean',
+        ];
+    }
 
     /**
      * Scope query to search by name, email, or phone.
@@ -65,31 +96,62 @@ class User extends BaseUser
     }
 
     /**
-     * Synchronize roles by integer IDs on the relation.
-     * Slug resolution is delegated to RoleService / UserService via Dependency Injection.
+     * Synchronize roles by integer IDs on the relation and audit role changes.
      */
     public function syncRoles(array $roleIds): array
     {
+        $oldRoles = $this->roles()->pluck('name')->toArray();
         $ids = array_filter(array_map('intval', $roleIds));
-        return $this->roles()->sync($ids);
+        $result = $this->roles()->sync($ids);
+        $newRoles = $this->roles()->pluck('name')->toArray();
+
+        if (!$this->wasRecentlyCreated && $oldRoles != $newRoles) {
+            $dispatch = fn() => ActivityOccurredEvent::dispatch(
+                action: 'ROLE_CHANGE',
+                module: 'USER_MANAGEMENT',
+                recordId: (string) $this->id,
+                recordType: 'User',
+                oldData: ['roles' => $oldRoles],
+                newData: ['roles' => $newRoles],
+            );
+
+            if (DB::transactionLevel() > 0) {
+                DB::afterCommit($dispatch);
+            } else {
+                $dispatch();
+            }
+        }
+
+        return $result;
     }
 
     /**
-     * Synchronize direct permissions by integer IDs on the relation.
-     * Slug resolution is delegated to PermissionService / UserService via Dependency Injection.
+     * Synchronize direct permissions by integer IDs on the relation and audit permission changes.
      */
     public function syncPermissions(array $permissionIds): array
     {
+        $oldPermissions = $this->permissions()->pluck('slug')->toArray();
         $ids = array_filter(array_map('intval', $permissionIds));
-        return $this->permissions()->sync($ids);
-    }
+        $result = $this->permissions()->sync($ids);
+        $newPermissions = $this->permissions()->pluck('slug')->toArray();
 
-    /**
-     * Check if user is Super Administrator.
-     * When is_admin = 1, user possesses full unrestricted access across all modules.
-     */
-    public function isAdmin(): bool
-    {
-        return (bool) ($this->is_admin ?? false) || $this->hasRole('admin');
+        if (!$this->wasRecentlyCreated && $oldPermissions != $newPermissions) {
+            $dispatch = fn() => ActivityOccurredEvent::dispatch(
+                action: 'PERMISSION_CHANGE',
+                module: 'USER_MANAGEMENT',
+                recordId: (string) $this->id,
+                recordType: 'User',
+                oldData: ['permissions' => $oldPermissions],
+                newData: ['permissions' => $newPermissions],
+            );
+
+            if (DB::transactionLevel() > 0) {
+                DB::afterCommit($dispatch);
+            } else {
+                $dispatch();
+            }
+        }
+
+        return $result;
     }
 }

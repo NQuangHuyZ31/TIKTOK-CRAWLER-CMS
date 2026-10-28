@@ -2,17 +2,144 @@
 
 namespace Modules\Crawler\Services;
 
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Modules\Core\Utils\FetchApi;
 use Modules\Crawler\Models\CrawlJob;
 use Modules\Crawler\Repositories\Interfaces\CrawlJobRepositoryInterface;
+use Modules\Crawler\Repositories\Interfaces\CrawlResultRepositoryInterface;
+use Modules\System\Events\ActivityOccurredEvent;
 use Modules\TiktokAccount\Repositories\Interfaces\TiktokAccountRepositoryInterface;
 
 class CrawlJobService
 {
     public function __construct(
         protected CrawlJobRepositoryInterface $crawlJobRepository,
-        protected TiktokAccountRepositoryInterface $tiktokAccountRepository
+        protected TiktokAccountRepositoryInterface $tiktokAccountRepository,
+        protected CrawlResultRepositoryInterface $crawlResultRepository
     ) {
+    }
+
+    /**
+     * Domain logic: Create a new crawl job.
+     * Rules:
+     * - Parses & normalizes data_crawl input (supports string JSON or array).
+     * - Calculates total_accounts based on source_type.
+     * - Initializes default state: 'pending', success_count = 0, failed_count = 0.
+     */
+    public function create(array $data): CrawlJob
+    {
+        $sourceType = $data['source_type'] ?? 'usernames';
+        $dataCrawl = $data['data_crawl'] ?? [];
+
+        if (is_string($dataCrawl)) {
+            $decoded = json_decode($dataCrawl, true);
+            $dataCrawl = is_array($decoded) ? $decoded : [$dataCrawl];
+        }
+
+        $totalAccounts = match ($sourceType) {
+            'usernames', 'urls', 'database' => count($dataCrawl),
+            'count' => (int) ($dataCrawl[0] ?? $data['total_accounts'] ?? 0),
+            default => count($dataCrawl),
+        };
+
+        return $this->crawlJobRepository->create([
+            'source_type' => $sourceType,
+            'data_crawls' => json_encode($dataCrawl),
+            'total_accounts' => $totalAccounts,
+            'status' => 'pending',
+            'success_count' => 0,
+            'failed_count' => 0,
+        ]);
+    }
+
+    /**
+     * Domain logic: Update an existing crawl job.
+     * Rules:
+     * - Job must exist (returns null if not found).
+     * - Invariant: Only 'pending' jobs can be updated (throws \DomainException if not pending).
+     * - Normalizes data_crawl and recalculates total_accounts if modified.
+     */
+    public function update(int $id, array $data): ?CrawlJob
+    {
+        $job = $this->crawlJobRepository->findById($id);
+        if (!$job) {
+            return null;
+        }
+
+        if ($job->status !== 'pending') {
+            throw new \DomainException('Only pending crawl jobs can be updated.');
+        }
+
+        $updateData = [];
+
+        if (isset($data['source_type'])) {
+            $updateData['source_type'] = $data['source_type'];
+        }
+
+        if (isset($data['data_crawl'])) {
+            $dataCrawl = $data['data_crawl'];
+            if (is_string($dataCrawl)) {
+                $decoded = json_decode($dataCrawl, true);
+                $dataCrawl = is_array($decoded) ? $decoded : [$dataCrawl];
+            }
+
+            $sourceType = $data['source_type'] ?? $job->source_type;
+            $updateData['data_crawls'] = json_encode($dataCrawl);
+            $updateData['total_accounts'] = match ($sourceType) {
+                'usernames', 'urls', 'database' => count($dataCrawl),
+                'count' => (int) ($dataCrawl[0] ?? $job->total_accounts),
+                default => count($dataCrawl),
+            };
+        }
+
+        if (!empty($updateData)) {
+            $this->crawlJobRepository->update($id, $updateData);
+            $job = $this->crawlJobRepository->findById($id);
+        }
+
+        return $job;
+    }
+
+    /**
+     * Domain logic: Delete a crawl job.
+     * Rules:
+     * - Returns false if job not found.
+     * - Invariant: Cannot delete a 'running' crawl job (throws \DomainException).
+     * - Deletes record via repository.
+     */
+    public function delete(int $id): bool
+    {
+        $job = $this->crawlJobRepository->findById($id);
+        if (!$job) {
+            return false;
+        }
+
+        if ($job->status === 'running') {
+            throw new \DomainException('Cannot delete a running crawl job.');
+        }
+
+        return (bool) $this->crawlJobRepository->delete($id);
+    }
+
+    /**
+     * Domain logic: Retrieve KPI dashboard statistics summary.
+     */
+    public function getStatisticsSummary(): array
+    {
+        return $this->crawlJobRepository->getStatisticsSummary();
+    }
+
+    /**
+     * Domain logic: Retrieve paginated crawl results for a specific job.
+     */
+    public function getJobResults(int $jobId, int $perPage = 10, array $filters = []): ?LengthAwarePaginator
+    {
+        $job = $this->crawlJobRepository->findById($jobId);
+        if (!$job) {
+            return null;
+        }
+
+        return $this->crawlResultRepository->getByJobId($jobId, $perPage, $filters);
     }
 
     /**
@@ -49,8 +176,20 @@ class CrawlJobService
 
             $this->dispatchToCrawlerEngine($payload);
 
-            $startedJob = $this->crawlJobRepository->findById($id);
-            return $startedJob;
+            ActivityOccurredEvent::dispatch(
+                action: 'CRAWL',
+                module: 'TIKTOK',
+                recordId: 'job_crawl_' . $id,
+                recordType: 'CrawlJob',
+                metadata: [
+                    'source_type' => $crawlJob->source_type,
+                    'total_accounts' => $crawlJob->total_accounts,
+                    'trigger_by' => 'manual',
+                ],
+                status: 'SUCCESS'
+            );
+
+            return $this->crawlJobRepository->findById($id);
         } catch (\Throwable $exception) {
             $this->markCrawlJobAsFailed($id, $exception->getMessage());
             throw $exception;
@@ -97,6 +236,19 @@ class CrawlJobService
             ]);
 
             $this->dispatchToCrawlerEngine($payload);
+
+            ActivityOccurredEvent::dispatch(
+                action: 'RETRY_CRAWL',
+                module: 'TIKTOK',
+                recordId: 'job_crawl_' . $id,
+                recordType: 'CrawlJob',
+                metadata: [
+                    'retry_count' => ($crawlJob->retry_count ?? 1),
+                    'trigger_by' => 'manual',
+                    'source_type' => $crawlJob->source_type,
+                ],
+                status: 'SUCCESS'
+            );
 
             return $this->crawlJobRepository->findById($id);
         } catch (\Throwable $exception) {
@@ -175,5 +327,15 @@ class CrawlJobService
             'error_message' => $message,
             'finished_at' => now(),
         ]);
+
+        ActivityOccurredEvent::dispatch(
+            action: 'CRAWL_FAILED',
+            module: 'TIKTOK',
+            recordId: 'job_crawl_' . $id,
+            recordType: 'CrawlJob',
+            status: 'FAILED',
+            errorMessage: $message,
+            metadata: ['trigger_by' => 'system']
+        );
     }
 }

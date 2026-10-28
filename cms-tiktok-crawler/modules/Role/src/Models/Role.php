@@ -2,15 +2,22 @@
 
 namespace Modules\Role\Models;
 
-use App\Models\User;
+use Modules\User\Models\User;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Support\Facades\DB;
 use Modules\Permission\Models\Permission;
+use Modules\System\Events\ActivityOccurredEvent;
+use Modules\System\Traits\LogsActivity;
 
 class Role extends Model
 {
-    use HasFactory;
+    use HasFactory, LogsActivity;
+
+    public string $activityModule = 'ROLE';
+    public string $activityRecordType = 'Role';
+    public string $activityIdentifierField = 'name';
 
     protected $table = 'roles';
 
@@ -37,28 +44,32 @@ class Role extends Model
     }
 
     /**
-     * Synchronize permissions by slugs or IDs.
-     *
-     * @param array<int|string> $permissions
+     * Synchronize permissions by IDs directly on the Eloquent relation and audit permission changes.
      */
-    public function syncPermissions(array $permissions): array
+    public function syncPermissions(array $permissionIds): array
     {
-        $ids = [];
-        $slugs = [];
+        $oldPermissions = $this->permissions()->pluck('slug')->toArray();
+        $ids = array_filter(array_map('intval', $permissionIds));
+        $result = $this->permissions()->sync($ids);
+        $newPermissions = $this->permissions()->pluck('slug')->toArray();
 
-        foreach ($permissions as $item) {
-            if (is_numeric($item)) {
-                $ids[] = (int) $item;
+        if (!$this->wasRecentlyCreated && $oldPermissions != $newPermissions) {
+            $dispatch = fn() => ActivityOccurredEvent::dispatch(
+                action: 'PERMISSION_CHANGE',
+                module: 'ROLE',
+                recordId: (string) $this->id,
+                recordType: 'Role',
+                oldData: ['permissions' => $oldPermissions],
+                newData: ['permissions' => $newPermissions],
+            );
+
+            if (DB::transactionLevel() > 0) {
+                DB::afterCommit($dispatch);
             } else {
-                $slugs[] = (string) $item;
+                $dispatch();
             }
         }
 
-        if (!empty($slugs)) {
-            $resolvedIds = app(\Modules\Permission\Repositories\PermissionRepositoryInterface::class)->resolveIdsBySlugs($slugs);
-            $ids = array_unique(array_merge($ids, $resolvedIds));
-        }
-
-        return $this->permissions()->sync($ids);
+        return $result;
     }
 }

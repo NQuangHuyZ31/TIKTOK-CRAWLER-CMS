@@ -2,9 +2,18 @@
 
 namespace Modules\System\Providers;
 
+use Illuminate\Support\Facades\Event;
 use Modules\Core\Providers\ModuleServiceProvider;
-use Modules\System\Repositories\SystemSettingRepository;
-use Modules\System\Services\SystemSettingService;
+use Modules\System\Events\ActivityOccurredEvent;
+use Modules\System\Listeners\RecordActivityLogListener;
+use Modules\System\Repositories\ActivityLogRepository;
+use Modules\System\Repositories\Interfaces\ActivityLogRepositoryInterface;
+use Modules\System\Repositories\Interfaces\LoginLogRepositoryInterface;
+use Modules\System\Repositories\LoginLogRepository;
+use Modules\System\Services\ActivityLogger;
+use Modules\System\Services\ActivityLogService;
+use Modules\System\Services\LoginLogService;
+use Modules\System\Services\SystemDiagnosticService;
 
 class SystemServiceProvider extends ModuleServiceProvider
 {
@@ -12,7 +21,22 @@ class SystemServiceProvider extends ModuleServiceProvider
 
     public function register(): void
     {
-        $this->app->singleton(SystemSettingRepository::class);
-        $this->app->singleton(SystemSettingService::class);
+        // Bind Repository Interfaces to Concrete Implementations
+        $this->app->singleton(ActivityLogRepositoryInterface::class, ActivityLogRepository::class);
+        $this->app->singleton(LoginLogRepositoryInterface::class, LoginLogRepository::class);
+
+        // Domain Services
+        $this->app->singleton(ActivityLogService::class);
+        $this->app->singleton(LoginLogService::class);
+        $this->app->singleton(ActivityLogger::class);
+        $this->app->singleton(SystemDiagnosticService::class);
+    }
+
+    public function boot(): void
+    {
+        parent::boot();
+
+        // Register Asynchronous / Queued Activity Log Listener
+        Event::listen(ActivityOccurredEvent::class, RecordActivityLogListener::class);
     }
 }

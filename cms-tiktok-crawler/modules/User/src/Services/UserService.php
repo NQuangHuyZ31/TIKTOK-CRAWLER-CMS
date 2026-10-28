@@ -53,7 +53,9 @@ class UserService
                 $this->userRepository->syncPermissions($user, $permissionIds);
             }
 
-            return $user->load(['roles.permissions', 'permissions']);
+            $created = $user->load(['roles.permissions', 'permissions']);
+
+            return $created;
         });
     }
 
@@ -85,14 +87,14 @@ class UserService
                 $this->userRepository->update($targetUser->id, $updateData);
             }
 
-            // Sync roles if provided
+            // Sync roles if provided (User::syncRoles automatically audits ROLE_CHANGE via System Event)
             $roles = $data['roles'] ?? (isset($data['role']) ? [$data['role']] : null);
             if ($roles !== null && is_array($roles)) {
                 $roleIds = $this->resolveRoleIds($roles);
                 $this->userRepository->syncRoles($targetUser, $roleIds);
             }
 
-            // Sync permissions if provided
+            // Sync permissions if provided (User::syncPermissions automatically audits PERMISSION_CHANGE via System Event)
             if (isset($data['permissions']) && is_array($data['permissions'])) {
                 $permissionIds = $this->resolvePermissionIds($data['permissions']);
                 $this->userRepository->syncPermissions($targetUser, $permissionIds);
