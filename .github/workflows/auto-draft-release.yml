@@ -1,4 +1,4 @@
-name: Auto Pre-Release on AI Version Bump
+name: Auto Draft Release on Version Bump
 
 on:
   push:
@@ -12,8 +12,8 @@ permissions:
   contents: write
 
 jobs:
-  check-and-prerelease:
-    name: Detect Version Bump & Create Pre-Release
+  draft-release:
+    name: Detect Version Bump & Create Draft Release
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -32,8 +32,8 @@ jobs:
 
           if [ "$CURR_VERSION" != "none" ] && [ "$CURR_VERSION" != "$PREV_VERSION" ]; then
             echo "is_bumped=true" >> $GITHUB_OUTPUT
-            echo "version=v$CURR_VERSION-beta.${{ github.run_number }}" >> $GITHUB_OUTPUT
-            echo "clean_version=$CURR_VERSION" >> $GITHUB_OUTPUT
+            echo "tag=v$CURR_VERSION" >> $GITHUB_OUTPUT
+            echo "version=$CURR_VERSION" >> $GITHUB_OUTPUT
           else
             echo "is_bumped=false" >> $GITHUB_OUTPUT
           fi
@@ -54,46 +54,37 @@ jobs:
           npm run check-types
           npx vite build || npm run mix:all
 
-      - name: Create Git Pre-Release Tag
-        if: steps.version_check.outputs.is_bumped == 'true'
-        run: |
-          TAG_NAME="${{ steps.version_check.outputs.version }}"
-          echo "Creating Git Tag: $TAG_NAME"
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag -a "$TAG_NAME" -m "Automated AI Agent Pre-Release: $TAG_NAME"
-          git push origin "$TAG_NAME"
-
-      - name: Package Pre-Release Archive
+      - name: Package Release Archive
         if: steps.version_check.outputs.is_bumped == 'true'
         run: |
           mkdir -p dist
-          tar -czf dist/cms-tiktok-crawler-${{ steps.version_check.outputs.version }}.tar.gz \
+          tar -czf dist/cms-tiktok-crawler-${{ steps.version_check.outputs.tag }}.tar.gz \
             --exclude='cms-tiktok-crawler/node_modules' \
             --exclude='cms-tiktok-crawler/vendor' \
             --exclude='.git' \
             cms-tiktok-crawler ProcessData docker render.yaml
 
-      - name: Generate Changelog
+      - name: Generate Release Notes & Changelog
         if: steps.version_check.outputs.is_bumped == 'true'
         run: |
-          TAG_NAME="${{ steps.version_check.outputs.version }}"
-          echo "### 🚀 Automated Pre-Release: $TAG_NAME" > changelog.md
+          TAG_NAME="${{ steps.version_check.outputs.tag }}"
+          echo "## 🚀 Release $TAG_NAME" > changelog.md
           echo "" >> changelog.md
-          echo "This pre-release was automatically generated following an AI Agent version upgrade." >> changelog.md
+          echo "### 📝 What's Changed:" >> changelog.md
+          git log -n 15 --pretty=format:"* %s (%h by @%an)" >> changelog.md
           echo "" >> changelog.md
-          echo "#### Recent Changes & Commits:" >> changelog.md
-          git log -n 10 --pretty=format:"* %s (%h by @%an)" >> changelog.md
+          echo "---" >> changelog.md
+          echo "> 💡 **Note**: This is an automated **Draft Release**. Please review the release notes and click **Publish release** when ready." >> changelog.md
 
-      - name: Publish GitHub Pre-Release
+      - name: Create or Update GitHub Draft Release
         if: steps.version_check.outputs.is_bumped == 'true'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ steps.version_check.outputs.version }}
-          name: "🤖 Pre-Release ${{ steps.version_check.outputs.version }}"
+          tag_name: ${{ steps.version_check.outputs.tag }}
+          name: "Release ${{ steps.version_check.outputs.tag }}"
           body_path: changelog.md
-          prerelease: true
-          draft: false
+          draft: true
+          prerelease: false
           files: |
             dist/*.tar.gz
         env:
