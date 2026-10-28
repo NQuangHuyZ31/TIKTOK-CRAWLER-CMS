@@ -23,7 +23,6 @@ class RecordActivityLogListener implements ShouldQueue
     public function handle(ActivityOccurredEvent $event): ?ActivityLog
     {
         try {
-            /** @var ActivityLog */
             return $this->activityLogRepository->create([
                 'user_id' => $event->userId,
                 'user_email' => $event->userEmail,

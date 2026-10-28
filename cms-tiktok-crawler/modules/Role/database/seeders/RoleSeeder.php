@@ -75,7 +75,7 @@ class RoleSeeder extends Seeder
 
         // Viewer gets view-only permissions (excluding administrative user/role/permission modules)
         $viewerPermissions = Permission::where('action', 'view')
-            ->whereNotIn('module', ['user', 'role', 'permission'])
+            ->whereNotIn('module', ['user', 'role', 'permission', 'system'])
             ->pluck('id')
             ->all();
         $viewerRole->permissions()->sync($viewerPermissions);
