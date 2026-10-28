@@ -1,7 +1,8 @@
 import React, { useMemo } from 'react';
 import { Table, Checkbox, Typography, Tag, Space, Tooltip, Alert } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { AppstoreOutlined, RobotOutlined, ApiOutlined, SettingOutlined, UserOutlined, SafetyCertificateOutlined, KeyOutlined, LockOutlined, CheckSquareOutlined } from '@ant-design/icons';
+import { CheckSquareOutlined } from '@ant-design/icons';
+import { getModuleConfig } from '../configs/systemOptions';
 
 const { Text } = Typography;
 
@@ -45,24 +46,6 @@ interface ModuleRow {
 	items: PermissionItem[];
 }
 
-const MODULE_CONFIG: Record<string, { label: string; icon: React.ReactNode; color: string }> = {
-	core: { label: 'Core / Dashboard', icon: <AppstoreOutlined />, color: 'blue' },
-	crawler: { label: 'Crawler Engine', icon: <RobotOutlined />, color: 'purple' },
-	tiktok_account: { label: 'TikTok Accounts', icon: <ApiOutlined />, color: 'green' },
-	system: { label: 'System Settings', icon: <SettingOutlined />, color: 'gold' },
-	user: { label: 'User Management', icon: <UserOutlined />, color: 'cyan' },
-	role: { label: 'Role Management', icon: <SafetyCertificateOutlined />, color: 'geekblue' },
-	permission: { label: 'Permission Management', icon: <KeyOutlined />, color: 'magenta' },
-	auth: { label: 'Authentication', icon: <LockOutlined />, color: 'orange' },
-};
-
-function formatModuleLabel(mod: string): string {
-	return mod
-		.split(/[_-]/)
-		.map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-		.join(' ');
-}
-
 /**
  * Normalizes any backend permission catalog into a uniform ModuleRow array.
  * Supports:
@@ -104,11 +87,7 @@ function normalizePermissions(input?: PermissionInputType): ModuleRow[] {
 	}
 
 	return Object.entries(grouped).map(([modKey, items]) => {
-		const conf = MODULE_CONFIG[modKey] || {
-			label: formatModuleLabel(modKey),
-			icon: <AppstoreOutlined />,
-			color: 'default',
-		};
+		const conf = getModuleConfig(modKey);
 
 		const actionsMap: Record<string, PermissionItem> = {};
 		items.forEach((p) => {

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Alert, AutoComplete, Form, Input, Modal, Select, Space, Typography } from 'antd';
 import { KeyOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import useAction from '@core/hooks/useAction';
+import { COMMON_PERMISSION_ACTIONS } from '../configs/permissionOptions';
 import { createPermission, CreatePermissionPayload } from '../Action/permission';
 
 const { Text } = Typography;
@@ -13,18 +14,6 @@ export interface CreatePermissionModalProps {
 	onClose: () => void;
 	onSuccess: () => void;
 }
-
-const COMMON_ACTIONS = [
-	{ value: 'view', label: 'view (Read-only data access)' },
-	{ value: 'create', label: 'create (Add new entries)' },
-	{ value: 'edit', label: 'edit (Modify existing data)' },
-	{ value: 'delete', label: 'delete (Delete entries)' },
-	{ value: 'export', label: 'export (Export data to CSV/Excel)' },
-	{ value: 'import', label: 'import (Batch import data)' },
-	{ value: 'approve', label: 'approve (Approve workflows)' },
-	{ value: 'assign', label: 'assign (Assign roles or ownership)' },
-	{ value: 'manage', label: 'manage (Administrative actions)' },
-];
 
 export default function CreatePermissionModal({ open, modulesList, onClose, onSuccess }: CreatePermissionModalProps) {
 	const [form] = Form.useForm();
@@ -159,7 +148,7 @@ export default function CreatePermissionModal({ open, modulesList, onClose, onSu
 					]}
 				>
 					<AutoComplete
-						options={COMMON_ACTIONS}
+						options={COMMON_PERMISSION_ACTIONS}
 						placeholder="Select or type action (e.g. view, edit, export)"
 						filterOption={(inputValue, option) =>
 							String(option?.value ?? '')

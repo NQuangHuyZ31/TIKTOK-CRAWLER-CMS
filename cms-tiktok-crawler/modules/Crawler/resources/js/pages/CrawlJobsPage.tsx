@@ -13,6 +13,7 @@ import { fetchCrawlJobs, fetchStatisticsSummary } from '../store/crawlJob/crawlJ
 import { setParams, resetParams } from '../store/crawlJob/crawlJobSlice';
 import crawlJobAPI from '../Action/crawlJob';
 import useAction from '@core/hooks/useAction';
+import { CRAWL_JOB_STATUS_FILTER_OPTIONS } from '../configs/crawlerOptions';
 import { crawlJobColumnConfig } from '../configs/tableConfig';
 
 export default function CrawlJobsPage() {
@@ -66,13 +67,7 @@ export default function CrawlJobsPage() {
 				{
 					key: 'status',
 					placeholder: 'All statuses',
-					options: [
-						{ label: 'All statuses', value: '' },
-						{ label: 'Pending', value: 'pending' },
-						{ label: 'Running', value: 'running' },
-						{ label: 'Completed', value: 'completed' },
-						{ label: 'Failed', value: 'failed' },
-					],
+					options: CRAWL_JOB_STATUS_FILTER_OPTIONS,
 					initialValue: params.status ?? undefined,
 					onChange: (val) => dispatch(setParams({ status: val, page: 1 })),
 				},

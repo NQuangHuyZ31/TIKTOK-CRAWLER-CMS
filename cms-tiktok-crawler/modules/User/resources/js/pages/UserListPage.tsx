@@ -6,6 +6,11 @@ import { useDispatch, useSelector } from '@core/store';
 import ListLayout from '@/components/ListLayout';
 import StatusDropdown from '@core/components/StatusDropdown';
 import { formatDateTime } from '@core/utils/formatDate';
+import {
+	USER_STATUS_FILTER_OPTIONS,
+	USER_ROLE_FILTER_OPTIONS,
+	USER_STATUS_CHANGE_OPTIONS,
+} from '../configs/userConstants';
 import { fetchAllUsers, fetchUserStatistics } from '../store/user/userThunks';
 import { setParams, resetParams } from '../store/user/userSlice';
 import userAPI from '../Action/user';
@@ -65,25 +70,14 @@ export default function UserListPage() {
 					{
 						key: 'status',
 						placeholder: 'All statuses',
-						options: [
-							{ label: 'All statuses', value: '' },
-							{ label: 'Active', value: 'active' },
-							{ label: 'Inactive', value: 'inactive' },
-							{ label: 'Blocked', value: 'blocked' },
-						],
+						options: USER_STATUS_FILTER_OPTIONS,
 						initialValue: params.status,
 						onChange: (val) => dispatch(setParams({ status: val, page: 1 })),
 					},
 					{
 						key: 'role',
 						placeholder: 'All roles',
-						options: [
-							{ label: 'All roles', value: '' },
-							{ label: 'Super Admin', value: 'admin' },
-							{ label: 'Operations Manager', value: 'manager' },
-							{ label: 'Crawler Specialist', value: 'editor' },
-							{ label: 'Data Viewer', value: 'viewer' },
-						],
+						options: USER_ROLE_FILTER_OPTIONS,
 						initialValue: params.role,
 						onChange: (val) => dispatch(setParams({ role: val, page: 1 })),
 					},
@@ -108,11 +102,7 @@ export default function UserListPage() {
 							status={status}
 							module="user"
 							onChange={(newStatus) => handleStatusChange(record.id, newStatus)}
-							options={[
-								{ value: 'active', label: 'Set as Active' },
-								{ value: 'inactive', label: 'Set as Inactive' },
-								{ value: 'blocked', label: 'Block Account', danger: true },
-							]}
+							options={USER_STATUS_CHANGE_OPTIONS}
 							disabled={user.id === record.id}
 						/>
 					),

@@ -8,6 +8,10 @@ import PermissionGate from '@core/components/PermissionGate';
 import StatusDropdown from '@core/components/StatusDropdown';
 import usePermission from '@core/hooks/usePermission';
 import useAction from '@core/hooks/useAction';
+import {
+	TIKTOK_ACCOUNT_STATUS_FILTER_OPTIONS,
+	TIKTOK_ACCOUNT_STATUS_CHANGE_OPTIONS,
+} from '../configs/accountOptions';
 import { formatNumber } from '@core/utils/formatNumber';
 import { formatDateTime } from '@core/utils/formatDate';
 import { fetchAllTiktokAccounts } from '../store/tiktokAccount/tiktokAccountThunks';
@@ -53,12 +57,7 @@ export default function TiktokAccountPage() {
 				{
 					key: 'status',
 					placeholder: 'All statuses',
-					options: [
-						{ label: 'All statuses', value: '' },
-						{ label: 'Active', value: 'active' },
-						{ label: 'Inactive', value: 'inactive' },
-						{ label: 'Banned', value: 'banned' },
-					],
+					options: TIKTOK_ACCOUNT_STATUS_FILTER_OPTIONS,
 					initialValue: params.status,
 					onChange: (val) => dispatch(setParams({ status: val, page: 1 })),
 				},
@@ -116,11 +115,7 @@ export default function TiktokAccountPage() {
 						status={status}
 						module="tiktok_account"
 						onChange={(newStatus) => handleStatusChange(record.id, newStatus)}
-						options={[
-							{ value: 'active', label: 'Set as Active' },
-							{ value: 'inactive', label: 'Set as Inactive' },
-							{ value: 'banned', label: 'Ban Account', danger: true },
-						]}
+						options={TIKTOK_ACCOUNT_STATUS_CHANGE_OPTIONS}
 					/>
 				),
 				followers_count: (val) => formatNumber(val),

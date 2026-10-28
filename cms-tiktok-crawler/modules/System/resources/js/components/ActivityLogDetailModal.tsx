@@ -1,6 +1,7 @@
 import React from 'react';
 import { Card, Col, Descriptions, Modal, Row, Space, Tag, Typography } from 'antd';
 import { CheckCircleOutlined, CloseCircleOutlined, InfoCircleOutlined } from '@ant-design/icons';
+import { getActivityActionConfig } from '../configs/activityLogConfig';
 import type { ActivityLogItem } from '../Action/activityLog';
 
 const { Text, Paragraph } = Typography;
@@ -17,17 +18,8 @@ export default function ActivityLogDetailModal({ open, onClose, activity }: Acti
 	const isSuccess = activity.status === 'SUCCESS';
 
 	const renderActionTag = (action: string) => {
-		const act = action?.toUpperCase();
-		if (act === 'CREATE') return <Tag color="green">CREATE</Tag>;
-		if (act === 'UPDATE') return <Tag color="blue">UPDATE</Tag>;
-		if (act === 'DELETE') return <Tag color="red">DELETE</Tag>;
-		if (act === 'LOGIN') return <Tag color="cyan">LOGIN</Tag>;
-		if (act === 'LOGOUT') return <Tag color="default">LOGOUT</Tag>;
-		if (act === 'CRAWL') return <Tag color="purple">CRAWL</Tag>;
-		if (act === 'RETRY_CRAWL') return <Tag color="geekblue">RETRY CRAWL</Tag>;
-		if (act === 'PERMISSION_CHANGE') return <Tag color="gold">PERMISSION CHANGE</Tag>;
-		if (act === 'ROLE_CHANGE') return <Tag color="magenta">ROLE CHANGE</Tag>;
-		return <Tag>{action}</Tag>;
+		const config = getActivityActionConfig(action);
+		return <Tag color={config.color}>{config.label}</Tag>;
 	};
 
 	return (

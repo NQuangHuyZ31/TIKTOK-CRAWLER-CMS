@@ -5,6 +5,7 @@ import { ArrowLeftOutlined, SaveOutlined, UserOutlined, MailOutlined, PhoneOutli
 import { useDispatch, useSelector } from '@core/store';
 import useAction from '@core/hooks/useAction';
 import PageHeader from '@core/components/PageHeader';
+import { USER_FORM_STATUS_OPTIONS } from '../configs/userConstants';
 import { fetchUserDetail, fetchRolesAndPermissions } from '../store/user/userThunks';
 import userAPI from '../Action/user';
 import RoleSelector from '../components/RoleSelector';
@@ -169,13 +170,7 @@ export default function UserFormPage() {
 
 						<Col xs={24} md={12}>
 							<Form.Item name="status" label="Account Status" rules={[{ required: true, message: 'Please select account status.' }]}>
-								<Select
-									options={[
-										{ value: 'active', label: 'Active (Permit Login & Operations)' },
-										{ value: 'inactive', label: 'Inactive (Temporary Hold)' },
-										{ value: 'blocked', label: 'Blocked (Access Suspended)' },
-									]}
-								/>
+								<Select options={USER_FORM_STATUS_OPTIONS} />
 							</Form.Item>
 						</Col>
 

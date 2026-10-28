@@ -54,3 +54,32 @@ export const STATUS_CONFIGS: Record<string, { label: string; color: string; badg
         badgeColor: '#ff4d4f',
     },
 };
+
+import type { SelectOption } from '@core/configs/systemOptions';
+
+export const USER_STATUS_FILTER_OPTIONS: SelectOption[] = [
+    { label: 'All statuses', value: '' },
+    { label: 'Active', value: 'active' },
+    { label: 'Inactive', value: 'inactive' },
+    { label: 'Blocked', value: 'blocked' },
+];
+
+export const USER_STATUS_CHANGE_OPTIONS: SelectOption[] = [
+    { value: 'active', label: 'Set as Active' },
+    { value: 'inactive', label: 'Set as Inactive' },
+    { value: 'blocked', label: 'Block Account', danger: true },
+];
+
+export const USER_FORM_STATUS_OPTIONS: SelectOption[] = [
+    { value: 'active', label: 'Active (Permit Login & Operations)' },
+    { value: 'inactive', label: 'Inactive (Temporary Hold)' },
+    { value: 'blocked', label: 'Blocked (Access Suspended)' },
+];
+
+export const USER_ROLE_FILTER_OPTIONS: SelectOption[] = [
+    { label: 'All roles', value: '' },
+    { label: 'Super Admin', value: 'admin' },
+    { label: 'Operations Manager', value: 'manager' },
+    { label: 'Crawler Specialist', value: 'editor' },
+    { label: 'Data Viewer', value: 'viewer' },
+];

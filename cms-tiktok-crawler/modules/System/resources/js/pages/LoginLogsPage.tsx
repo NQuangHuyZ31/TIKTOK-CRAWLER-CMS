@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import ListLayout, { DynamicFilterField } from '@core/components/ListLayout';
 import { useDispatch, useSelector } from '@core/store';
+import { LOGIN_STATUS_OPTIONS } from '../configs/activityLogConfig';
 import { setLoginParams, resetLoginParams } from '../store/system/systemSlice';
 import { fetchLoginLogs } from '../store/system/systemThunks';
 import LoginLogTable from '../components/LoginLogTable';
@@ -24,11 +25,7 @@ export default function LoginLogsPage() {
 			type: 'select',
 			value: loginParams.status,
 			width: 160,
-			options: [
-				{ label: 'All Statuses', value: '' },
-				{ label: 'Success', value: 'success' },
-				{ label: 'Failed', value: 'failed' },
-			],
+			options: LOGIN_STATUS_OPTIONS,
 			onChange: (val) => dispatch(setLoginParams({ status: val || undefined, page: 1 })),
 		},
 	];

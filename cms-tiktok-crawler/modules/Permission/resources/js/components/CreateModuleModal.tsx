@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Alert, Button, Checkbox, Form, Input, Modal, Space, Typography } from 'antd';
 import { AppstoreAddOutlined, CheckOutlined } from '@ant-design/icons';
 import useAction from '@core/hooks/useAction';
+import { BASIC_PERMISSION_ACTIONS } from '../configs/permissionOptions';
 import { createModulePermissions } from '../Action/permission';
 
 const { Text } = Typography;
@@ -12,13 +13,6 @@ export interface CreateModuleModalProps {
 	onClose: () => void;
 	onSuccess: () => void;
 }
-
-const BASIC_ACTIONS = [
-	{ label: 'View (view)', value: 'view', desc: 'Read-only access and data listing' },
-	{ label: 'Create (create)', value: 'create', desc: 'Add new records and entities' },
-	{ label: 'Edit (edit)', value: 'edit', desc: 'Modify existing records' },
-	{ label: 'Delete (delete)', value: 'delete', desc: 'Permanently remove records' },
-];
 
 export default function CreateModuleModal({ open, onClose, onSuccess }: CreateModuleModalProps) {
 	const [form] = Form.useForm();
@@ -32,14 +26,14 @@ export default function CreateModuleModal({ open, onClose, onSuccess }: CreateMo
 		if (open) {
 			form.resetFields();
 			form.setFieldsValue({
-				actions: ['view', 'create', 'edit', 'delete'],
+				actions: BASIC_PERMISSION_ACTIONS.map((a) => a.value),
 			});
 			setErrorMsg(null);
 		}
 	}, [open, form]);
 
 	const handleSelectAll = () => {
-		form.setFieldsValue({ actions: ['view', 'create', 'edit', 'delete'] });
+		form.setFieldsValue({ actions: BASIC_PERMISSION_ACTIONS.map((a) => a.value) });
 	};
 
 	const handleDeselectAll = () => {
@@ -135,7 +129,7 @@ export default function CreateModuleModal({ open, onClose, onSuccess }: CreateMo
 				>
 					<Checkbox.Group style={{ width: '100%' }}>
 						<Space orientation="vertical" style={{ width: '100%' }}>
-							{BASIC_ACTIONS.map((item) => (
+							{BASIC_PERMISSION_ACTIONS.map((item) => (
 								<Checkbox key={item.value} value={item.value}>
 									<Space direction="vertical" size={0}>
 										<Text strong>{item.label}</Text>
