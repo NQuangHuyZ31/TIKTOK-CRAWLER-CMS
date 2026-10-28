@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Space, Button, Popconfirm, Tooltip } from 'antd';
 import { EyeOutlined, EditOutlined, DeleteOutlined, KeyOutlined } from '@ant-design/icons';
 import { useDispatch, useSelector } from '@core/store';
-import ListLayout from '@/components/ListLayout';
+import ListLayout from '@core/components/ListLayout';
 import StatusDropdown from '@core/components/StatusDropdown';
 import { formatDateTime } from '@core/utils/formatDate';
 import {
@@ -18,7 +18,7 @@ import type { UserItem } from '../Action/user';
 import userColumnConfig from '../configs/columnConfig';
 import UserKpiCards from '../components/UserKpiCards';
 import UserColumn from '../components/UserColumn';
-import PermissionGate from '@/components/PermissionGate';
+import PermissionGate from '@core/components/PermissionGate';
 import { UserRoleTags } from '../components/UserRoleTags';
 import useAction from '@core/hooks/useAction';
 
@@ -47,7 +47,7 @@ export default function UserListPage() {
 	};
 
 	const handleResetPassword = (id: number | string) => {
-		act(() => userAPI.resetPassword(id), 'Reset password has sent to email');
+		act(() => userAPI.resetPassword(id), 'Reset password email has been sent successfully');
 	};
 
 	return (

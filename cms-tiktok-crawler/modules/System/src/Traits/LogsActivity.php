@@ -113,13 +113,8 @@ trait LogsActivity
      * @param string|null $module Custom module name (default: model's activity module)
      * @return array The result of $relation->sync($ids)
      */
-    public function auditSync(
-        string $relation,
-        array $ids,
-        string $identifierColumn = 'slug',
-        ?string $action = null,
-        ?string $module = null
-    ): array {
+    public function auditSync(string $relation, array $ids, string $identifierColumn = 'slug', ?string $action = null, ?string $module = null): array
+    {
         $relationQuery = $this->{$relation}();
         $oldItems = $relationQuery->pluck($identifierColumn)->toArray();
         $filteredIds = array_filter(array_map('intval', $ids));

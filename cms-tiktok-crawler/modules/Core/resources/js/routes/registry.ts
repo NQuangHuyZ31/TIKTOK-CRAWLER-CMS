@@ -1,4 +1,4 @@
-import { PermissionAction } from '@/hooks/usePermission';
+import { PermissionAction } from '../hooks/usePermission';
 import { useMemo, useSyncExternalStore, type ComponentType, type ReactNode } from 'react';
 import { useLocation } from 'react-router-dom';
 

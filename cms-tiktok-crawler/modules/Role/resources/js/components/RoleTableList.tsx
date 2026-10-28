@@ -1,12 +1,9 @@
 import React from 'react';
-import { Button, Popconfirm, Space, Tag, Tooltip, Typography } from 'antd';
-import { CrownOutlined, DeleteOutlined, EditOutlined, SafetyCertificateOutlined } from '@ant-design/icons';
+import { Space, Tag, Typography } from 'antd';
+import { CrownOutlined, SafetyCertificateOutlined } from '@ant-design/icons';
 import TableComponent from '@core/components/Table';
-import type { TableColumn } from '@core/components/Table';
 import { roleTableColumns } from '../configs/roleTableConfig';
 import type { RoleItem } from '../Action/role';
-import { Link } from 'react-router-dom';
-import PermissionGate from '@/components/PermissionGate';
 
 const { Text } = Typography;
 
@@ -47,33 +44,20 @@ export default function RoleTableList({ data, loading = false, pagination, onPag
 		),
 	};
 
-	const actionColumns: TableColumn<RoleItem>[] = [
-		{
-			title: 'Actions',
-			key: 'actions',
-			width: 140,
-			align: 'center',
-			fixed: 'right',
-			render: (_: any, record: RoleItem) => {
-				return (
-					<Space size={4}>
-						<PermissionGate module="role" action="edit">
-							<Tooltip title="Edit">
-								<Button size="small" type="text" icon={<EditOutlined style={{ color: '#52c41a' }} />} onClick={() => onEdit(record)} />
-							</Tooltip>
-						</PermissionGate>
-						<PermissionGate module="role" action="delete">
-							<Popconfirm title="Delete role" description="Are you sure you want to delete this role?" onConfirm={() => onDelete(record)} okText="Delete" cancelText="Cancel" okButtonProps={{ danger: true }}>
-								<Tooltip title="Delete">
-									<Button type="text" danger size="small" icon={<DeleteOutlined />} />
-								</Tooltip>
-							</Popconfirm>
-						</PermissionGate>
-					</Space>
-				);
-			},
-		},
-	];
-
-	return <TableComponent columns={roleTableColumns} data={data} loading={loading} pagination={pagination} onPageChange={onPageChange} renderColumns={renderColumns} appendColumns={actionColumns} rowKey="id" />;
+	return (
+		<TableComponent
+			columns={roleTableColumns}
+			data={data}
+			loading={loading}
+			pagination={pagination}
+			onPageChange={onPageChange}
+			renderColumns={renderColumns}
+			onEdit={onEdit}
+			onDelete={onDelete}
+			canDelete={(record) => record.slug !== 'admin'}
+			deleteConfirmTitle={(record) => `Are you sure you want to delete role '${record.name}'?`}
+			permissionModule="role"
+			rowKey="id"
+		/>
+	);
 }

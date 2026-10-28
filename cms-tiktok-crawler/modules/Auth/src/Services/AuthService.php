@@ -93,6 +93,82 @@ class AuthService
     }
 
     /**
+     * Generate password reset token for forgot password request.
+     */
+    public function forgotPassword(string $email): string
+    {
+        $user = $this->userRepository->findByEmail($email);
+        if (!$user) {
+            throw ValidationException::withMessages([
+                'email' => [__('passwords.user')],
+            ]);
+        }
+
+        $token = Password::createToken($user);
+
+        Audit::record(
+            action: 'REQUEST_RESET_PASSWORD',
+            target: $user,
+            metadata: ['email' => $email, 'method' => 'forgot_password'],
+            status: 'SUCCESS',
+            module: 'AUTH',
+            user: $user
+        );
+
+        return $token;
+    }
+
+    /**
+     * Change password for the authenticated user.
+     */
+    public function changePassword(User $user, array $data): void
+    {
+        if (!Hash::check($data['current_password'], $user->password)) {
+            throw ValidationException::withMessages([
+                'current_password' => ['The provided current password does not match our records.'],
+            ]);
+        }
+
+        $this->userRepository->update($user->id, [
+            'password' => Hash::make($data['password']),
+        ]);
+
+        Audit::record(
+            action: 'CHANGE_PASSWORD',
+            target: $user,
+            metadata: ['email' => $user->email],
+            status: 'SUCCESS',
+            module: 'AUTH',
+            user: $user
+        );
+    }
+
+    /**
+     * Update profile details for the authenticated user.
+     */
+    public function updateProfile(User $user, array $data): array
+    {
+        $allowed = ['name', 'phone', 'avatar'];
+        $updateData = array_intersect_key($data, array_flip($allowed));
+
+        if (!empty($updateData)) {
+            $this->userRepository->update($user->id, $updateData);
+            $user->refresh();
+        }
+
+        Audit::record(
+            action: 'UPDATE_PROFILE',
+            target: $user,
+            metadata: $updateData,
+            status: 'SUCCESS',
+            module: 'AUTH',
+            user: $user
+        );
+
+        return $this->formatUserData($user);
+    }
+
+    /**
      * Reset account password using the provided credentials.
      *
      * @param array<string, mixed> $credentials

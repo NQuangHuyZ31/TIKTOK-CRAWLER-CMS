@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Space, Button, Popconfirm, Tooltip, InputNumber, Form } from 'antd';
 import { EyeOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useDispatch, useSelector } from '@core/store';
-import ListLayout from '@/components/ListLayout';
+import ListLayout from '@core/components/ListLayout';
 import PermissionGate from '@core/components/PermissionGate';
 import StatusDropdown from '@core/components/StatusDropdown';
 import usePermission from '@core/hooks/usePermission';

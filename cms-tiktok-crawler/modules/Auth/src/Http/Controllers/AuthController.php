@@ -97,4 +97,75 @@ class AuthController extends BaseController
             return $this->respondError($e->getMessage(), 400);
         }
     }
+
+    /**
+     * Request a password reset link token.
+     * api: POST /{admin_path}/api/auth/forgot-password
+     */
+    public function forgotPassword(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'email' => 'required|email',
+        ]);
+
+        try {
+            $token = $this->authService->forgotPassword($validated['email']);
+            return $this->respondSuccess(['token' => $token], 'Password reset token generated successfully.');
+        } catch (ValidationException $e) {
+            return $this->respondError($e->validator->errors()->first(), 422, $e->errors());
+        } catch (\Throwable $e) {
+            return $this->respondError($e->getMessage(), 400);
+        }
+    }
+
+    /**
+     * Change password for the currently authenticated user.
+     * api: POST /{admin_path}/api/auth/change-password
+     */
+    public function changePassword(Request $request): JsonResponse
+    {
+        $user = $this->getAuthenticatedUser($request);
+        if (!$user) {
+            return $this->respondError('Unauthenticated.', 401);
+        }
+
+        $validated = $request->validate([
+            'current_password' => 'required|string',
+            'password' => 'required|string|min:8|confirmed',
+        ]);
+
+        try {
+            $this->authService->changePassword($user, $validated);
+            return $this->respondSuccess(null, 'Password changed successfully.');
+        } catch (ValidationException $e) {
+            return $this->respondError($e->validator->errors()->first(), 422, $e->errors());
+        } catch (\Throwable $e) {
+            return $this->respondError($e->getMessage(), 400);
+        }
+    }
+
+    /**
+     * Update the authenticated user's profile.
+     * api: PUT /{admin_path}/api/auth/profile
+     */
+    public function profile(Request $request): JsonResponse
+    {
+        $user = $this->getAuthenticatedUser($request);
+        if (!$user) {
+            return $this->respondError('Unauthenticated.', 401);
+        }
+
+        $validated = $request->validate([
+            'name' => 'nullable|string|max:255',
+            'phone' => 'nullable|string|max:50',
+            'avatar' => 'nullable|string|max:255',
+        ]);
+
+        try {
+            $data = $this->authService->updateProfile($user, $validated);
+            return $this->respondSuccess($data, 'Profile updated successfully.');
+        } catch (\Throwable $e) {
+            return $this->respondError($e->getMessage(), 400);
+        }
+    }
 }

@@ -1,7 +1,9 @@
 import React, { useMemo } from 'react';
-import { Table } from 'antd';
+import { Button, Popconfirm, Space, Table, Tooltip } from 'antd';
+import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
 import type { TableProps } from 'antd';
 import type { ColumnsType, ColumnType } from 'antd/es/table';
+import PermissionGate from './PermissionGate';
 
 export interface PaginationInfo {
 	page?: number;
@@ -32,6 +34,15 @@ export interface TableComponentProps<T = any> extends Omit<TableProps<T>, 'dataS
 	prependColumns?: TableColumn<T>[];
 	extraColumns?: TableColumn<T>[];
 	appendColumns?: TableColumn<T>[];
+
+	// Native action props (Single Standard across all modules)
+	onEdit?: (record: T) => void;
+	onDelete?: (record: T) => void;
+	canEdit?: boolean | ((record: T) => boolean);
+	canDelete?: boolean | ((record: T) => boolean);
+	deleteConfirmTitle?: string | ((record: T) => React.ReactNode);
+	extraActions?: (record: T) => React.ReactNode;
+	permissionModule?: string;
 }
 
 /**
@@ -42,8 +53,9 @@ export function buildColumns<T = any>(
 	renderColumns: Record<string, (value: any, record: T, index: number) => React.ReactNode> = {},
 	prependColumns: TableColumn<T>[] = [],
 	extraColumns: TableColumn<T>[] = [],
+	actionsColumn?: TableColumn<T>,
 ): ColumnsType<T> {
-	const allColumns = [...prependColumns, ...baseColumns, ...extraColumns];
+	const allColumns = [...prependColumns, ...baseColumns, ...extraColumns, ...(actionsColumn ? [actionsColumn] : [])];
 
 	return allColumns.map((col) => {
 		const key = String(col.key ?? col.dataIndex ?? '');
@@ -90,11 +102,92 @@ export default function TableComponent<T = any>({
 	prependColumns = [],
 	extraColumns = [],
 	appendColumns = [],
+	onEdit,
+	onDelete,
+	canEdit = true,
+	canDelete = true,
+	deleteConfirmTitle = 'Are you sure you want to delete this record?',
+	extraActions,
+	permissionModule,
 	...restProps
 }: TableComponentProps<T>) {
 	const finalExtra = extraColumns.length > 0 ? extraColumns : appendColumns;
 
-	const tableColumns = useMemo(() => buildColumns<T>(columns, renderColumns, prependColumns, finalExtra), [columns, renderColumns, prependColumns, finalExtra]);
+	const actionsColumn = useMemo<TableColumn<T> | undefined>(() => {
+		if (!onEdit && !onDelete && !extraActions) {
+			return undefined;
+		}
+
+		return {
+			title: 'Actions',
+			key: 'actions',
+			width: onEdit && onDelete ? 120 : 90,
+			align: 'center',
+			fixed: 'right',
+			render: (_: any, record: T) => {
+				const isEditable = typeof canEdit === 'function' ? canEdit(record) : canEdit;
+				const isDeletable = typeof canDelete === 'function' ? canDelete(record) : canDelete;
+				const confirmDescription = typeof deleteConfirmTitle === 'function' ? deleteConfirmTitle(record) : deleteConfirmTitle;
+
+				return (
+					<Space size={4}>
+						{extraActions && extraActions(record)}
+
+						{onEdit && isEditable && (
+							permissionModule ? (
+								<PermissionGate module={permissionModule} action="edit">
+									<Tooltip title="Edit">
+										<Button size="small" type="text" icon={<EditOutlined style={{ color: '#52c41a' }} />} onClick={() => onEdit(record)} />
+									</Tooltip>
+								</PermissionGate>
+							) : (
+								<Tooltip title="Edit">
+									<Button size="small" type="text" icon={<EditOutlined style={{ color: '#52c41a' }} />} onClick={() => onEdit(record)} />
+								</Tooltip>
+							)
+						)}
+
+						{onDelete && isDeletable && (
+							permissionModule ? (
+								<PermissionGate module={permissionModule} action="delete">
+									<Popconfirm
+										title="Delete"
+										description={confirmDescription}
+										onConfirm={() => onDelete(record)}
+										okText="Delete"
+										cancelText="Cancel"
+										okButtonProps={{ danger: true }}
+									>
+										<Tooltip title="Delete">
+											<Button type="text" danger size="small" icon={<DeleteOutlined />} />
+										</Tooltip>
+									</Popconfirm>
+								</PermissionGate>
+							) : (
+								<Popconfirm
+									title="Delete"
+									description={confirmDescription}
+									onConfirm={() => onDelete(record)}
+									okText="Delete"
+									cancelText="Cancel"
+									okButtonProps={{ danger: true }}
+								>
+									<Tooltip title="Delete">
+										<Button type="text" danger size="small" icon={<DeleteOutlined />} />
+									</Tooltip>
+								</Popconfirm>
+							)
+						)}
+					</Space>
+				);
+			},
+		};
+	}, [onEdit, onDelete, canEdit, canDelete, deleteConfirmTitle, extraActions, permissionModule]);
+
+	const tableColumns = useMemo(
+		() => buildColumns<T>(columns, renderColumns, prependColumns, finalExtra, actionsColumn),
+		[columns, renderColumns, prependColumns, finalExtra, actionsColumn],
+	);
 
 	const onPage = onPageChange ?? handlePageChange;
 	const paginationConfig = useMemo(() => {

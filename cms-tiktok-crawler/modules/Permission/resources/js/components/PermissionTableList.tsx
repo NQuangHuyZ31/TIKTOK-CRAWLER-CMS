@@ -1,8 +1,7 @@
 import React from 'react';
-import { Button, Popconfirm, Space, Tag, Tooltip, Typography } from 'antd';
-import { DeleteOutlined, KeyOutlined } from '@ant-design/icons';
+import { Space, Tag, Typography } from 'antd';
+import { KeyOutlined } from '@ant-design/icons';
 import TableComponent from '@core/components/Table';
-import type { TableColumn } from '@core/components/Table';
 import { permissionTableColumns } from '../configs/permissionTableConfig';
 import type { PermissionItem } from '../Action/permission';
 
@@ -73,35 +72,22 @@ export default function PermissionTableList({ data, loading = false, pagination,
 		),
 	};
 
-	const actionColumns: TableColumn<PermissionItem>[] = [
-		{
-			title: 'Actions',
-			key: 'actions',
-			width: 90,
-			align: 'center',
-			fixed: 'right',
-			render: (_: any, record: PermissionItem) => (
-				<Space size={4}>
-					<Popconfirm
-						title="Delete permission"
-						description={
-							<div style={{ maxWidth: 240 }}>
-								Are you sure you want to delete permission <strong>{record.slug}</strong>?
-							</div>
-						}
-						onConfirm={() => onDelete(record)}
-						okText="Delete"
-						cancelText="Cancel"
-						okButtonProps={{ danger: true }}
-					>
-						<Tooltip title="Delete permission">
-							<Button type="text" danger size="small" icon={<DeleteOutlined />} />
-						</Tooltip>
-					</Popconfirm>
-				</Space>
-			),
-		},
-	];
-
-	return <TableComponent columns={permissionTableColumns} data={data} loading={loading} pagination={pagination} onPageChange={onPageChange} renderColumns={renderColumns} appendColumns={actionColumns} rowKey="id" />;
+	return (
+		<TableComponent
+			columns={permissionTableColumns}
+			data={data}
+			loading={loading}
+			pagination={pagination}
+			onPageChange={onPageChange}
+			renderColumns={renderColumns}
+			onDelete={onDelete}
+			deleteConfirmTitle={(record) => (
+				<div style={{ maxWidth: 240 }}>
+					Are you sure you want to delete permission <strong>{record.slug}</strong>?
+				</div>
+			)}
+			permissionModule="permission"
+			rowKey="id"
+		/>
+	);
 }

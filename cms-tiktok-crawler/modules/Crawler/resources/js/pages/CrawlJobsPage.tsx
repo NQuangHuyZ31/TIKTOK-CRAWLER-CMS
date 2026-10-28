@@ -4,7 +4,7 @@ import dayjs from 'dayjs';
 import { Space, Button, Popconfirm, Tooltip } from 'antd';
 import { EyeOutlined, EditOutlined, DeleteOutlined, RedoOutlined, PlayCircleOutlined } from '@ant-design/icons';
 import { useDispatch, useSelector } from '@core/store';
-import ListLayout from '@/components/ListLayout';
+import ListLayout from '@core/components/ListLayout';
 import StatusTag from '@core/components/StatusTag';
 import PermissionGate from '@core/components/PermissionGate';
 import { formatNumber } from '@core/utils/formatNumber';

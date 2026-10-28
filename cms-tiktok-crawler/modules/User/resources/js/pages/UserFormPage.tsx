@@ -10,7 +10,7 @@ import { fetchUserDetail, fetchRolesAndPermissions } from '../store/user/userThu
 import userAPI from '../Action/user';
 import RoleSelector from '../components/RoleSelector';
 import PermissionMatrixSelector from '../components/PermissionMatrixSelector';
-import AccessDeny from '@/components/AccessDeny';
+import AccessDeny from '@core/components/AccessDeny';
 
 const { Title, Text, Paragraph } = Typography;
 

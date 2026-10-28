@@ -83,6 +83,15 @@ export interface ListLayoutProps<T = any> {
 	rowKey?: string | ((record: T) => string);
 	rowSelection?: TableComponentProps<T>['rowSelection'];
 
+	// Table Native Actions (Forwarded to TableComponent)
+	onEdit?: (record: T) => void;
+	onDelete?: (record: T) => void;
+	canEdit?: boolean | ((record: T) => boolean);
+	canDelete?: boolean | ((record: T) => boolean);
+	deleteConfirmTitle?: string | ((record: T) => React.ReactNode);
+	extraActions?: (record: T) => React.ReactNode;
+	permissionModule?: string;
+
 	// 7. Child slot (Optional fallback when passing custom table content)
 	children?: ReactNode;
 }
@@ -127,6 +136,13 @@ export default function ListLayout<T = any>({
 	renderColumns,
 	rowKey = 'id',
 	rowSelection,
+	onEdit,
+	onDelete,
+	canEdit,
+	canDelete,
+	deleteConfirmTitle,
+	extraActions,
+	permissionModule,
 
 	// Child slot
 	children,
@@ -305,7 +321,23 @@ export default function ListLayout<T = any>({
 
 				{/* 4. Table Component */}
 				{columns && data !== undefined ? (
-					<TableComponent<T> columns={columns} data={data} loading={loading} pagination={pagination} handlePageChange={onPageChange} renderColumns={renderColumns} rowKey={rowKey} rowSelection={rowSelection} />
+					<TableComponent<T>
+						columns={columns}
+						data={data}
+						loading={loading}
+						pagination={pagination}
+						handlePageChange={onPageChange}
+						renderColumns={renderColumns}
+						rowKey={rowKey}
+						rowSelection={rowSelection}
+						onEdit={onEdit}
+						onDelete={onDelete}
+						canEdit={canEdit}
+						canDelete={canDelete}
+						deleteConfirmTitle={deleteConfirmTitle}
+						extraActions={extraActions}
+						permissionModule={permissionModule}
+					/>
 				) : (
 					children
 				)}

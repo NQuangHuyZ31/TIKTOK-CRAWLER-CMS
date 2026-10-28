@@ -46,6 +46,6 @@ class RoleRepository extends BaseRepository implements RoleRepositoryInterface
 
     public function syncPermissions(Role $role, array $permissionIds): array
     {
-        return $role->permissions()->sync($permissionIds);
+        return $role->syncPermissions($permissionIds);
     }
 }

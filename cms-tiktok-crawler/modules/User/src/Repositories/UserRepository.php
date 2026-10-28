@@ -31,8 +31,7 @@ class UserRepository extends BaseRepository implements UserRepositoryInterface
      */
     public function syncRoles(User $user, array $roleIds): array
     {
-        $ids = array_filter(array_map('intval', $roleIds));
-        return $user->roles()->sync($ids);
+        return $user->syncRoles($roleIds);
     }
 
     /**
@@ -40,8 +39,7 @@ class UserRepository extends BaseRepository implements UserRepositoryInterface
      */
     public function syncPermissions(User $user, array $permissionIds): array
     {
-        $ids = array_filter(array_map('intval', $permissionIds));
-        return $user->permissions()->sync($ids);
+        return $user->syncPermissions($permissionIds);
     }
 
     /**

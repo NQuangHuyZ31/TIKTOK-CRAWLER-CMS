@@ -96,16 +96,6 @@ export default function ActivityLogTable({ data, loading, pagination, onPageChan
 			width: 170,
 			render: (date: string) => <Text style={{ fontSize: 13, color: '#595959' }}>{date ? new Date(date).toLocaleString() : '-'}</Text>,
 		},
-		{
-			title: 'Actions',
-			key: 'operations',
-			width: 90,
-			render: (_: any, record: ActivityLogItem) => (
-				<Tooltip title="View Snapshot & Changes">
-					<Button type="text" icon={<EyeOutlined />} onClick={() => onViewDetail(record)} />
-				</Tooltip>
-			),
-		},
 	];
 
 	return (
@@ -124,6 +114,11 @@ export default function ActivityLogTable({ data, loading, pagination, onPageChan
 					: false
 			}
 			onPageChange={onPageChange}
+			extraActions={(record) => (
+				<Tooltip title="View Snapshot & Changes">
+					<Button type="text" icon={<EyeOutlined />} onClick={() => onViewDetail(record)} />
+				</Tooltip>
+			)}
 		/>
 	);
 }
