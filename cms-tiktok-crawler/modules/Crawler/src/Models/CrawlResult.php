@@ -7,18 +7,10 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Notifications\Notifiable;
+use Modules\System\Traits\LogsActivity;
 use Modules\TiktokAccount\Models\TiktokAccount;
 
-#[Fillable([
-    'crawl_job_id',
-    'tiktok_account_id',
-    'username',
-    'nickname',
-    'avatar_url',
-    'avatar_path',
-    'profile_url',
-    'followers_count',
-    'following_count',
+#[Fillable(['crawl_job_id','tiktok_account_id','username','nickname','avatar_url','avatar_path','profile_url','followers_count','following_count',
     'likes_count',
     'video_count',
     'bio',
@@ -29,7 +21,10 @@ use Modules\TiktokAccount\Models\TiktokAccount;
 ])]
 class CrawlResult extends Model
 {
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable, LogsActivity;
+    public string $activityModule = 'CRAWLER';
+    public string $activityRecordType = 'CRAWL_RESULT';
+    public string $activityIdentifierField = 'id';
 
     /**
      * Relationship to CrawlJob.

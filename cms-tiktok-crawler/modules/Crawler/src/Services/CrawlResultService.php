@@ -4,8 +4,6 @@ namespace Modules\Crawler\Services;
 
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
-use Modules\Crawler\Models\CrawlJob;
-use Modules\Crawler\Models\CrawlResult;
 use Modules\Crawler\Repositories\Interfaces\CrawlJobRepositoryInterface;
 use Modules\Crawler\Repositories\Interfaces\CrawlResultRepositoryInterface;
 use Modules\TiktokAccount\Repositories\Interfaces\TiktokAccountRepositoryInterface;
