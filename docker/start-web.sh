@@ -15,6 +15,10 @@ chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 if [ "${RUN_MIGRATIONS:-true}" = "true" ]; then
     echo "[Render] Running Database Migrations..."
     php /var/www/html/artisan migrate --force || echo "[Render] Warning: Migration completed with notice."
+    if [ "${RUN_SEEDER:-true}" = "true" ]; then
+        echo "[Render] Running Database Seeders..."
+        php /var/www/html/artisan db:seed --force || echo "[Render] Notice: Seeding completed or skipped."
+    fi
 fi
 
 # Cache configuration, routes, and views for optimal performance
