@@ -2,15 +2,16 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { Alert, Row, Col, Card, Space, Flex, Tag, Button, Tooltip, Badge } from 'antd';
 import { ReloadOutlined, PlusOutlined, HistoryOutlined, ArrowRightOutlined, EyeOutlined } from '@ant-design/icons';
 import { useNavigate, Link } from 'react-router-dom';
-import { getDashboardOverview } from '../Action/dashboard';
+import { getDashboardOverview, getGrowthTrends } from '../Action/dashboard';
 import PageHeader from '../components/PageHeader';
 import TableComponent, { TableColumn } from '../components/Table';
 import StatusTag from '../components/StatusTag';
 import EmptyState from '../components/EmptyState';
 import PermissionGate from '../components/PermissionGate';
 import usePermission from '../hooks/usePermission';
-import type { CrawlerStatistics, TiktokStatistics, CrawlJobItem } from './ui/types';
+import type { CrawlerStatistics, TiktokStatistics, CrawlJobItem, DashboardGrowthTrends } from './ui/types';
 import DashboardKpiCards from './ui/DashboardKpiCards';
+import DashboardGrowthCharts from './ui/DashboardGrowthCharts';
 import CrawlEngineOverview from './ui/CrawlEngineOverview';
 import TiktokEcosystemOverview from './ui/TiktokEcosystemOverview';
 import DashboardQuickShortcuts from './ui/DashboardQuickShortcuts';
@@ -64,60 +65,86 @@ export default function DashboardPage() {
 	const [crawlerStats, setCrawlerStats] = useState<CrawlerStatistics | null>(null);
 	const [tiktokStats, setTiktokStats] = useState<TiktokStatistics | null>(null);
 	const [recentJobs, setRecentJobs] = useState<CrawlJobItem[]>([]);
+	const [growthTrends, setGrowthTrends] = useState<DashboardGrowthTrends | null>(null);
+	const [selectedPeriod, setSelectedPeriod] = useState<number>(30);
+	const [growthLoading, setGrowthLoading] = useState<boolean>(false);
 	const [loading, setLoading] = useState<boolean>(true);
 	const [refreshing, setRefreshing] = useState<boolean>(false);
 	const [error, setError] = useState<string>('');
 	const [lastUpdated, setLastUpdated] = useState<string>('');
 
 	// Load metrics in a single aggregated request from Core Dashboard API
-	const loadDashboardData = useCallback(async (isRefresh = false) => {
-		if (isRefresh) {
-			setRefreshing(true);
-		} else {
-			setLoading(true);
-		}
-		setError('');
-
-		try {
-			const res = await getDashboardOverview();
-			const overview = res?.data;
-
-			if (overview) {
-				if (overview.crawler_statistics) {
-					setCrawlerStats({
-						total_jobs: Number(overview.crawler_statistics.total_jobs || 0),
-						total_accounts: Number(overview.crawler_statistics.total_accounts || 0),
-						total_success_accounts: Number(overview.crawler_statistics.total_success_accounts || 0),
-						total_failed_accounts: Number(overview.crawler_statistics.total_failed_accounts || 0),
-						total_completed_jobs: Number(overview.crawler_statistics.total_completed_jobs || 0),
-						total_failed_jobs: Number(overview.crawler_statistics.total_failed_jobs || 0),
-					});
-				}
-
-				if (overview.tiktok_statistics) {
-					setTiktokStats({
-						total_accounts: Number(overview.tiktok_statistics.total_accounts || 0),
-						total_followers: Number(overview.tiktok_statistics.total_followers || 0),
-						total_following: Number(overview.tiktok_statistics.total_following || 0),
-						total_likes: Number(overview.tiktok_statistics.total_likes || 0),
-						total_active_accounts: Number(overview.tiktok_statistics.total_active_accounts || 0),
-						total_inactive_accounts: Number(overview.tiktok_statistics.total_inactive_accounts || 0),
-					});
-				}
-
-				if (Array.isArray(overview.recent_jobs)) {
-					setRecentJobs(overview.recent_jobs);
-				}
+	const loadDashboardData = useCallback(
+		async (isRefresh = false, days = selectedPeriod) => {
+			if (isRefresh) {
+				setRefreshing(true);
+			} else {
+				setLoading(true);
 			}
+			setError('');
 
-			setLastUpdated(new Date().toLocaleTimeString('en-US'));
-		} catch (err: any) {
-			setError(err?.message || 'Failed to load dashboard statistics.');
+			try {
+				const res = await getDashboardOverview(days);
+				const overview = res?.data;
+
+				if (overview) {
+					if (overview.crawler_statistics) {
+						setCrawlerStats({
+							total_jobs: Number(overview.crawler_statistics.total_jobs || 0),
+							total_accounts: Number(overview.crawler_statistics.total_accounts || 0),
+							total_success_accounts: Number(overview.crawler_statistics.total_success_accounts || 0),
+							total_failed_accounts: Number(overview.crawler_statistics.total_failed_accounts || 0),
+							total_completed_jobs: Number(overview.crawler_statistics.total_completed_jobs || 0),
+							total_failed_jobs: Number(overview.crawler_statistics.total_failed_jobs || 0),
+						});
+					}
+
+					if (overview.tiktok_statistics) {
+						setTiktokStats({
+							total_accounts: Number(overview.tiktok_statistics.total_accounts || 0),
+							total_followers: Number(overview.tiktok_statistics.total_followers || 0),
+							total_following: Number(overview.tiktok_statistics.total_following || 0),
+							total_likes: Number(overview.tiktok_statistics.total_likes || 0),
+							total_active_accounts: Number(overview.tiktok_statistics.total_active_accounts || 0),
+							total_inactive_accounts: Number(overview.tiktok_statistics.total_inactive_accounts || 0),
+						});
+					}
+
+					if (Array.isArray(overview.recent_jobs)) {
+						setRecentJobs(overview.recent_jobs);
+					}
+
+					if (overview.growth_trends) {
+						setGrowthTrends(overview.growth_trends);
+					}
+				}
+
+				setLastUpdated(new Date().toLocaleTimeString('en-US'));
+			} catch (err: any) {
+				setError(err?.message || 'Failed to load dashboard statistics.');
+			} finally {
+				setLoading(false);
+				setRefreshing(false);
+			}
+		},
+		[selectedPeriod],
+	);
+
+	// Switch period dynamically for Growth Charts
+	const handlePeriodChange = async (days: number) => {
+		setSelectedPeriod(days);
+		setGrowthLoading(true);
+		try {
+			const res = await getGrowthTrends(days);
+			if (res?.data) {
+				setGrowthTrends(res.data);
+			}
+		} catch {
+			// If dedicated fetch fails, fall back gracefully
 		} finally {
-			setLoading(false);
-			setRefreshing(false);
+			setGrowthLoading(false);
 		}
-	}, []);
+	};
 
 	useEffect(() => {
 		loadDashboardData();
@@ -170,6 +197,9 @@ export default function DashboardPage() {
 
 			{/* Primary High-Level KPI Summary Cards */}
 			<DashboardKpiCards crawlerStats={crawlerStats} tiktokStats={tiktokStats} loading={loading} />
+
+			{/* Dynamic Followers & Likes Growth Trajectory Charts */}
+			<DashboardGrowthCharts growthTrends={growthTrends} loading={loading || growthLoading} selectedPeriod={selectedPeriod} onPeriodChange={handlePeriodChange} />
 
 			{/* Deep Analytics & Performance Breakdown */}
 			<Row gutter={[20, 20]}>

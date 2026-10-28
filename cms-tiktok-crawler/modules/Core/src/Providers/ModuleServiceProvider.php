@@ -33,5 +33,13 @@ abstract class ModuleServiceProvider extends ServiceProvider
         if (is_dir($migrations)) {
             $this->loadMigrationsFrom($migrations);
         }
+
+        // Load module console routes and schedules if running in console
+        if ($this->app->runningInConsole()) {
+            $consoleRoutes = $registry->path($this->name, 'routes/console.php');
+            if (file_exists($consoleRoutes)) {
+                require $consoleRoutes;
+            }
+        }
     }
 }

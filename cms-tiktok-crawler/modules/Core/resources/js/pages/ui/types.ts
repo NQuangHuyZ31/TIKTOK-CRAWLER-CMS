@@ -30,3 +30,27 @@ export interface CrawlJobItem {
 	started_at?: string;
 	completed_at?: string;
 }
+
+export interface GrowthPoint {
+	date: string;
+	label: string;
+	value: number;
+	change: number;
+}
+
+export interface GrowthTrendData {
+	title: string;
+	metric: string;
+	current_value: number;
+	previous_value: number;
+	net_change: number;
+	growth_rate: number;
+	period_days: number;
+	points: GrowthPoint[];
+}
+
+export interface DashboardGrowthTrends {
+	period_days: number;
+	followers_growth: GrowthTrendData;
+	likes_growth: GrowthTrendData;
+}

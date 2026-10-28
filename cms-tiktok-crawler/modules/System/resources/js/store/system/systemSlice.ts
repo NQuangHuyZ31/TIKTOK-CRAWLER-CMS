@@ -2,7 +2,17 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import type { LoginLogItem } from '../../Action/loginLog';
 import type { ActivityLogItem, ActivityStatistics } from '../../Action/activityLog';
 import type { SystemInfoData } from '../../Action/systemDiagnostic';
-import { fetchLoginLogs, fetchActivityLogs, fetchActivityStatistics, fetchSystemDiagnostic } from './systemThunks';
+import type { WorkerSettings, CleanupHistoryItem } from '../../Action/systemSetting';
+import {
+	fetchLoginLogs,
+	fetchActivityLogs,
+	fetchActivityStatistics,
+	fetchSystemDiagnostic,
+	fetchWorkerSettings,
+	saveWorkerSettings,
+	triggerManualCleanup,
+	fetchCleanupHistory,
+} from './systemThunks';
 
 export interface SystemState {
 	// Login Logs
@@ -45,6 +55,13 @@ export interface SystemState {
 	diagnostic: SystemInfoData | null;
 	diagnosticLoading: boolean;
 
+	// Worker & Maintenance Settings
+	workerSettings: WorkerSettings | null;
+	settingsLoading: boolean;
+	settingsSaving: boolean;
+	cleanupRunning: boolean;
+	cleanupHistory: CleanupHistoryItem[];
+
 	error: string | null;
 }
 
@@ -80,6 +97,12 @@ const initialState: SystemState = {
 
 	diagnostic: null,
 	diagnosticLoading: false,
+
+	workerSettings: null,
+	settingsLoading: false,
+	settingsSaving: false,
+	cleanupRunning: false,
+	cleanupHistory: [],
 
 	error: null,
 };
@@ -173,6 +196,57 @@ const systemSlice = createSlice({
 				state.diagnosticLoading = false;
 				state.error = action.payload as string;
 			});
+
+		// Worker Settings
+		builder
+			.addCase(fetchWorkerSettings.pending, (state) => {
+				state.settingsLoading = true;
+				state.error = null;
+			})
+			.addCase(fetchWorkerSettings.fulfilled, (state, action) => {
+				state.settingsLoading = false;
+				state.workerSettings = action.payload ?? null;
+				if (action.payload?.last_cleanup_history) {
+					state.cleanupHistory = action.payload.last_cleanup_history;
+				}
+			})
+			.addCase(fetchWorkerSettings.rejected, (state, action) => {
+				state.settingsLoading = false;
+				state.error = action.payload as string;
+			});
+
+		// Save Worker Settings
+		builder
+			.addCase(saveWorkerSettings.pending, (state) => {
+				state.settingsSaving = true;
+				state.error = null;
+			})
+			.addCase(saveWorkerSettings.fulfilled, (state, action) => {
+				state.settingsSaving = false;
+				state.workerSettings = action.payload ?? null;
+			})
+			.addCase(saveWorkerSettings.rejected, (state, action) => {
+				state.settingsSaving = false;
+				state.error = action.payload as string;
+			});
+
+		// Manual Cleanup
+		builder
+			.addCase(triggerManualCleanup.pending, (state) => {
+				state.cleanupRunning = true;
+			})
+			.addCase(triggerManualCleanup.fulfilled, (state) => {
+				state.cleanupRunning = false;
+			})
+			.addCase(triggerManualCleanup.rejected, (state, action) => {
+				state.cleanupRunning = false;
+				state.error = action.payload as string;
+			});
+
+		// Cleanup History
+		builder.addCase(fetchCleanupHistory.fulfilled, (state, action) => {
+			state.cleanupHistory = action.payload ?? [];
+		});
 	},
 });
 

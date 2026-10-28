@@ -8,6 +8,7 @@ import type { RouteDef } from '@core/routes/registry';
 import LoginLogsPage from '../pages/LoginLogsPage';
 import ActivityLogsPage from '../pages/ActivityLogsPage';
 import SystemDiagnosticPage from '../pages/SystemDiagnosticPage';
+import SystemSettingsPage from '../pages/SystemSettingsPage';
 
 const systemRoutes: RouteDef[] = [
 	{
@@ -44,6 +45,18 @@ const systemRoutes: RouteDef[] = [
 		parentPath: '/system',
 		icon: AuditOutlined,
 		order: 42,
+	},
+	{
+		path: '/system/settings',
+		component: SystemSettingsPage,
+		layout: 'admin',
+		title: 'Settings',
+		label: 'Settings',
+		module: 'system',
+		action: 'view',
+		parentPath: '/system',
+		icon: SettingOutlined,
+		order: 43,
 	},
 ];
 
