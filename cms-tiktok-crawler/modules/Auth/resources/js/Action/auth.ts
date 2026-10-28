@@ -56,33 +56,4 @@ export const resetPassword = (data: ResetPasswordPayload) =>
         data,
     });
 
-export interface LoginLogItem {
-    id: number;
-    user_id?: number | null;
-    email: string;
-    ip_address?: string | null;
-    user_agent?: string | null;
-    device?: string | null;
-    status: 'success' | 'failed';
-    failure_reason?: string | null;
-    created_at: string;
-    user?: { id: number; name: string; email: string };
-}
-
-/**
- * Retrieve paginated login activity logs.
- * API: GET /auth/login-logs
- */
-export const getLoginLogs = (params: Record<string, any> = {}) =>
-    api<{
-        status: string;
-        data: {
-            data: LoginLogItem[];
-            total: number;
-            current_page: number;
-            per_page: number;
-            last_page: number;
-        };
-        message: string;
-    }>('/auth/login-logs', { params });
 

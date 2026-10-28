@@ -2,7 +2,7 @@
 
 namespace Modules\Auth\Http\Controllers;
 
-use App\Models\User;
+use Modules\User\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -62,6 +62,7 @@ class AuthController extends BaseController
             // Fallback: revoke all tokens for this user
             $user->tokens()->delete();
         }
+
         return $this->respondSuccess(null, 'Logged out successfully.');
     }
 
@@ -79,24 +80,6 @@ class AuthController extends BaseController
 
         $data = $this->authService->getMe($user);
         return $this->respondSuccess($data, 'Profile retrieved successfully.');
-    }
-
-    /**
-     * Retrieve paginated login activity logs.
-     * api: GET /{admin_path}/api/auth/login-logs
-     */
-    public function loginLogs(Request $request): JsonResponse
-    {
-        $user = $this->getAuthenticatedUser($request);
-
-        if (!$user) {
-            return $this->respondError('Unauthenticated.', 401);
-        }
-
-        $perPage = (int) $request->input('per_page', 15);
-        $logs = $this->authService->getLoginLogs($user, $request->all(), $perPage);
-
-        return $this->respondSuccess($logs, 'Login logs retrieved successfully.');
     }
 
     /**

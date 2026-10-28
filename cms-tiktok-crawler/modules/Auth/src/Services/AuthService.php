@@ -2,18 +2,20 @@
 
 namespace Modules\Auth\Services;
 
-use App\Models\User;
+use Modules\User\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Validation\ValidationException;
 use Modules\Auth\Repositories\Interfaces\AuthRepositoryInterface;
+use Modules\System\Services\LoginLogService;
 use Modules\User\Repositories\Interfaces\UserRepositoryInterface;
 
 class AuthService
 {
     public function __construct(
         protected AuthRepositoryInterface $authRepository,
-        protected UserRepositoryInterface $userRepository
+        protected UserRepositoryInterface $userRepository,
+        protected LoginLogService $loginLogService
     ) {}
 
     /**
@@ -49,10 +51,10 @@ class AuthService
         // Issue Sanctum token
         $token = $user->createToken('auth_token')->plainTextToken;
 
-        // Record successful login log
+        // Record successful login log via System LoginLogService
         $logData['status'] = 'success';
         $logData['failure_reason'] = null;
-        $this->authRepository->recordLoginLog($logData);
+        $this->loginLogService->record($logData);
 
         return [
             'token' => $token,
@@ -79,18 +81,6 @@ class AuthService
         }
 
         return 'Desktop';
-    }
-
-    /**
-     * Retrieve paginated login logs with role-based scoping.
-     */
-    public function getLoginLogs(?User $user, array $filters = [], int $perPage = 15): \Illuminate\Contracts\Pagination\LengthAwarePaginator
-    {
-        if ($user && !$user->isAdmin()) {
-            $filters['user_id'] = $user->id;
-        }
-
-        return $this->authRepository->getLoginLogs($filters, $perPage);
     }
 
     /**
@@ -147,7 +137,7 @@ class AuthService
     {
         $logData['status'] = 'failed';
         $logData['failure_reason'] = $reason;
-        $this->authRepository->recordLoginLog($logData);
+        $this->loginLogService->record($logData);
 
         throw ValidationException::withMessages($messages);
     }
