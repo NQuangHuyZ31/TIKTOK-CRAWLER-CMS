@@ -6,6 +6,7 @@ import authReducer from '@modules/Auth/resources/js/store/auth/authSlice';
 import userReducer from '@modules/User/resources/js/store/user/userSlice';
 import roleReducer from '@modules/Role/resources/js/store/role/roleSlice';
 import permissionReducer from '@modules/Permission/resources/js/store/permission/permissionSlice';
+import systemReducer from '@modules/System/resources/js/store/system/systemSlice';
 
 export const store = configureStore({
 	reducer: {
@@ -15,6 +16,7 @@ export const store = configureStore({
 		user: userReducer,
 		role: roleReducer,
 		permission: permissionReducer,
+		system: systemReducer,
 	}
 });
 

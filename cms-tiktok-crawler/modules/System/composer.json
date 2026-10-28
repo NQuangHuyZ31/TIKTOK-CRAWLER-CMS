@@ -1,13 +1,8 @@
 {
 	"name": "cms-tiktok-crawler/module-system",
-	"description": "System configuration, roles, and permissions module for Tiktok CMS",
-	"version": "1.0.0",
+	"description": "System diagnostic and audit logging module",
 	"type": "library",
-	"require": {
-		"php": "^8.3",
-		"laravel/framework": "^13.17",
-		"cms-tiktok-crawler/module-core": "1.0.0"
-	},
+	"license": "proprietary",
 	"autoload": {
 		"psr-4": {
 			"Modules\\System\\": "src/"
