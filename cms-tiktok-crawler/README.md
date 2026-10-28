@@ -669,6 +669,16 @@ php artisan route:list
 
 ---
 
+## 🛠️ DevOps, Git Worktree & CI/CD Documentation
+
+Comprehensive operational and release manuals have been established:
+- **Git Worktree & Concurrency Manual**: [`docs/development/git-worktree-workflow.md`](docs/development/git-worktree-workflow.md)
+- **CI/CD Pipeline Architecture**: [`docs/deployment/ci-cd-architecture.md`](docs/deployment/ci-cd-architecture.md)
+- **Release Management & SemVer**: [`docs/deployment/release-management.md`](docs/deployment/release-management.md)
+- **Render Production Deployment Playbook**: [`docs/deployment/render-deployment.md`](docs/deployment/render-deployment.md)
+
+---
+
 ## 📄 Bản quyền (License)
 
 Dự án được phát triển nội bộ bởi **Ureka Media**. Mọi quyền được bảo lưu.

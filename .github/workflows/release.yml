@@ -45,9 +45,9 @@ jobs:
         run: |
           npm ci
           npm run check-types
-          npx vite build || npm run mix:all
+          npx vite build || npm run mix:prod
 
-      - name: Package Release Archive
+      - name: Package Release Archive Asset
         run: |
           mkdir -p dist
           tar -czf dist/cms-tiktok-crawler-${{ github.ref_name }}.tar.gz \
@@ -59,12 +59,18 @@ jobs:
       - name: Generate Release Notes & Changelog
         id: changelog
         run: |
-          echo "### Release Notes for ${{ github.ref_name }}" > changelog.md
+          echo "### 🚀 Release Notes for ${{ github.ref_name }}" > changelog.md
           echo "" >> changelog.md
-          echo "#### Changes in this release:" >> changelog.md
-          git log -n 15 --pretty=format:"* %s (%h by @%an)" >> changelog.md
+          echo "- **Commit SHA**: \`${{ github.sha }}\`" >> changelog.md
+          echo "- **Release Date**: $(date -u +"%Y-%m-%d %H:%M:%S UTC")" >> changelog.md
+          echo "" >> changelog.md
+          echo "#### 📝 Conventional Commits in this Release:" >> changelog.md
+          git log -n 25 --pretty=format:"* %s (%h by @%an)" >> changelog.md
+          echo "" >> changelog.md
+          echo "---" >> changelog.md
+          echo "> 💡 **Deployment Notice**: Published official releases automatically trigger the Render deployment and health check pipeline (\`deploy.yml\`)." >> changelog.md
 
-      - name: Create GitHub Release or Pre-Release
+      - name: Create or Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           name: ${{ steps.release_type.outputs.release_title }}
@@ -75,11 +81,3 @@ jobs:
             dist/*.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Trigger Render Production Deploy Webhook
-        if: github.event.action == 'published' && env.RENDER_WEB_DEPLOY_HOOK != ''
-        env:
-          RENDER_WEB_DEPLOY_HOOK: ${{ secrets.RENDER_WEB_DEPLOY_HOOK }}
-        run: |
-          echo "Triggering Production Deploy for Tag ${{ github.ref_name }}..."
-          curl -s -X POST "$RENDER_WEB_DEPLOY_HOOK" || true

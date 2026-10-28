@@ -1,0 +1,12 @@
+{
+    "/modules/Core/index.js": "/modules/Core/index.js",
+    "/modules/Core/vendor.js": "/modules/Core/vendor.js",
+    "/modules/Core/app.css": "/modules/Core/app.css",
+    "/modules/Auth/index.js": "/modules/Auth/index.js",
+    "/modules/Crawler/index.js": "/modules/Crawler/index.js",
+    "/modules/Permission/index.js": "/modules/Permission/index.js",
+    "/modules/Role/index.js": "/modules/Role/index.js",
+    "/modules/System/index.js": "/modules/System/index.js",
+    "/modules/TiktokAccount/index.js": "/modules/TiktokAccount/index.js",
+    "/modules/User/index.js": "/modules/User/index.js"
+}

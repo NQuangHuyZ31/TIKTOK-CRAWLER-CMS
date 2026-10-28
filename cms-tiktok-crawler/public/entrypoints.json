@@ -1,0 +1,71 @@
+{
+  "Core": {
+    "name": "Core",
+    "route_prefix": "admin",
+    "js": [
+      "/modules/Core/vendor.js",
+      "/modules/Core/index.js"
+    ],
+    "css": [
+      "/modules/Core/app.css"
+    ]
+  },
+  "Auth": {
+    "name": "Auth",
+    "route_prefix": "admin/auth",
+    "js": [
+      "/modules/Auth/index.js"
+    ],
+    "css": [
+      "/modules/Core/app.css"
+    ]
+  },
+  "Crawler": {
+    "name": "Crawler",
+    "route_prefix": "admin/crawler",
+    "js": [
+      "/modules/Crawler/index.js"
+    ],
+    "css": []
+  },
+  "Permission": {
+    "name": "Permission",
+    "route_prefix": "admin/permission",
+    "js": [
+      "/modules/Permission/index.js"
+    ],
+    "css": []
+  },
+  "Role": {
+    "name": "Role",
+    "route_prefix": "admin/role",
+    "js": [
+      "/modules/Role/index.js"
+    ],
+    "css": []
+  },
+  "System": {
+    "name": "System",
+    "route_prefix": "admin/system",
+    "js": [
+      "/modules/System/index.js"
+    ],
+    "css": []
+  },
+  "TiktokAccount": {
+    "name": "TiktokAccount",
+    "route_prefix": "admin/tiktok-account",
+    "js": [
+      "/modules/TiktokAccount/index.js"
+    ],
+    "css": []
+  },
+  "User": {
+    "name": "User",
+    "route_prefix": "admin/user",
+    "js": [
+      "/modules/User/index.js"
+    ],
+    "css": []
+  }
+}
