@@ -18,6 +18,7 @@
     - feature/<task-id>-<description>
     - fix/<task-id>-<description>
     - hotfix/<task-id>-<description>
+    - release/<task-id>-<description> (e.g. release/v1.0.0)
     - refactor/<task-id>-<description>
     - test/<task-id>-<description>
     - docs/<task-id>-<description>
@@ -94,7 +95,7 @@ if ($Action -eq "List") {
     git -C "$GitRoot" worktree list
 
     Write-Host "`n[Persistent Slot Mapping]" -ForegroundColor Cyan
-    for ($i = 1; $i -5; $i++) {
+    for ($i = 1; $i -le 5; $i++) {
         $path = "$ParentDir\project1-worktree-$i"
         $exists = Test-Path $path
         $statusStr = if ($exists) { "[ACTIVE]" } else { "[AVAILABLE]" }
@@ -178,11 +179,11 @@ if (-not $Branch) {
 }
 
 # Branch naming standard check for active dev branches
-$standardPattern = "^(feature|fix|hotfix|refactor|test|docs|chore|ci)/[a-zA-Z0-9._-]+$"
+$standardPattern = "^(feature|fix|hotfix|release|refactor|test|docs|chore|ci)/[a-zA-Z0-9._-]+$"
 $isIdleBranch = ($Branch -match "^worktree-[1-5]$") -or ($Branch -eq "main") -or ($Branch -eq "develop")
 
 if (-not $isIdleBranch -and ($Branch -notmatch $standardPattern)) {
-    Write-Warning "Branch '$Branch' does NOT follow the standard naming convention:`n  <type>/<task-id>-<description> (e.g., feature/PROJ-101-auth-flow)`nAllowed types: feature, fix, hotfix, refactor, test, docs, chore, ci"
+    Write-Warning "Branch '$Branch' does NOT follow the standard naming convention:`n  <type>/<task-id>-<description> (e.g., feature/PROJ-101-auth-flow)`nAllowed types: feature, fix, hotfix, release, refactor, test, docs, chore, ci"
 }
 
 if ($Branch -eq "main") {

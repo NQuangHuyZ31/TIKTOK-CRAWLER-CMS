@@ -2,26 +2,31 @@
 
 > [!IMPORTANT]
 > **MANDATORY READING FOR ALL AI AGENTS BEFORE EXECUTING ANY TASK!**
-> Adhere strictly to the Worktree protocol, English-only standard, Core reusability matrix (DO NOT REINVENT), Pull Request automation, Draft Release lifecycle, and the **Mandatory Human Approval Gate for Production Deployment**.
+> Adhere strictly to the Worktree protocol, English-only standard, Core reusability matrix (DO NOT REINVENT), Pull Request protocol (NO DIRECT PUSH TO MAIN), Draft Release lifecycle, and the **Mandatory Human Approval Gate for Production Deployment**.
 
 ---
 
 ## 1. Non-Negotiable Core Invariants
 
-1. **Step 0 - Worktree-Exclusive Protocol**: Run `.\scripts\agent-worktree.ps1 -Action List` or `git worktree list` first. The root repository (`E:\Urekamedia\project1`) is strictly an idle anchor. All development, commits, tests, and branch switches MUST occur inside persistent worktree slots (`project1-worktree-1` to `project1-worktree-5`).
+1. **Step 0 - Worktree-Exclusive Protocol**: Run `.\scripts\agent-worktree.ps1 -Action List` or `git worktree list` first. The root repository (`E:\Urekamedia\project1`) is strictly an idle anchor tracking `main`. All development, commits, tests, and branch switches MUST occur inside persistent worktree slots (`project1-worktree-1` to `project1-worktree-5`).
 2. **Standardized Branch Naming**: Branches MUST follow the standard convention:
    - `feature/<task-id>-<description>`
    - `fix/<task-id>-<description>`
    - `hotfix/<task-id>-<description>`
+   - `release/<task-id>-<description>` (e.g. `release/v1.0.0`)
    - `refactor/<task-id>-<description>`
    - `test/<task-id>-<description>`
    - `docs/<task-id>-<description>`
    - `chore/<task-id>-<description>`
    - `ci/<task-id>-<description>`
-3. **Automated Pull Request & Merge Workflow**:
-   - The Agent is **fully authorized** to push the task branch to remote, open a Pull Request, evaluate CI status, and merge into `main` via `.\scripts\agent-pr.ps1 -Action FullCycle -Branch <branch>`.
-4. **Automated Draft Release Generation**:
-   - Merging into `main` automatically triggers GitHub Action `auto-draft-release.yml` to build frontend assets, package `dist/*.tar.gz`, compile the changelog, and create/update a **GitHub Draft Release**.
+3. **Strict Branching & Pull Request Gate (ZERO Direct Push to `main`)**:
+   - The Agent or developer **MUST NEVER push directly to `main`**.
+   - All release candidates MUST be pushed to a `release/v<version>` branch (e.g. `release/v1.0.0`).
+   - The Agent opens a Pull Request targeting `main` via `.\scripts\agent-pr.ps1 -Branch "release/v<version>"`.
+   - **The Agent MUST STOP and hand over the PR link to the human User.**
+   - **Only the human User may review the PR, verify CI checks pass, and merge the PR into `main` on GitHub.**
+4. **Automated Draft Release Generation on Merge**:
+   - Merging the Pull Request into `main` automatically triggers GitHub Action `auto-draft-release.yml` to build frontend assets, package `dist/*.tar.gz`, compile the changelog, and create/update a **GitHub Draft Release**.
 5. **CRITICAL: Mandatory Human Review & Manual Release Publication Gate**:
    - **The Agent is STRICTLY FORBIDDEN from publishing a Release or triggering production deployment.**
    - The Agent must **STOP** once the Draft Release is generated and provide the Draft Release link to the repository owner.
@@ -65,23 +70,24 @@
 
 ```mermaid
 flowchart TD
-    A[Step 0: Worktree Inspection] --> B[Step 1: Create Task Branch in Slot]
+    A[Step 0: Worktree Inspection] --> B[Step 1: Create Task/Release Branch in Slot]
     B --> C[Step 2: Implement Changes & Reuse Core]
     C --> D[Step 3: Strict Local Validation]
     D --> E[Step 4: Commit with Conventional Commits]
-    E --> F[Step 5: Agent Pushes Branch & Creates PR]
-    F --> G[Step 6: CI Quality & Security Gates Pass]
-    G --> H[Step 7: Agent Merges PR to main]
-    H --> I[Step 8: GitHub Action Auto Generates Draft Release]
-    I --> J["🛑 STOP & NOTIFY USER: Agent halts"]
-    J --> K["👤 USER ACTION: Review notes & click 'Publish release'"]
-    K --> L[Step 9: Render Production Deploy & Health Check]
+    E --> F[Step 5: Agent Pushes Branch to origin - NEVER main]
+    F --> G[Step 6: Agent Opens Pull Request to main]
+    G --> H["🛑 STOP & HANDOFF 1: Agent halts with PR link"]
+    H --> I["👤 USER ACTION 1: Review PR diff & merge into main"]
+    I --> J[Step 7: GitHub Action Auto Generates Draft Release]
+    J --> K["🛑 STOP & HANDOFF 2: Draft Release link provided"]
+    K --> L["👤 USER ACTION 2: Review notes & click 'Publish release'"]
+    L --> M[Step 8: Render Production Deploy & Health Check]
 ```
 
 1. **Step 0 - Select Worktree Slot**:
    ```powershell
    .\scripts\agent-worktree.ps1 -Action List
-   .\scripts\agent-worktree.ps1 -WorktreeIndex 1 -Branch "feature/PROJ-101-proxy-rotation" -CreateBranch
+   .\scripts\agent-worktree.ps1 -WorktreeIndex 1 -Branch "release/v1.0.0" -CreateBranch
    ```
 2. **Step 1 - Navigate to Worktree Module Workspace**:
    ```powershell
@@ -96,19 +102,18 @@ flowchart TD
    ```
 5. **Step 4 - Conventional Commit**:
    ```powershell
-   git commit -m "feat(crawler): implement exponential backoff proxy rotation"
+   git commit -m "chore(release): prepare v1.0.0 release candidate"
    ```
-6. **Step 5 & 6 - Automated PR Creation & Merge to `main`**:
+6. **Step 5 & 6 - Push Release Branch & Open PR (Never push directly to main)**:
    Execute the automated agent PR workflow from root:
    ```powershell
    cd E:\Urekamedia\project1
-   .\scripts\agent-pr.ps1 -Action FullCycle -Branch "feature/PROJ-101-proxy-rotation"
+   .\scripts\agent-pr.ps1 -Branch "release/v1.0.0"
    ```
-7. **Step 7 - Automatic Draft Release Generation**:
-   The push to `main` automatically triggers `.github/workflows/auto-draft-release.yml`. A **GitHub Draft Release** is generated/updated with distribution assets and changelog.
-8. **Step 8 - Agent Completion & User Handoff**:
-   The Agent resets the worktree slot (`.\scripts\agent-worktree.ps1 -Action Clean -WorktreeIndex 1`) and outputs the Draft Release URL to the human User.
-   **The Agent MUST NOT publish the release.**
+7. **Step 7 - Agent Halts & User Merges PR**:
+   The Agent halts and gives the PR link to the User. The User inspects the PR diff, verifies CI status, and clicks **Merge pull request** into `main`.
+8. **Step 8 - Automatic Draft Release Generation**:
+   The merge into `main` automatically triggers `.github/workflows/auto-draft-release.yml`. A **GitHub Draft Release** is generated/updated with distribution assets and changelog.
 9. **Step 9 - Human Manual Release Publication & Deploy**:
    The User reviews the Draft Release at `https://github.com/NQuangHuyZ31/TIKTOK-CRAWLER-CMS/releases` and manually clicks **Publish release** to trigger Render deployment and post-deployment health check.
 

@@ -38,10 +38,13 @@ function Assert-Test([string]$name, [bool]$condition, [string]$details = "") {
 # 1. Branch Naming Regex Validation
 # -----------------------------------------------------------------------------
 Write-Host "--- Test Suite 1: Branch Naming Convention ---" -ForegroundColor Yellow
-$branchPattern = "^(feature|fix|hotfix|refactor|test|docs|chore|ci)/[a-zA-Z0-9._-]+$"
+$branchPattern = "^(feature|fix|hotfix|release|refactor|test|docs|chore|ci)/[a-zA-Z0-9._-]+$"
 
 Assert-Test "Valid feature branch 'feature/PROJ-101-proxy-rotation'" `
     ("feature/PROJ-101-proxy-rotation" -match $branchPattern)
+
+Assert-Test "Valid release branch 'release/v1.0.0'" `
+    ("release/v1.0.0" -match $branchPattern)
 
 Assert-Test "Valid fix branch 'fix/PROJ-102-null-id'" `
     ("fix/PROJ-102-null-id" -match $branchPattern)
