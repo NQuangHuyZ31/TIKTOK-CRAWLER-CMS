@@ -34,6 +34,5 @@ jsconfig.json
 PROJECT_SUMMARY.md
 /dist
 public/modules
-public/*.json
 docs/*
 
