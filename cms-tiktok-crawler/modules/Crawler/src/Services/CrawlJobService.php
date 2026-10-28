@@ -7,7 +7,7 @@ use Modules\Core\Utils\FetchApi;
 use Modules\Crawler\Models\CrawlJob;
 use Modules\Crawler\Repositories\Interfaces\CrawlJobRepositoryInterface;
 use Modules\Crawler\Repositories\Interfaces\CrawlResultRepositoryInterface;
-use Modules\System\Events\ActivityOccurredEvent;
+use Modules\System\Facades\Audit;
 use Modules\TiktokAccount\Repositories\Interfaces\TiktokAccountRepositoryInterface;
 
 class CrawlJobService
@@ -159,17 +159,17 @@ class CrawlJobService
 
             $this->dispatchToCrawlerEngine($payload);
 
-            ActivityOccurredEvent::dispatch(
+            Audit::record(
                 action: 'CRAWL',
-                module: 'TIKTOK',
-                recordId: 'job_crawl_' . $id,
-                recordType: 'CrawlJob',
+                target: 'job_crawl_' . $id,
                 metadata: [
                     'source_type' => $crawlJob->source_type,
                     'total_accounts' => $crawlJob->total_accounts,
                     'trigger_by' => 'manual',
                 ],
-                status: 'SUCCESS'
+                status: 'SUCCESS',
+                module: 'TIKTOK',
+                recordType: 'CrawlJob'
             );
 
             return $this->crawlJobRepository->findById($id);
@@ -215,17 +215,17 @@ class CrawlJobService
 
             $this->dispatchToCrawlerEngine($payload);
 
-            ActivityOccurredEvent::dispatch(
+            Audit::record(
                 action: 'RETRY_CRAWL',
-                module: 'TIKTOK',
-                recordId: 'job_crawl_' . $id,
-                recordType: 'CrawlJob',
+                target: 'job_crawl_' . $id,
                 metadata: [
                     'retry_count' => ($crawlJob->retry_count ?? 1),
                     'trigger_by' => 'manual',
                     'source_type' => $crawlJob->source_type,
                 ],
-                status: 'SUCCESS'
+                status: 'SUCCESS',
+                module: 'TIKTOK',
+                recordType: 'CrawlJob'
             );
 
             return $this->crawlJobRepository->findById($id);
@@ -306,14 +306,14 @@ class CrawlJobService
             'finished_at' => now(),
         ]);
 
-        ActivityOccurredEvent::dispatch(
+        Audit::record(
             action: 'CRAWL_FAILED',
-            module: 'TIKTOK',
-            recordId: 'job_crawl_' . $id,
-            recordType: 'CrawlJob',
+            target: 'job_crawl_' . $id,
+            metadata: ['trigger_by' => 'system'],
             status: 'FAILED',
             errorMessage: $message,
-            metadata: ['trigger_by' => 'system']
+            module: 'TIKTOK',
+            recordType: 'CrawlJob'
         );
     }
 }

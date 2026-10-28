@@ -4,6 +4,7 @@ namespace Modules\System\Providers;
 
 use Illuminate\Support\Facades\Event;
 use Modules\Core\Providers\ModuleServiceProvider;
+use Modules\System\Contracts\AuditableEvent;
 use Modules\System\Events\ActivityOccurredEvent;
 use Modules\System\Listeners\RecordActivityLogListener;
 use Modules\System\Repositories\ActivityLogRepository;
@@ -12,6 +13,7 @@ use Modules\System\Repositories\Interfaces\LoginLogRepositoryInterface;
 use Modules\System\Repositories\LoginLogRepository;
 use Modules\System\Services\ActivityLogger;
 use Modules\System\Services\ActivityLogService;
+use Modules\System\Services\Auditor;
 use Modules\System\Services\LoginLogService;
 use Modules\System\Services\SystemDiagnosticService;
 
@@ -29,6 +31,7 @@ class SystemServiceProvider extends ModuleServiceProvider
         $this->app->singleton(ActivityLogService::class);
         $this->app->singleton(LoginLogService::class);
         $this->app->singleton(ActivityLogger::class);
+        $this->app->singleton(Auditor::class);
         $this->app->singleton(SystemDiagnosticService::class);
     }
 
@@ -38,5 +41,6 @@ class SystemServiceProvider extends ModuleServiceProvider
 
         // Register Asynchronous / Queued Activity Log Listener
         Event::listen(ActivityOccurredEvent::class, RecordActivityLogListener::class);
+        Event::listen(AuditableEvent::class, RecordActivityLogListener::class);
     }
 }

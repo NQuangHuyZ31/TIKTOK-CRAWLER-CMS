@@ -22,7 +22,7 @@ trait LogsActivity
                 return;
             }
 
-            $dispatch = fn() => ActivityOccurredEvent::dispatch(
+            static::safeDispatchActivity(fn() => ActivityOccurredEvent::dispatch(
                 action: 'CREATE',
                 module: $model->getActivityModuleName(),
                 recordId: $model->getActivityRecordIdentifier(),
@@ -30,13 +30,7 @@ trait LogsActivity
                 oldData: null,
                 newData: $newData,
                 metadata: $model->getActivityMetadata('CREATE')
-            );
-
-            if (DB::transactionLevel() > 0) {
-                DB::afterCommit($dispatch);
-            } else {
-                $dispatch();
-            }
+            ));
         });
 
         static::updated(function ($model) {
@@ -67,7 +61,7 @@ trait LogsActivity
 
             $action = $model->resolveActivityAction('UPDATE');
 
-            $dispatch = fn() => ActivityOccurredEvent::dispatch(
+            static::safeDispatchActivity(fn() => ActivityOccurredEvent::dispatch(
                 action: $action,
                 module: $model->getActivityModuleName(),
                 recordId: $model->getActivityRecordIdentifier(),
@@ -75,13 +69,7 @@ trait LogsActivity
                 oldData: $oldData,
                 newData: $newData,
                 metadata: $model->getActivityMetadata($action)
-            );
-
-            if (DB::transactionLevel() > 0) {
-                DB::afterCommit($dispatch);
-            } else {
-                $dispatch();
-            }
+            ));
         });
 
         static::deleted(function ($model) {
@@ -91,7 +79,7 @@ trait LogsActivity
 
             $oldData = $model->getActivitySnapshotData($model->getOriginal());
 
-            $dispatch = fn() => ActivityOccurredEvent::dispatch(
+            static::safeDispatchActivity(fn() => ActivityOccurredEvent::dispatch(
                 action: 'DELETE',
                 module: $model->getActivityModuleName(),
                 recordId: $model->getActivityRecordIdentifier(),
@@ -99,14 +87,65 @@ trait LogsActivity
                 oldData: !empty($oldData) ? $oldData : null,
                 newData: null,
                 metadata: $model->getActivityMetadata('DELETE')
-            );
-
-            if (DB::transactionLevel() > 0) {
-                DB::afterCommit($dispatch);
-            } else {
-                $dispatch();
-            }
+            ));
         });
+    }
+
+    /**
+     * Dispatch an activity event safely with transaction awareness.
+     */
+    public static function safeDispatchActivity(\Closure $dispatch): void
+    {
+        if (DB::transactionLevel() > 0) {
+            DB::afterCommit($dispatch);
+        } else {
+            $dispatch();
+        }
+    }
+
+    /**
+     * Synchronize a Many-to-Many relationship and record an activity log if changed.
+     *
+     * @param string $relation Name of the relationship method on the model (e.g. 'roles', 'permissions')
+     * @param array $ids Array of foreign IDs to sync
+     * @param string $identifierColumn Column to pluck for comparing old vs new (e.g. 'slug', 'name', 'id')
+     * @param string|null $action Custom action name (default: strtoupper($relation) . '_CHANGE')
+     * @param string|null $module Custom module name (default: model's activity module)
+     * @return array The result of $relation->sync($ids)
+     */
+    public function auditSync(
+        string $relation,
+        array $ids,
+        string $identifierColumn = 'slug',
+        ?string $action = null,
+        ?string $module = null
+    ): array {
+        $relationQuery = $this->{$relation}();
+        $oldItems = $relationQuery->pluck($identifierColumn)->toArray();
+        $filteredIds = array_filter(array_map('intval', $ids));
+        $result = $relationQuery->sync($filteredIds);
+        $newItems = $relationQuery->pluck($identifierColumn)->toArray();
+
+        if (!$this->wasRecentlyCreated && $oldItems != $newItems) {
+            $resolvedAction = $action ?? strtoupper($relation) . '_CHANGE';
+            $resolvedModule = $module ?? $this->getActivityModuleName();
+
+            static::safeDispatchActivity(fn() => ActivityOccurredEvent::dispatch(
+                action: $resolvedAction,
+                module: $resolvedModule,
+                recordId: $this->getActivityRecordIdentifier(),
+                recordType: $this->getActivityRecordTypeName(),
+                oldData: [$relation => $oldItems],
+                newData: [$relation => $newItems],
+                metadata: [
+                    'attached' => $result['attached'] ?? [],
+                    'detached' => $result['detached'] ?? [],
+                    'updated' => $result['updated'] ?? [],
+                ]
+            ));
+        }
+
+        return $result;
     }
 
     /**
@@ -116,6 +155,16 @@ trait LogsActivity
     {
         if (property_exists($this, 'activityModule') && !empty($this->activityModule)) {
             return $this->activityModule;
+        }
+
+        $class = static::class;
+        if (preg_match('/Modules\\\\([a-zA-Z0-9_]+)\\\\Models/', $class, $matches)) {
+            $mod = strtoupper($matches[1]);
+            return match ($mod) {
+                'USER' => 'USER_MANAGEMENT',
+                'TIKTOKACCOUNT', 'CRAWLER' => 'TIKTOK',
+                default => $mod,
+            };
         }
 
         return strtoupper(class_basename($this));

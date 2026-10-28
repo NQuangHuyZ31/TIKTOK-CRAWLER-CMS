@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Validation\ValidationException;
 use Modules\Auth\Repositories\Interfaces\AuthRepositoryInterface;
-use Modules\System\Events\ActivityOccurredEvent;
+use Modules\System\Facades\Audit;
 use Modules\System\Services\LoginLogService;
 use Modules\User\Repositories\Interfaces\UserRepositoryInterface;
 
@@ -113,19 +113,17 @@ class AuthService
         );
 
         if ($status !== Password::PASSWORD_RESET) {
-            ActivityOccurredEvent::dispatch(
+            Audit::record(
                 action: 'RESET_PASSWORD',
-                module: 'AUTH',
-                recordId: $credentials['email'] ?? null,
-                recordType: 'User',
-                oldData: null,
-                newData: null,
+                target: $credentials['email'] ?? null,
                 metadata: [
                     'email' => $credentials['email'] ?? null,
                     'reason' => 'invalid_or_expired_token',
                 ],
                 status: 'FAILED',
-                errorMessage: __($status)
+                errorMessage: __($status),
+                module: 'AUTH',
+                recordType: 'User'
             );
 
             throw ValidationException::withMessages([
@@ -133,18 +131,15 @@ class AuthService
             ]);
         }
 
-        ActivityOccurredEvent::dispatch(
+        Audit::record(
             action: 'RESET_PASSWORD',
-            module: 'AUTH',
-            recordId: (string) ($resetUser?->id ?? $credentials['email']),
-            recordType: 'User',
-            oldData: null,
-            newData: null,
+            target: $resetUser,
             metadata: [
                 'email' => $resetUser?->email ?? $credentials['email'],
                 'method' => 'token_reset',
             ],
             status: 'SUCCESS',
+            module: 'AUTH',
             user: $resetUser
         );
     }

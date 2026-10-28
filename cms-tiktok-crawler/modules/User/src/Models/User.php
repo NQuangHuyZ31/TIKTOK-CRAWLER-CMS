@@ -11,9 +11,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
-use Illuminate\Support\Facades\DB;
 use Modules\Core\Traits\HasRolesAndPermissions;
-use Modules\System\Events\ActivityOccurredEvent;
 use Modules\System\Traits\LogsActivity;
 
 #[Fillable(['name', 'email', 'password', 'phone', 'avatar', 'status', 'is_admin'])]
@@ -27,6 +25,11 @@ class User extends Authenticatable
     public string $activityRecordType = 'User';
 
     protected $table = 'users';
+
+    protected static function newFactory(): UserFactory
+    {
+        return UserFactory::new();
+    }
 
     /**
      * Get the attributes that should be cast.
@@ -100,29 +103,7 @@ class User extends Authenticatable
      */
     public function syncRoles(array $roleIds): array
     {
-        $oldRoles = $this->roles()->pluck('name')->toArray();
-        $ids = array_filter(array_map('intval', $roleIds));
-        $result = $this->roles()->sync($ids);
-        $newRoles = $this->roles()->pluck('name')->toArray();
-
-        if (!$this->wasRecentlyCreated && $oldRoles != $newRoles) {
-            $dispatch = fn() => ActivityOccurredEvent::dispatch(
-                action: 'ROLE_CHANGE',
-                module: 'USER_MANAGEMENT',
-                recordId: (string) $this->id,
-                recordType: 'User',
-                oldData: ['roles' => $oldRoles],
-                newData: ['roles' => $newRoles],
-            );
-
-            if (DB::transactionLevel() > 0) {
-                DB::afterCommit($dispatch);
-            } else {
-                $dispatch();
-            }
-        }
-
-        return $result;
+        return $this->auditSync('roles', $roleIds, 'name', action: 'ROLE_CHANGE');
     }
 
     /**
@@ -130,28 +111,6 @@ class User extends Authenticatable
      */
     public function syncPermissions(array $permissionIds): array
     {
-        $oldPermissions = $this->permissions()->pluck('slug')->toArray();
-        $ids = array_filter(array_map('intval', $permissionIds));
-        $result = $this->permissions()->sync($ids);
-        $newPermissions = $this->permissions()->pluck('slug')->toArray();
-
-        if (!$this->wasRecentlyCreated && $oldPermissions != $newPermissions) {
-            $dispatch = fn() => ActivityOccurredEvent::dispatch(
-                action: 'PERMISSION_CHANGE',
-                module: 'USER_MANAGEMENT',
-                recordId: (string) $this->id,
-                recordType: 'User',
-                oldData: ['permissions' => $oldPermissions],
-                newData: ['permissions' => $newPermissions],
-            );
-
-            if (DB::transactionLevel() > 0) {
-                DB::afterCommit($dispatch);
-            } else {
-                $dispatch();
-            }
-        }
-
-        return $result;
+        return $this->auditSync('permissions', $permissionIds, 'slug', action: 'PERMISSION_CHANGE');
     }
 }

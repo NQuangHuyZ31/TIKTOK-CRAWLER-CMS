@@ -6,9 +6,7 @@ use Modules\User\Models\User;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Illuminate\Support\Facades\DB;
 use Modules\Permission\Models\Permission;
-use Modules\System\Events\ActivityOccurredEvent;
 use Modules\System\Traits\LogsActivity;
 
 class Role extends Model
@@ -48,28 +46,6 @@ class Role extends Model
      */
     public function syncPermissions(array $permissionIds): array
     {
-        $oldPermissions = $this->permissions()->pluck('slug')->toArray();
-        $ids = array_filter(array_map('intval', $permissionIds));
-        $result = $this->permissions()->sync($ids);
-        $newPermissions = $this->permissions()->pluck('slug')->toArray();
-
-        if (!$this->wasRecentlyCreated && $oldPermissions != $newPermissions) {
-            $dispatch = fn() => ActivityOccurredEvent::dispatch(
-                action: 'PERMISSION_CHANGE',
-                module: 'ROLE',
-                recordId: (string) $this->id,
-                recordType: 'Role',
-                oldData: ['permissions' => $oldPermissions],
-                newData: ['permissions' => $newPermissions],
-            );
-
-            if (DB::transactionLevel() > 0) {
-                DB::afterCommit($dispatch);
-            } else {
-                $dispatch();
-            }
-        }
-
-        return $result;
+        return $this->auditSync('permissions', $permissionIds, 'slug', action: 'PERMISSION_CHANGE');
     }
 }
