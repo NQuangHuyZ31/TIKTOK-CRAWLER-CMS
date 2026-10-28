@@ -1,0 +1,100 @@
+name: Auto Pre-Release on AI Version Bump
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'cms-tiktok-crawler/package.json'
+
+permissions:
+  contents: write
+
+jobs:
+  check-and-prerelease:
+    name: Detect Version Bump & Create Pre-Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Extract Previous and Current Version
+        id: version_check
+        run: |
+          PREV_VERSION=$(git show HEAD~1:cms-tiktok-crawler/package.json 2>/dev/null | grep -o '"version": "[^"]*"' | cut -d'"' -f4 || echo "none")
+          CURR_VERSION=$(grep -o '"version": "[^"]*"' cms-tiktok-crawler/package.json | cut -d'"' -f4 || echo "none")
+
+          echo "Previous Version: $PREV_VERSION"
+          echo "Current Version : $CURR_VERSION"
+
+          if [ "$CURR_VERSION" != "none" ] && [ "$CURR_VERSION" != "$PREV_VERSION" ]; then
+            echo "is_bumped=true" >> $GITHUB_OUTPUT
+            echo "version=v$CURR_VERSION-beta.${{ github.run_number }}" >> $GITHUB_OUTPUT
+            echo "clean_version=$CURR_VERSION" >> $GITHUB_OUTPUT
+          else
+            echo "is_bumped=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Setup Node.js
+        if: steps.version_check.outputs.is_bumped == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: cms-tiktok-crawler/package-lock.json
+
+      - name: Validate & Build Distribution Bundle
+        if: steps.version_check.outputs.is_bumped == 'true'
+        working-directory: cms-tiktok-crawler
+        run: |
+          npm ci
+          npm run check-types
+          npx vite build || npm run mix:all
+
+      - name: Create Git Pre-Release Tag
+        if: steps.version_check.outputs.is_bumped == 'true'
+        run: |
+          TAG_NAME="${{ steps.version_check.outputs.version }}"
+          echo "Creating Git Tag: $TAG_NAME"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "$TAG_NAME" -m "Automated AI Agent Pre-Release: $TAG_NAME"
+          git push origin "$TAG_NAME"
+
+      - name: Package Pre-Release Archive
+        if: steps.version_check.outputs.is_bumped == 'true'
+        run: |
+          mkdir -p dist
+          tar -czf dist/cms-tiktok-crawler-${{ steps.version_check.outputs.version }}.tar.gz \
+            --exclude='cms-tiktok-crawler/node_modules' \
+            --exclude='cms-tiktok-crawler/vendor' \
+            --exclude='.git' \
+            cms-tiktok-crawler ProcessData docker render.yaml
+
+      - name: Generate Changelog
+        if: steps.version_check.outputs.is_bumped == 'true'
+        run: |
+          TAG_NAME="${{ steps.version_check.outputs.version }}"
+          echo "### 🚀 Automated Pre-Release: $TAG_NAME" > changelog.md
+          echo "" >> changelog.md
+          echo "This pre-release was automatically generated following an AI Agent version upgrade." >> changelog.md
+          echo "" >> changelog.md
+          echo "#### Recent Changes & Commits:" >> changelog.md
+          git log -n 10 --pretty=format:"* %s (%h by @%an)" >> changelog.md
+
+      - name: Publish GitHub Pre-Release
+        if: steps.version_check.outputs.is_bumped == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version_check.outputs.version }}
+          name: "🤖 Pre-Release ${{ steps.version_check.outputs.version }}"
+          body_path: changelog.md
+          prerelease: true
+          draft: false
+          files: |
+            dist/*.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
