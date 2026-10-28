@@ -5,6 +5,14 @@ COPY cms-tiktok-crawler/package*.json ./
 RUN npm ci
 COPY cms-tiktok-crawler ./
 RUN npm run check-types
+
+# Provide build-time environment variables for Vite and Laravel Mix
+ARG VITE_API_URL=/admin/api
+ARG VITE_APP_NAME="CMS TikTok Crawler"
+ENV NODE_ENV=production
+ENV VITE_API_URL=$VITE_API_URL
+ENV VITE_APP_NAME=$VITE_APP_NAME
+
 # Build production bundle for SPA
 RUN npm run mix:prod && npx vite build
 
@@ -44,6 +52,10 @@ COPY --from=frontend-builder /app/public /var/www/html/public
 
 # Install production PHP dependencies
 RUN composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
+
+# Environment defaults
+ENV APP_ENV=production
+ENV LOG_CHANNEL=stderr
 
 # Copy Nginx & PHP configuration
 COPY docker/nginx.conf /etc/nginx/http.d/default.conf
