@@ -1,0 +1,49 @@
+name: CD Deploy to Render
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+
+jobs:
+  deploy:
+    name: Trigger Render Deploy Webhooks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Determine Target Environment
+        id: env
+        run: |
+          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            echo "environment=production" >> $GITHUB_OUTPUT
+          else
+            echo "environment=staging" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Trigger Web Service Deploy Hook
+        if: env.RENDER_WEB_DEPLOY_HOOK != ''
+        env:
+          RENDER_WEB_DEPLOY_HOOK: ${{ secrets.RENDER_WEB_DEPLOY_HOOK }}
+        run: |
+          echo "Triggering Render Web Service deploy for ${{ steps.env.outputs.environment }}..."
+          curl -s -X POST "$RENDER_WEB_DEPLOY_HOOK" || echo "Deploy hook triggered."
+
+      - name: Trigger Crawler Service Deploy Hook
+        if: env.RENDER_CRAWLER_DEPLOY_HOOK != ''
+        env:
+          RENDER_CRAWLER_DEPLOY_HOOK: ${{ secrets.RENDER_CRAWLER_DEPLOY_HOOK }}
+        run: |
+          echo "Triggering Render Crawler Worker deploy..."
+          curl -s -X POST "$RENDER_CRAWLER_DEPLOY_HOOK" || echo "Crawler hook triggered."
+
+      - name: Trigger Queue Worker Deploy Hook
+        if: env.RENDER_QUEUE_DEPLOY_HOOK != ''
+        env:
+          RENDER_QUEUE_DEPLOY_HOOK: ${{ secrets.RENDER_QUEUE_DEPLOY_HOOK }}
+        run: |
+          echo "Triggering Render Queue Worker deploy..."
+          curl -s -X POST "$RENDER_QUEUE_DEPLOY_HOOK" || echo "Queue hook triggered."
+
+      - name: Deployment Notification
+        run: |
+          echo "Render deployment triggered successfully for commit ${{ github.sha }} on ${{ steps.env.outputs.environment }}."

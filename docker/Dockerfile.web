@@ -1,0 +1,60 @@
+# Build stage for Frontend
+FROM node:20-alpine AS frontend-builder
+WORKDIR /app
+COPY cms-tiktok-crawler/package*.json ./
+RUN npm ci
+COPY cms-tiktok-crawler ./
+RUN npm run check-types
+# Build production bundle for SPA
+RUN npx vite build || npm run mix:all
+
+# Production stage for PHP + Nginx
+FROM php:8.3-fpm-alpine
+
+# Install system dependencies & PHP extensions
+RUN apk add --no-cache \
+    nginx \
+    curl \
+    git \
+    libpng-dev \
+    libzip-dev \
+    zip \
+    unzip \
+    oniguruma-dev \
+    icu-dev \
+    linux-headers \
+    mysql-client
+
+RUN docker-php-ext-install pdo pdo_mysql mbstring bcmath zip intl pcntl opcache gd
+
+# Install Redis extension
+RUN apk add --no-cache --virtual .build-deps $PHPIZE_DEPS \
+    && pecl install redis \
+    && docker-php-ext-enable redis \
+    && apk del .build-deps
+
+# Get latest Composer
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+WORKDIR /var/www/html
+
+# Copy application files
+COPY cms-tiktok-crawler /var/www/html
+COPY --from=frontend-builder /app/public /var/www/html/public
+
+# Install production PHP dependencies
+RUN composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
+
+# Copy Nginx & PHP configuration
+COPY docker/nginx.conf /etc/nginx/http.d/default.conf
+COPY docker/php.ini /usr/local/etc/php/conf.d/custom.ini
+COPY docker/start-web.sh /usr/local/bin/start-web.sh
+RUN chmod +x /usr/local/bin/start-web.sh
+
+# Storage & Cache permissions
+RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache \
+    && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
+
+EXPOSE 80
+
+CMD ["/usr/local/bin/start-web.sh"]

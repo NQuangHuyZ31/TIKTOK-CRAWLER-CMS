@@ -1,4 +1,4 @@
-name: CI Workflow
+name: CI Pipeline
 
 on:
   push:
@@ -27,11 +27,11 @@ jobs:
       - name: Install Dependencies
         run: npm ci
 
-      - name: Check TypeScript Types
+      - name: Check TypeScript Types (Zero Error Standard)
         run: npm run check-types
 
-  test:
-    name: Backend Feature Tests
+  test-backend:
+    name: Backend Feature & Unit Tests
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -43,20 +43,20 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.2'
+          php-version: '8.3'
           extensions: mbstring, xml, ctype, iconv, intl, pdo, pdo_sqlite, bcmath, redis
           coverage: none
 
       - name: Copy Environment File
         run: cp .env.example .env
 
-      - name: Generate Application Key
-        run: php artisan key:generate
-
       - name: Install Composer Dependencies
         run: composer install --prefer-dist --no-interaction --no-progress
 
-      - name: Run Test Suite
+      - name: Generate Application Key
+        run: php artisan key:generate
+
+      - name: Run Test Suite (100% Passing Required)
         env:
           DB_CONNECTION: sqlite
           DB_DATABASE: ':memory:'

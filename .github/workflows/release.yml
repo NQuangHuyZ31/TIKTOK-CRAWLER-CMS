@@ -1,0 +1,85 @@
+name: Release & Pre-Release Pipeline
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  build-and-release:
+    name: Build Artifacts & Publish GitHub Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine Release Type (Official vs Pre-release)
+        id: release_type
+        run: |
+          TAG_NAME="${{ github.ref_name }}"
+          echo "Tag: $TAG_NAME"
+          # Detect alpha, beta, rc, or dev suffixes
+          if echo "$TAG_NAME" | grep -Eq -- '-(alpha|beta|rc|dev)'; then
+            echo "is_prerelease=true" >> $GITHUB_OUTPUT
+            echo "release_title=Pre-Release $TAG_NAME" >> $GITHUB_OUTPUT
+          else
+            echo "is_prerelease=false" >> $GITHUB_OUTPUT
+            echo "release_title=Release $TAG_NAME" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: cms-tiktok-crawler/package-lock.json
+
+      - name: Compile Frontend Distribution Bundle
+        working-directory: cms-tiktok-crawler
+        run: |
+          npm ci
+          npm run check-types
+          npx vite build || npm run mix:all
+
+      - name: Package Release Archive
+        run: |
+          mkdir -p dist
+          tar -czf dist/cms-tiktok-crawler-${{ github.ref_name }}.tar.gz \
+            --exclude='cms-tiktok-crawler/node_modules' \
+            --exclude='cms-tiktok-crawler/vendor' \
+            --exclude='.git' \
+            cms-tiktok-crawler ProcessData docker render.yaml
+
+      - name: Generate Release Notes & Changelog
+        id: changelog
+        run: |
+          echo "### Release Notes for ${{ github.ref_name }}" > changelog.md
+          echo "" >> changelog.md
+          echo "#### Changes in this release:" >> changelog.md
+          git log -n 15 --pretty=format:"* %s (%h by @%an)" >> changelog.md
+
+      - name: Create GitHub Release or Pre-Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ steps.release_type.outputs.release_title }}
+          body_path: changelog.md
+          prerelease: ${{ steps.release_type.outputs.is_prerelease == 'true' }}
+          draft: false
+          files: |
+            dist/*.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Trigger Render Production Deploy Webhook
+        if: steps.release_type.outputs.is_prerelease == 'false' && env.RENDER_WEB_DEPLOY_HOOK != ''
+        env:
+          RENDER_WEB_DEPLOY_HOOK: ${{ secrets.RENDER_WEB_DEPLOY_HOOK }}
+        run: |
+          echo "Triggering Production Deploy for Tag ${{ github.ref_name }}..."
+          curl -s -X POST "$RENDER_WEB_DEPLOY_HOOK" || true

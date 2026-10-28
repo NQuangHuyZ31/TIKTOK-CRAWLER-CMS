@@ -1,0 +1,140 @@
+# ==============================================================================
+# Render.com Blueprint Infrastructure as Code (IaC)
+# Project: CMS TikTok Crawler Platform
+# ==============================================================================
+# Services included:
+# 1. cms-tiktok-web: PHP 8.3 FPM + Nginx + Compiled React SPA
+# 2. cms-tiktok-crawler: Fast Python FastAPI + Playwright TikTok Crawler Engine
+# 3. cms-tiktok-queue: PHP Background Worker (queue:work)
+# 4. cms-tiktok-cron: PHP Periodic Scheduler (schedule:run every minute)
+# ==============================================================================
+
+services:
+  # ----------------------------------------------------------------------------
+  # 1. Main Web Service (Backend REST API & Frontend SPA Admin UI)
+  # ----------------------------------------------------------------------------
+  - type: web
+    name: cms-tiktok-web
+    env: docker
+    dockerfilePath: ./docker/Dockerfile.web
+    dockerContext: .
+    plan: standard
+    region: singapore
+    healthCheckPath: /api/health
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: false
+      - key: APP_KEY
+        generateValue: true
+      - key: APP_URL
+        value: https://cms-tiktok-web.onrender.com
+      - key: RUN_MIGRATIONS
+        value: true
+      - key: DB_CONNECTION
+        value: mysql
+      - key: DB_HOST
+        sync: false
+      - key: DB_PORT
+        value: 3306
+      - key: DB_DATABASE
+        sync: false
+      - key: DB_USERNAME
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: CACHE_STORE
+        value: redis
+      - key: QUEUE_CONNECTION
+        value: redis
+      - key: SESSION_DRIVER
+        value: redis
+      - key: SERVICES_CRAWLER_URL
+        value: http://cms-tiktok-crawler:8001
+
+  # ----------------------------------------------------------------------------
+  # 2. Background Worker: Python TikTok Crawler Service
+  # ----------------------------------------------------------------------------
+  - type: worker
+    name: cms-tiktok-crawler
+    env: docker
+    dockerfilePath: ./docker/Dockerfile.crawler
+    dockerContext: .
+    plan: standard
+    region: singapore
+    envVars:
+      - key: SERVICE_HOST
+        value: 0.0.0.0
+      - key: SERVICE_PORT
+        value: 8001
+      - key: CMS_CALLBACK_URL
+        value: https://cms-tiktok-web.onrender.com/api/crawler/webhook
+
+  # ----------------------------------------------------------------------------
+  # 3. Background Worker: Laravel Queue Worker
+  # ----------------------------------------------------------------------------
+  - type: worker
+    name: cms-tiktok-queue
+    env: docker
+    dockerfilePath: ./docker/Dockerfile.worker
+    dockerContext: .
+    plan: starter
+    region: singapore
+    startCommand: php artisan queue:work --sleep=3 --tries=3 --max-time=3600 --queue=default,crawler,system
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: false
+      - key: DB_CONNECTION
+        value: mysql
+      - key: DB_HOST
+        sync: false
+      - key: DB_PORT
+        value: 3306
+      - key: DB_DATABASE
+        sync: false
+      - key: DB_USERNAME
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: QUEUE_CONNECTION
+        value: redis
+
+  # ----------------------------------------------------------------------------
+  # 4. Cron Job: Laravel Scheduler (Log Pruning & Cron Tasks)
+  # ----------------------------------------------------------------------------
+  - type: cron
+    name: cms-tiktok-cron
+    env: docker
+    dockerfilePath: ./docker/Dockerfile.worker
+    dockerContext: .
+    schedule: "* * * * *"
+    region: singapore
+    startCommand: php artisan schedule:run
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: false
+      - key: DB_CONNECTION
+        value: mysql
+      - key: DB_HOST
+        sync: false
+      - key: DB_PORT
+        value: 3306
+      - key: DB_DATABASE
+        sync: false
+      - key: DB_USERNAME
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: QUEUE_CONNECTION
+        value: redis
