@@ -5,8 +5,8 @@ namespace Modules\Crawler\Http\Controllers;
 use Illuminate\Http\Request;
 use Modules\Core\Http\Controllers\BaseController;
 use Modules\Crawler\Models\CrawlResult;
-use Modules\Crawler\Repositories\Interfaces\CrawlResultRepositoryInterface;
 use Modules\Crawler\Resources\CrawlResultResource;
+use Modules\Crawler\Services\CrawlResultService;
 
 class CrawlResultController extends BaseController
 {
@@ -17,17 +17,18 @@ class CrawlResultController extends BaseController
     protected array $defaultSort = ['id', 'desc'];
 
     public function __construct(
-        protected CrawlResultRepositoryInterface $crawlResultRepository
+        protected CrawlResultService $crawlResultService
     ) {
     }
 
     /**
      * REST sub-action: Retrieve paginated crawl results for a specific job.
+     * Delegated to CrawlResultService.
      */
     public function byJob(int $jobId, Request $request)
     {
         $perPage = (int) $request->input('per_page', 10);
-        $results = $this->crawlResultRepository->getByJobId($jobId, $perPage, $request->all());
+        $results = $this->crawlResultService->getByJobId($jobId, $perPage, $request->all());
 
         return $this->respondSuccess(CrawlResultResource::collection($results), 'Crawl results retrieved successfully.');
     }

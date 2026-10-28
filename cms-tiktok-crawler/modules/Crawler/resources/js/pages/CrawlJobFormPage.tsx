@@ -142,10 +142,7 @@ export default function CrawlJobFormPage() {
 				});
 			}}
 			redirectUrl={(result, isEdit, id) => {
-				if (!isEdit) {
-					const newId = result?.id ?? result?.data?.id;
-					return newId ? `/crawler/crawl-job/${newId}` : '/crawler/crawl-job';
-				}
+				if (isEdit) return `/crawler/crawl-job/${id}`;
 				return `/crawler/crawl-job`;
 			}}
 		>
