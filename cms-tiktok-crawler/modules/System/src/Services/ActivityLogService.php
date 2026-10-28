@@ -40,4 +40,14 @@ class ActivityLogService
             user: $user
         );
     }
+
+    /**
+     * Retrieve aggregate KPI statistics for activity logs.
+     *
+     * @return array<string, int>
+     */
+    public function getStatistics(): array
+    {
+        return $this->activityLogRepository->getStatistics();
+    }
 }
