@@ -112,8 +112,6 @@ class DynamicRouteResovle {
         $request->attributes->set('module', $permissionModule);
         $request->attributes->set('permission_action', $permissionAction);
 
-        Log::info(''. $module .''. $controller .''. $actionMethod .''. $id .''. $permissionAction);
-
         // Build parameters for dependency injection generically
         $actionParams = [];
 

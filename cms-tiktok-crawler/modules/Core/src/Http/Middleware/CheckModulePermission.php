@@ -20,12 +20,6 @@ class CheckModulePermission
         $action = $action ?: $request->attributes->get('permission_action');
         $user = $request->user() ?? auth('sanctum')->user() ?? auth()->user();
 
-        // Log::info([
-        //     'module' => $module,
-        //     'action' => $action,
-        //     // 'user'=> $user,
-        // ]);
-
         if (!$user) {
             return response()->json([
                 'status' => 'error',
