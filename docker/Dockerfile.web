@@ -6,7 +6,7 @@ RUN npm ci
 COPY cms-tiktok-crawler ./
 RUN npm run check-types
 # Build production bundle for SPA
-RUN npx vite build || npm run mix:all
+RUN npm run mix:prod && npx vite build
 
 # Production stage for PHP + Nginx
 FROM php:8.3-fpm-alpine
