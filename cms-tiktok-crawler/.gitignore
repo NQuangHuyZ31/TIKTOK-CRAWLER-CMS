@@ -35,4 +35,6 @@ PROJECT_SUMMARY.md
 /dist
 public/modules
 docs/*
+public/entrypoints.json
+public/mix-manifest.json
 
