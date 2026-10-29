@@ -114,56 +114,53 @@ class DashboardService
     public function getGrowthTrends(int $days = 30): array
     {
         $days = max(7, min(90, $days));
-        $totalFollowers = 0;
-        $totalLikes = 0;
 
-        if ($this->tiktokAccountRepository) {
-            try {
-                $summary = $this->tiktokAccountRepository->getStatisticSummary();
-                $totalFollowers = (int) ($summary['total_followers'] ?? 0);
-                $totalLikes = (int) ($summary['total_likes'] ?? 0);
-            } catch (\Throwable $e) {
-                Log::warning('DashboardService: Failed to query account summary for growth trends: ' . $e->getMessage());
-            }
-        }
-
-        // Query daily aggregates from crawl_results if table exists
         $dailySnapshots = collect();
+
         try {
             if (DB::getSchemaBuilder()->hasTable('crawl_results')) {
-                $startDate = Carbon::now()->subDays($days - 1)->startOfDay();
+                $endDate = Carbon::now();
+                $startDate = $endDate->copy()
+                    ->subDays($days - 1)
+                    ->startOfDay();
+
                 $dailySnapshots = DB::table('crawl_results')
-                    ->selectRaw('DATE(created_at) as date, SUM(followers_count) as total_followers, SUM(likes_count) as total_likes')
-                    ->where('created_at', '>=', $startDate)
+                    ->selectRaw('
+                    DATE(created_at) as date,
+                    SUM(followers_count) as total_followers,
+                    SUM(likes_count) as total_likes
+                ')
+                    ->whereBetween('created_at', [$startDate, $endDate])
                     ->where('status', 'success')
-                    ->groupBy('date')
+                    ->groupByRaw('DATE(created_at)')
                     ->orderBy('date')
                     ->get()
                     ->keyBy('date');
             }
         } catch (\Throwable $e) {
-            Log::warning('DashboardService: Error fetching daily crawl results: ' . $e->getMessage());
+            Log::warning(
+                'DashboardService: Failed to fetch growth trends: '
+                    . $e->getMessage()
+            );
         }
 
         return [
             'period_days' => $days,
+
             'followers_growth' => $this->buildTrendSeries(
                 title: 'Followers Growth',
                 metric: 'followers',
-                currentTotal: $totalFollowers,
-                days: $days,
                 dailySnapshots: $dailySnapshots,
                 field: 'total_followers',
-                growthRateEst: 0.12
+                days: $days,
             ),
+
             'likes_growth' => $this->buildTrendSeries(
                 title: 'Likes Growth',
                 metric: 'likes',
-                currentTotal: $totalLikes,
-                days: $days,
                 dailySnapshots: $dailySnapshots,
                 field: 'total_likes',
-                growthRateEst: 0.18
+                days: $days,
             ),
         ];
     }
@@ -171,53 +168,40 @@ class DashboardService
     /**
      * Helper to construct a continuous time series array for a specific metric.
      */
-    protected function buildTrendSeries(string $title, string $metric, int $currentTotal, int $days, Collection $dailySnapshots, string $field, float $growthRateEst): array
+    protected function buildTrendSeries(string $title, string $metric, Collection $dailySnapshots, string $field, int $days,): array
     {
         $points = [];
-        $startDate = Carbon::now()->subDays($days - 1)->startOfDay();
-        $hasDbData = $dailySnapshots->isNotEmpty();
+        $previousValue = null;
 
-        // Baseline: if currentTotal is 0, provide clean 0 series; otherwise calculate progressive baseline
-        $baseline = $currentTotal > 0 ? (int) round($currentTotal / (1 + $growthRateEst)) : 0;
-        $runningValue = $baseline;
+        foreach ($dailySnapshots as $date => $snapshot) {
+            $value = (int) ($snapshot->{$field} ?? 0);
 
-        for ($i = 0; $i < $days; $i++) {
-            $dateObj = $startDate->copy()->addDays($i);
-            $dateStr = $dateObj->format('Y-m-d');
-            $label = $dateObj->format('M d');
+            $change = $previousValue !== null
+                ? $value - $previousValue
+                : 0;
 
-            if ($hasDbData && isset($dailySnapshots[$dateStr])) {
-                $val = (int) ($dailySnapshots[$dateStr]->$field ?? 0);
-                $runningValue = max($runningValue, $val);
-            } else {
-                if ($i === $days - 1) {
-                    $runningValue = $currentTotal;
-                } elseif ($currentTotal > 0) {
-                    $progress = $i / max(1, $days - 1);
-                    $curveFactor = pow($progress, 1.25);
-                    $runningValue = (int) round($baseline + ($currentTotal - $baseline) * $curveFactor);
-                } else {
-                    $runningValue = 0;
-                }
-            }
-
-            $prevVal = count($points) > 0 ? $points[count($points) - 1]['value'] : $runningValue;
-            $change = $runningValue - $prevVal;
+            $dateObj = Carbon::parse($date);
 
             $points[] = [
-                'date' => $dateStr,
-                'label' => $label,
-                'value' => $runningValue,
+                'date' => $dateObj->format('Y-m-d'),
+                'label' => $dateObj->format('M d'),
+                'value' => $value,
                 'change' => $change,
             ];
+
+            $previousValue = $value;
         }
 
         $firstValue = $points[0]['value'] ?? 0;
-        $lastValue = $points[count($points) - 1]['value'] ?? 0;
+        $lastValue = $points !== []
+            ? $points[count($points) - 1]['value']
+            : 0;
+
         $netChange = $lastValue - $firstValue;
+
         $growthRate = $firstValue > 0
             ? round(($netChange / $firstValue) * 100, 1)
-            : ($lastValue > 0 ? 100.0 : 0.0);
+            : 0.0;
 
         return [
             'title' => $title,
