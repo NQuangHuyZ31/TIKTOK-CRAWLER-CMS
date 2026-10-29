@@ -11,7 +11,6 @@ async def open_url(
     wait_time: int = 3000,
 ):
     try:
-        logger.debug("Opening URL %s (timeout=%dms)", url, timeout)
         await page.goto(
             url,
             wait_until="commit",
@@ -30,7 +29,6 @@ async def go_back(
 ):
     """Return from a profile page to the TikTok feed."""
     try:
-        logger.debug("Navigating back to previous page (timeout=%dms)", timeout)
         await page.go_back(
             wait_until="commit",
             timeout=timeout,
