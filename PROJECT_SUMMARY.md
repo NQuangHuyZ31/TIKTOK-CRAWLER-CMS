@@ -36,3 +36,34 @@ Configured a multi-agent worktree concurrency architecture with dedicated roles 
   - **Total Tests**: 32
   - **Passed**: 32 / 32 (100%)
   - **Failed**: 0
+
+## Milestone: Playwright Headless Dynamic Resolution & Render Crawler Config
+- **Date**: 2026-10-29
+- **Author**: Antigravity AI Assistant
+- **Branch**: `feature/CRAWL-101-crawler-headless-env`
+
+### 1. Objectives & Delivered Solution
+Resolved Docker container / Linux headless execution constraints and aligned Render Blueprint IaC for free/standard tier crawler deployment:
+1. **Dynamic Headless Detection (`config.py`)**:
+   - Implemented `_resolve_headless_mode()` to read the `HEADLESS` environment variable (`true`/`false`).
+   - Automatically falls back to `HEADLESS=True` in non-GUI Linux environments (containers lacking `$DISPLAY`), preventing `Missing X server or $DISPLAY` crash in production while maintaining local GUI debugging flexibility on Windows.
+2. **Container Launch Arguments (`crawler.py`)**:
+   - In headless mode, Playwright launches Chromium with container-optimized stability flags: `["--no-sandbox", "--disable-dev-shm-usage", "--disable-gpu"]`.
+   - Greatly reduces memory footprint to fit within Render Free (512MB RAM) and standard Docker containers.
+3. **Docker Environment Default (`Dockerfile.crawler`)**:
+   - Added `ENV HEADLESS=true` and `PYTHONUNBUFFERED=1` to guarantee headless operation inside containers by default.
+4. **Render Blueprint Harmonization (`render.yaml`)**:
+   - Aligned crawler service environment variable keys (`CRAWLER_HOST`, `CRAWLER_PORT`, `HEADLESS`, `BACKEND_CALLBACK_URL`).
+   - Aligned Web service crawler endpoint to `CRAWLER_SERVICE_URL`.
+
+### 2. Files Modified
+- `ProcessData/tiktok-crawler/app/config.py`: Added `_resolve_headless_mode()` and `HEADLESS` export.
+- `ProcessData/tiktok-crawler/app/crawler.py`: Imported `HEADLESS` and added container-safe launch flags.
+- `docker/Dockerfile.crawler`: Added `HEADLESS=true` and `PYTHONUNBUFFERED=1` environment variables.
+- `render.yaml`: Updated crawler service config and environment keys.
+- `PROJECT_SUMMARY.md`: Recorded milestone details and verification evidence.
+
+### 3. Verification Test Results
+- **TypeScript**: `npm.cmd run check-types` (0 errors).
+- **Backend Tests**: `php artisan test` (145 passed / 145 tests, 786 assertions, 100%).
+- **Python Syntax Check**: `python -m py_compile` passed for `config.py` and `crawler.py`.

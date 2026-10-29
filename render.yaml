@@ -52,26 +52,28 @@ services:
         value: redis
       - key: SESSION_DRIVER
         value: redis
-      - key: SERVICES_CRAWLER_URL
+      - key: CRAWLER_SERVICE_URL
         value: http://cms-tiktok-crawler:8001
 
   # ----------------------------------------------------------------------------
   # 2. Background Worker: Python TikTok Crawler Service
   # ----------------------------------------------------------------------------
-  - type: worker
+  - type: web
     name: cms-tiktok-crawler
     env: docker
     dockerfilePath: ./docker/Dockerfile.crawler
     dockerContext: .
-    plan: standard
+    plan: starter
     region: singapore
     envVars:
-      - key: SERVICE_HOST
+      - key: CRAWLER_HOST
         value: 0.0.0.0
-      - key: SERVICE_PORT
+      - key: CRAWLER_PORT
         value: 8001
-      - key: CMS_CALLBACK_URL
-        value: https://cms-tiktok-web.onrender.com/api/crawler/webhook
+      - key: HEADLESS
+        value: "true"
+      - key: BACKEND_CALLBACK_URL
+        value: https://cms-tiktok-web.onrender.com/admin/api/public/crawler
 
   # ----------------------------------------------------------------------------
   # 3. Background Worker: Laravel Queue Worker

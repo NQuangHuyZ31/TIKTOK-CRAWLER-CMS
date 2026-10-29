@@ -2,7 +2,7 @@ import logging
 
 from playwright.async_api import async_playwright
 
-from config import BACKEND_CALLBACK_URL, normalize_callback_url
+from config import BACKEND_CALLBACK_URL, HEADLESS, normalize_callback_url
 from services.callback_service import CallbackService
 from services.profile_crawler import ProfileCrawler
 from utils.browser_utils import go_back, open_url, scroll_page
@@ -55,7 +55,15 @@ class TikTokCrawler:
 
         try:
             async with async_playwright() as playwright:
-                browser = await playwright.chromium.launch(headless=False)
+                launch_args = (
+                    ["--no-sandbox", "--disable-dev-shm-usage", "--disable-gpu"]
+                    if HEADLESS
+                    else []
+                )
+                browser = await playwright.chromium.launch(
+                    headless=HEADLESS,
+                    args=launch_args,
+                )
                 context = await browser.new_context(
                     viewport={"width": 1280, "height": 720}
                 )

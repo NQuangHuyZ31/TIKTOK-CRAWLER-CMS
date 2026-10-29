@@ -19,6 +19,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
+ENV HEADLESS=true \
+    PYTHONUNBUFFERED=1
+
 # Copy requirements & install Python dependencies
 COPY ProcessData/tiktok-crawler/requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
