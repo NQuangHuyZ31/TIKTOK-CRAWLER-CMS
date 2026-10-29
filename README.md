@@ -128,9 +128,9 @@ To maintain codebase hygiene, avoid branch conflicts, and support multi-agent wo
 .\scripts\agent-worktree.ps1 -Action List
 
 # Switch to a slot by role and create a new task branch
-.\scripts\agent-worktree.ps1 -Role feature -Branch "feature/TIK-101-profile-sync" -CreateBranch
-.\scripts\agent-worktree.ps1 -Role fix -Branch "fix/TIK-102-null-author" -CreateBranch
-.\scripts\agent-worktree.ps1 -Role hotfix -Branch "hotfix/SEC-001-api-key" -CreateBranch
+.\scripts\agent-worktree.ps1 -Role feature -Branch "feature" -CreateBranch
+.\scripts\agent-worktree.ps1 -Role fix -Branch "fix" -CreateBranch
+.\scripts\agent-worktree.ps1 -Role hotfix -Branch "hotfix" -CreateBranch
 
 # Inspect active status across all worktrees
 .\scripts\agent-worktree.ps1 -Action Status

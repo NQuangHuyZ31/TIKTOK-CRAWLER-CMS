@@ -1,6 +1,6 @@
 ---
 name: core-reusability-promoter
-description: Checks modules/Core for reusable UI/backend assets before building new ones and guides promoting shared logic.
+description: Reuses and promotes shared logic into modules/Core/.
 ---
 
 # Core Reusability & Promotion

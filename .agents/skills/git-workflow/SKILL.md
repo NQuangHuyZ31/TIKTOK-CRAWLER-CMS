@@ -1,6 +1,6 @@
 ---
 name: git-workflow
-description: Fixed category branching conventions (feature, fix, refactor, hotfix, test, chore) with zero direct push to main.
+description: Direct branch protocol, Conventional Commits, and pre-commit checks.
 ---
 
 # Git Workflow Standards
@@ -11,15 +11,15 @@ Work directly in the root workspace on dedicated task branches. Worktree isolati
 
 > [!IMPORTANT]
 > **Single Branch Policy (No Description Sub-branches)**:
-> When working on bug fixes, do NOT create branches with descriptions such as `fix/<description>` or `fix/TIK-...`.
-> Always use the direct branch name `fix` (or `feature`, `refactor`, `hotfix`) directly to avoid branch proliferation.
+> When working on bug fixes or features, do NOT create branches with descriptions such as `fix/<description>` or `fix/TIK-...`.
+> Always use the direct branch name (`fix`, `feature`, `refactor`, `hotfix`, `test`, `chore`) directly to avoid branch proliferation.
 
 ```powershell
 # 1. Fetch latest and switch/create task branch (e.g. 'fix')
 git checkout main
 git pull origin main
-git checkout -b feature/TIK-101-new-feature
-# or: fix/TIK-102-bug-fix, refactor/TIK-103-clean-code
+git checkout -B fix origin/main
+# or: git checkout -B feature origin/main
 
 # 2. Develop and run validation checks
 npm.cmd run check-types
@@ -27,10 +27,10 @@ php artisan test
 
 # 3. Commit with Conventional Commits
 git add .
-git commit -m "feat(crawler): your descriptive commit message"
+git commit -m "fix(crawler): your descriptive commit message"
 
 # 4. Push branch to remote origin
-git push -u origin feature/TIK-101-new-feature
+git push -u origin fix
 ```
 
 ---
@@ -66,8 +66,3 @@ Before staging or committing:
 - Push the task branch and create a Pull Request targeting `main`.
 - Merging into `main` creates an automated **Draft Release** (`draft: true`).
 - Production deployment to Render triggers **ONLY** when the human user clicks **"Publish release"** on GitHub.
-1. **Fixed Category Branches**: Work strictly on `feature`, `fix`, `refactor`, `hotfix`, `test`, or `chore`. Never create dynamic branch names (`<type>/<description>`).
-2. **Zero Push to `main`**: All commits push to category branches: `git push -u origin <branch>`.
-3. **Commit Format**: Conventional Commits in English (`feat:`, `fix:`, `refactor:`, `chore:`).
-4. **Validation**: Run `npm.cmd run check-types` and `php artisan test` before pushing.
-5. **PR & Release**: Open PR targeting `main`. Human approval required to publish releases for Render deployment.

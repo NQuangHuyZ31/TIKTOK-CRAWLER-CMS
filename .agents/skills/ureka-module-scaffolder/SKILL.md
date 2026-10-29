@@ -1,6 +1,6 @@
 ---
 name: ureka-module-scaffolder
-description: Scaffolds a new Ureka modular architecture module across Backend (Model, Repo, Controller) and Frontend (Action, pages).
+description: Scaffolds Ureka modular architecture boilerplate for Backend and Frontend.
 ---
 
 # Ureka Module Scaffolder
