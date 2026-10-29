@@ -3,21 +3,22 @@
     Automates Pull Request creation and branch pushing for AI Agents adhering to AGENTS.md.
 
 .DESCRIPTION
-    1. Validates TypeScript types locally if node_modules exists.
-    2. Pushes task branch to GitHub remote origin.
-    3. Outputs GitHub Pull Request URL for human review.
+    1. Validates that current branch is a category branch (never 'main').
+    2. Validates TypeScript types locally if node_modules exists.
+    3. Pushes category branch to GitHub remote origin.
+    4. Outputs GitHub Pull Request URL for human review.
 
 .PARAMETER Action
     'CreatePR' or 'Status'. Default is 'CreatePR'.
 
 .PARAMETER Branch
-    The branch to push and open a PR for. If not provided, uses the active git branch.
+    The category branch to push (e.g. 'refactor', 'feature', 'fix'). If not provided, uses active git branch.
 
 .PARAMETER TargetBranch
     The destination branch to merge into. Default is 'main'.
 
 .EXAMPLE
-    .\scripts\agent-pr.ps1 -Branch "feature/TIK-101-auth"
+    .\scripts\agent-pr.ps1 -Branch "refactor"
 #>
 
 param (
@@ -44,16 +45,18 @@ if (-not $Branch) {
     $Branch = (git -C "$WorkingPath" rev-parse --abbrev-ref HEAD 2>$null).Trim()
 }
 
+$allowedBranches = @("feature", "fix", "refactor", "hotfix", "test", "chore")
+
 if ($Branch -eq "main" -or $Branch -eq "develop") {
-    Write-Error "ABORT: Current branch is '$Branch'. Development and PR creation must originate from a task branch (e.g., 'feature/...', 'fix/...')."
+    Write-Error "ABORT: Direct push/PR from '$Branch' is strictly prohibited. You must work on a designated category branch: $($allowedBranches -join ', ')."
     exit 1
 }
 
 Write-Host "`n========================================================" -ForegroundColor Cyan
 Write-Host " CMS TikTok Crawler - AI Pull Request Workflow" -ForegroundColor Cyan
-Write-Host " Source Branch : $Branch" -ForegroundColor Yellow
-Write-Host " Target Branch : $TargetBranch" -ForegroundColor Yellow
-Write-Host " Working Dir   : $WorkingPath" -ForegroundColor DarkGray
+Write-Host " Category Branch : $Branch" -ForegroundColor Yellow
+Write-Host " Target Branch   : $TargetBranch" -ForegroundColor Yellow
+Write-Host " Working Dir     : $WorkingPath" -ForegroundColor DarkGray
 Write-Host "========================================================`n" -ForegroundColor Cyan
 
 # -----------------------------------------------------------------------------
@@ -75,7 +78,7 @@ if (Test-Path "$cmsDir\node_modules") {
 }
 
 # -----------------------------------------------------------------------------
-# 2. Push Branch to Origin
+# 2. Push Category Branch to Origin (NEVER to main)
 # -----------------------------------------------------------------------------
 Write-Host "`n[Gate 2/3] Pushing branch '$Branch' to remote origin..." -ForegroundColor Yellow
 git -C "$WorkingPath" push -u origin "$Branch"
@@ -83,7 +86,7 @@ if ($LASTEXITCODE -ne 0) {
     Write-Error "Failed to push branch '$Branch' to origin."
     exit 1
 }
-Write-Host "  -> Branch pushed successfully to origin." -ForegroundColor Green
+Write-Host "  -> Branch '$Branch' pushed successfully to origin." -ForegroundColor Green
 
 # -----------------------------------------------------------------------------
 # 3. Pull Request Generation & Human Handoff
@@ -104,10 +107,10 @@ $lastCommit = (git -C "$WorkingPath" log -1 --pretty=format:"%s (%h)").Trim()
 Write-Host "`n========================================================" -ForegroundColor Green
 Write-Host " ✅ PULL REQUEST PREPARED & PUSHED TO ORIGIN" -ForegroundColor Green
 Write-Host "========================================================" -ForegroundColor Green
-Write-Host " Latest Commit : $lastCommit" -ForegroundColor White
-Write-Host " Source Branch : $Branch" -ForegroundColor Yellow
-Write-Host " Target Branch : $TargetBranch" -ForegroundColor Yellow
-Write-Host " PR URL        : $PrUrl" -ForegroundColor Cyan
+Write-Host " Latest Commit   : $lastCommit" -ForegroundColor White
+Write-Host " Category Branch : $Branch" -ForegroundColor Yellow
+Write-Host " Target Branch   : $TargetBranch" -ForegroundColor Yellow
+Write-Host " PR URL          : $PrUrl" -ForegroundColor Cyan
 Write-Host "========================================================`n" -ForegroundColor Green
 
 Write-Host "[Next Steps - Human Review & Release Lifecycle]" -ForegroundColor Yellow

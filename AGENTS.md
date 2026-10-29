@@ -1,29 +1,32 @@
 # AGENTS.md - AI Operating Manual & Invariants
 
 > [!IMPORTANT]
-> **MANDATORY RULES FOR ALL AI AGENTS**: Direct branch workflow, strict Conventional Commits, clean TypeScript and backend test validations, Draft Release lifecycle, and the **Mandatory Human Approval Gate for Production Deployment (Deploy ONLY when a new release is published)**.
+> **MANDATORY RULES FOR ALL AI AGENTS**:
+> 1. **STRICTLY FORBIDDEN TO PUSH DIRECTLY TO `main`**: AI agents must NEVER run `git push origin main` or commit directly on `main`.
+> 2. **Fixed Category Branch Policy**: Do NOT create dynamic branch names like `feature/<description>` or `refactor/<description>`. Push strictly to the matching fixed category branch (`feature`, `fix`, `refactor`, `hotfix`, `test`, `chore`).
+> 3. **Draft Release & Production Gate**: Merging to `main` creates a Draft Release. Deploy to production ONLY when the human user publishes the release.
 
 ---
 
-## 1. Branch Workflow (Direct Branch Protocol)
-Work directly in the project workspace on dedicated task branches. Worktree isolation is disabled.
+## 1. Fixed Category Branch Workflow
 
-### Branch Naming Conventions
-| Prefix | Type | Purpose & Scope |
+To keep the repository clean and avoid branch sprawl, we use **fixed, persistent category branches** matching the task type (no sub-branch suffixes):
+
+| Branch Name | Type | Scope & Purpose |
 | :--- | :--- | :--- |
-| `feature/*` | Feature | New features & capabilities: Ingest workflows, UI screens, crawler workers. |
-| `fix/*` | Bug Fix | Defect repairs: Issue resolution, null checks, query optimization. |
-| `hotfix/*` | Hotfix | Critical production patches: Emergency fixes for live services. |
-| `refactor/*` | Refactoring | Code cleanup, modularization, structure improvements. |
-| `test/*` | Testing | Test automation: Pest/PHPUnit, Vitest. |
-| `release/*`, `chore/*` | Release/Maintenance | SemVer bumping, changelog, dependencies, CI workflows. |
+| **`feature`** | Feature | New features & capabilities: Ingest workflows, UI screens, crawler workers. |
+| **`fix`** | Bug Fix | Defect repairs: Bug resolution, null checks, query optimization. |
+| **`refactor`** | Refactoring | Code cleanup, modularization, directory restructuring, centralizing assets. |
+| **`hotfix`** | Hotfix | Critical production patches: Emergency fixes for live services. |
+| **`test`** | Testing | Test automation: Pest/PHPUnit, Vitest. |
+| **`chore`** | Maintenance | Dependencies, CI workflows, documentation, release preparation. |
 
 ### Standard Git Commands for Agent
 ```powershell
-# 1. Ensure latest main and create task branch
-git checkout main
-git pull origin main
-git checkout -b feature/TIK-101-profile-sync
+# 1. Checkout the matching category branch (e.g., refactor, feature, or fix)
+git checkout refactor
+# Sync with latest main if needed
+git merge main
 
 # 2. Develop and run validation checks
 npm.cmd run check-types
@@ -31,22 +34,23 @@ php artisan test
 
 # 3. Commit with Conventional Commits
 git add .
-git commit -m "feat(crawler): add error retry exponential backoff"
+git commit -m "refactor(crawler): centralize documentation and agent skills"
 
-# 4. Push branch to remote
-git push -u origin feature/TIK-101-profile-sync
+# 4. Push directly to the matching category branch (NEVER push to main!)
+git push -u origin refactor
 ```
 
 ---
 
 ## 2. Pull Request & Merging Standard
-1. **Agent MUST NOT push unreviewed breaking changes directly to `main`**. Always work on task branches.
-2. Push branch to remote origin:
+1. **Agent MUST NEVER push directly to `main`**.
+2. Push exclusively to the active category branch:
    ```powershell
-   git push -u origin <branch>
+   git push -u origin <category-branch>
    ```
-3. Create Pull Request targeting `main`.
-4. Hand over the PR link to the human User, or merge after all CI/local validations pass if instructed.
+   *(e.g., `git push -u origin refactor` or `git push -u origin feature`)*
+3. Hand over the GitHub Pull Request URL targeting `main` to the human user.
+4. **Only the human User reviews and merges the PR into `main`**.
 
 ---
 
@@ -54,17 +58,18 @@ git push -u origin feature/TIK-101-profile-sync
 
 ```mermaid
 flowchart TD
-    A["Agent Dev on Branch<br>(feature/*, fix/*, etc.)"] --> B["Local Checks & Tests<br>(check-types, pest/phpunit)"]
-    B --> C["git push origin <branch> & Open PR to main"]
-    C --> D["Human Code Review & Merge into main"]
-    D --> E["GitHub Action: auto-draft-release.yml<br>(draft: true)"]
-    E --> F["📦 GitHub Draft Release Created<br>(NO DEPLOYMENT)"]
-    F --> G{"🛑 Human Gate:<br>User reviews Draft notes &<br>clicks 'Publish release'"}
-    G -- "NO / Not ready" --> H["System remains unchanged<br>(No deployment)"]
-    G -- "YES: Published (vX.Y.Z)" --> I["GitHub Action: deploy.yml triggered"]
-    I --> J["Render Production Deploy Hook"]
-    J --> K["Health Check: /api/health (HTTP 200)"]
-    K --> L["✅ Production Live"]
+    A["Agent Dev on Category Branch<br>(refactor, feature, fix, etc.)"] --> B["Local Checks & Tests<br>(check-types, pest/phpunit)"]
+    B --> C["git push origin <category-branch><br>(e.g. origin refactor)"]
+    C --> D["Open PR targeting main"]
+    D --> E["Human Code Review & Merge into main"]
+    E --> F["GitHub Action: auto-draft-release.yml<br>(draft: true)"]
+    F --> G["📦 GitHub Draft Release Created<br>(NO DEPLOYMENT)"]
+    G --> H{"🛑 Human Gate:<br>User reviews Draft notes &<br>clicks 'Publish release'"}
+    H -- "NO / Not ready" --> I["System remains unchanged<br>(No deployment)"]
+    H -- "YES: Published (vX.Y.Z)" --> J["GitHub Action: deploy.yml triggered"]
+    J --> K["Render Production Deploy Hook"]
+    K --> L["Health Check: /api/health (HTTP 200)"]
+    L --> M["✅ Production Live"]
 ```
 
 ### Invariants for Production Deployment:
@@ -80,11 +85,11 @@ flowchart TD
 
 ## 4. Code Standards & Reusability Matrix
 - **Language**: English-only for all text, comments, docstrings, commits, and PR descriptions.
-- **Commits**: Strict Conventional Commits (`feat(scope): ...`, `fix(scope): ...`, `chore(release): ...`).
+- **Commits**: Strict Conventional Commits (`feat(scope): ...`, `fix(scope): ...`, `chore(release): ...`, `refactor(scope): ...`).
 - **TypeScript**: 100% Strict TypeScript. `npm.cmd run check-types` (0 compilation errors). React 19. No untyped `any`.
 - **PowerShell**: On Windows, invoke tools via `npm.cmd` / `npx.cmd`.
 - **Documentation Update**:
-  - Update `PROJECT_SUMMARY.md`: Append a milestone entry detailing the solution, touched files, and test results when completing significant features.
+  - Update `PROJECT_SUMMARY.md`: Append a milestone entry detailing the solution, touched files, and test results before reporting completion.
 
 ### Core Reusability Matrix (DO NOT REINVENT)
 | Layer | Core Asset | Usage Standard |
