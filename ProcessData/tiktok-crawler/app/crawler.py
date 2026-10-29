@@ -168,24 +168,31 @@ class TikTokCrawler:
                                 crawl_error or "0 followers, 0 following, 0 likes extracted (empty DOM)",
                             )
 
-                        callback_succeeded = await self._publish_account_result(
-                            job_id=job_id,
-                            username=username,
-                            profile_url=profile_url,
-                            account=account,
-                            error_message=crawl_error,
+                        callback_succeeded, callback_response = (
+                            await self._publish_account_result(
+                                job_id=job_id,
+                                username=username,
+                                profile_url=profile_url,
+                                account=account,
+                                error_message=crawl_error,
+                            )
                         )
 
-                        logger.info(
-                            "[Job #%d] [@%s] Callback sent (status=%s)",
-                            job_id,
-                            username,
-                            "success" if callback_succeeded else "failed",
-                        )
-
-                        if account is not None and callback_succeeded:
+                        if callback_succeeded:
+                            logger.info(
+                                "[Job #%d] [@%s] Callback response: %s",
+                                job_id,
+                                username,
+                                callback_response,
+                            )
                             success_count += 1
                         else:
+                            logger.error(
+                                "[Job #%d] [@%s] Callback failed: %s",
+                                job_id,
+                                username,
+                                callback_response,
+                            )
                             failed_count += 1
 
                         if crawl_from_feed:
@@ -246,7 +253,7 @@ class TikTokCrawler:
         profile_url: str,
         account,
         error_message: str | None,
-    ) -> bool:
+    ) -> tuple[bool, dict]:
         if account is not None:
             data = {
                 "status": "success",
@@ -261,11 +268,11 @@ class TikTokCrawler:
             }
 
         try:
-            await self.callback_service.send("account", job_id, data)
-            return True
-        except Exception:
+            response_data = await self.callback_service.send("account", job_id, data)
+            return True, response_data
+        except Exception as error:
             logger.exception("[Job #%d] Could not deliver result for @%s to backend", job_id, username)
-            return False
+            return False, {"error": str(error)}
 
     async def _publish_completed(
         self,
@@ -285,7 +292,11 @@ class TikTokCrawler:
         if error_message:
             data["error_message"] = error_message
 
-        await self.callback_service.send("completed", job_id, data)
+        try:
+            response_data = await self.callback_service.send("completed", job_id, data)
+            logger.info("[Job #%d] Completion callback response: %s", job_id, response_data)
+        except Exception as error:
+            logger.error("[Job #%d] Completion callback failed: %s", job_id, error)
 
     @staticmethod
     def _build_targets(

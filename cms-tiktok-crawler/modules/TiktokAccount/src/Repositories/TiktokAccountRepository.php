@@ -40,7 +40,7 @@ class TiktokAccountRepository extends BaseRepository implements TiktokAccountRep
 			return false;
 		}
 
-		$query = $account->results();
+		$query = $account->results()->orderBy('crawled_at','desc');
 
 		return $query->paginate($perPage);
 	}
