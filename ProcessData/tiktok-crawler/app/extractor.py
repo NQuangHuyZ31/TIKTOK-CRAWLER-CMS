@@ -10,26 +10,6 @@ from models import TikTokAccount
 
 logger = logging.getLogger(__name__)
 
-# Known signatures indicating anti-bot challenge or verification
-CHALLENGE_PATTERNS = (
-    "slardar_us_waf",
-    "verify-center",
-    "captcha_verify_container",
-    "secsdk-captcha",
-    "verify-bar-close",
-    "captcha-verify-image",
-    "tiktok-verify-page",
-)
-
-# Signatures indicating deleted or non-existent TikTok account
-NOT_FOUND_PATTERNS = (
-    "user-not-found",
-    "couldn't find this account",
-    "account not found",
-    "user not found",
-    "cannot find this account",
-)
-
 
 class ExtractorPageError(Exception):
     """Raised when the page content is invalid for extraction (e.g. challenge or 404)."""
@@ -39,49 +19,64 @@ class ExtractorPageError(Exception):
         self.page_type = page_type
 
 
-def check_page_type(soup: BeautifulSoup, html: str) -> str:
+def check_page_type(soup: BeautifulSoup, html: str | None = None) -> str:
     """
-    Classify the TikTok page content.
+    Classify the TikTok page content safely using parsed DOM and SSR scripts.
+    Avoids string duplication (html.lower()) to prevent MemoryError and avoids
+    matching i18n translation maps in JavaScript bundles.
 
     Returns one of:
-      - 'challenge': Anti-bot WAF or CAPTCHA challenge.
-      - 'not_found': Account does not exist or was deleted.
+      - 'profile': Valid profile page with verified profile indicators (checked first!).
       - 'private': Account is marked private.
-      - 'profile': Valid profile page with verified profile indicators.
+      - 'challenge': Anti-bot CAPTCHA or WAF challenge DOM elements.
+      - 'not_found': Account does not exist or was deleted (DOM elements).
       - 'unknown': Unrecognized structure.
     """
-    html_lower = html.lower()
-
-    if any(pattern in html_lower for pattern in CHALLENGE_PATTERNS):
-        return "challenge"
-
-    if any(pattern in html_lower for pattern in NOT_FOUND_PATTERNS):
-        return "not_found"
-
-    if "this account is private" in html_lower:
-        return "private"
-
-    # Strict profile markers (presence of profile components, not generic scripts)
+    # 1. First priority: Check if valid profile markers exist in DOM
     if (
         soup.find("strong", {"data-e2e": "followers-count"})
         or soup.find("h1", {"data-e2e": "user-title"})
         or soup.find("h2", {"data-e2e": "user-subtitle"})
     ):
+        if soup.find(string=lambda s: s and "this account is private" in s.lower()):
+            return "private"
         return "profile"
 
-    # SSR Rehydration data containing user detail / userInfo
+    # 2. Check if valid SSR rehydration JSON has user profile data
     rehydration_script = soup.find("script", id="__UNIVERSAL_DATA_FOR_REHYDRATION__")
     if rehydration_script:
         text = rehydration_script.string or rehydration_script.get_text() or ""
         if '"userInfo"' in text or '"webapp.user-detail"' in text:
+            # Check if TikTok explicit error code indicates user not found (code 10221)
+            if '"statusCode":10221' in text or '"statusCode": 10221' in text:
+                return "not_found"
             return "profile"
 
-    # SIGI_STATE specifically containing UserModule
+    # 3. Check SIGI_STATE for UserModule
     sigi_script = soup.find("script", id="SIGI_STATE")
     if sigi_script:
         text = sigi_script.string or sigi_script.get_text() or ""
         if '"UserModule"' in text:
             return "profile"
+
+    # 4. Check for explicit not-found DOM elements (NEVER match in <script> i18n maps)
+    if (
+        soup.find(attrs={"data-e2e": "user-not-found"})
+        or soup.find(class_=lambda c: c and "user-not-found" in c)
+        or soup.find("p", string=lambda s: s and "couldn't find this account" in s.lower())
+    ):
+        return "not_found"
+
+    # 5. Check for explicit challenge/CAPTCHA DOM elements
+    if (
+        soup.find(
+            class_=lambda c: c
+            and any(p in c for p in ("captcha_verify_container", "verify-center", "secsdk-captcha"))
+        )
+        or soup.find(id=lambda i: i and ("captcha-verify" in i or "verify-ele" in i))
+        or soup.find(attrs={"data-e2e": "sec-sdk-iframe"})
+    ):
+        return "challenge"
 
     return "unknown"
 
