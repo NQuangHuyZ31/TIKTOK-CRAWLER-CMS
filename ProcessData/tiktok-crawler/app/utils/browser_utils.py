@@ -1,4 +1,7 @@
+import logging
 from playwright.async_api import Page
+
+logger = logging.getLogger(__name__)
 
 
 async def open_url(
@@ -14,7 +17,7 @@ async def open_url(
             timeout=timeout,
         )
     except Exception as error:
-        print(f"Navigation warning: {error}")
+        logger.warning("Navigation warning for %s: %s", url, error)
 
     await page.wait_for_timeout(wait_time)
 
@@ -31,7 +34,7 @@ async def go_back(
             timeout=timeout,
         )
     except Exception as error:
-        print(f"Back navigation warning: {error}")
+        logger.warning("Back navigation warning: %s", error)
 
     await page.wait_for_timeout(wait_time)
 

@@ -6,7 +6,6 @@ from services.avatar_service import AvatarService
 from utils.browser_utils import open_url
 from utils.tiktok_utils import normalize_username
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -40,7 +39,7 @@ class ProfileCrawler:
 
         if not profile.username:
             raise RuntimeError(
-                "Could not extract profile username"
+                f"Could not extract profile username from {profile_url}"
             )
 
         if profile.avatar_url:
@@ -58,7 +57,6 @@ class ProfileCrawler:
                     profile.username,
                     error,
                 )
-
                 profile.avatar_path = None
 
         return profile

@@ -1,10 +1,17 @@
-from fastapi import BackgroundTasks, FastAPI, HTTPException
+import logging
 from typing import Literal
 
+from fastapi import BackgroundTasks, FastAPI, HTTPException
 from pydantic import BaseModel, Field, model_validator
 
 from config import CALLBACK_TOKEN, normalize_callback_url
 from crawler import TikTokCrawler
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+)
+logger = logging.getLogger(__name__)
 
 
 class CrawlRequest(BaseModel):
@@ -60,6 +67,8 @@ async def execute_crawl(request: CrawlRequest) -> None:
             urls=request.urls,
             target_count=request.total_accounts,
         )
+    except Exception as error:
+        logger.exception("Job #%d failed: %s", request.job_id, error)
     finally:
         running_jobs.discard(request.job_id)
 
