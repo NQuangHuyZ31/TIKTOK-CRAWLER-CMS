@@ -2,7 +2,6 @@ from datetime import datetime
 from html import unescape
 import json
 import logging
-import re
 from urllib.parse import urlparse
 
 from bs4 import BeautifulSoup
@@ -32,15 +31,23 @@ NOT_FOUND_PATTERNS = (
 )
 
 
+class ExtractorPageError(Exception):
+    """Raised when the page content is invalid for extraction (e.g. challenge or 404)."""
+
+    def __init__(self, page_type: str, message: str):
+        super().__init__(message)
+        self.page_type = page_type
+
+
 def check_page_type(soup: BeautifulSoup, html: str) -> str:
     """
     Classify the TikTok page content.
 
     Returns one of:
-      - 'challenge': Page is an anti-bot WAF or CAPTCHA challenge.
+      - 'challenge': Anti-bot WAF or CAPTCHA challenge.
       - 'not_found': Account does not exist or was deleted.
       - 'private': Account is marked private.
-      - 'profile': Valid profile page.
+      - 'profile': Valid profile page with verified profile indicators.
       - 'unknown': Unrecognized structure.
     """
     html_lower = html.lower()
@@ -54,15 +61,27 @@ def check_page_type(soup: BeautifulSoup, html: str) -> str:
     if "this account is private" in html_lower:
         return "private"
 
-    # Check for presence of profile identifiers either in DOM or SSR scripts
+    # Strict profile markers (presence of profile components, not generic scripts)
     if (
         soup.find("strong", {"data-e2e": "followers-count"})
         or soup.find("h1", {"data-e2e": "user-title"})
         or soup.find("h2", {"data-e2e": "user-subtitle"})
-        or soup.find("script", id="__UNIVERSAL_DATA_FOR_REHYDRATION__")
-        or soup.find("script", id="SIGI_STATE")
     ):
         return "profile"
+
+    # SSR Rehydration data containing user detail / userInfo
+    rehydration_script = soup.find("script", id="__UNIVERSAL_DATA_FOR_REHYDRATION__")
+    if rehydration_script:
+        text = rehydration_script.string or rehydration_script.get_text() or ""
+        if '"userInfo"' in text or '"webapp.user-detail"' in text:
+            return "profile"
+
+    # SIGI_STATE specifically containing UserModule
+    sigi_script = soup.find("script", id="SIGI_STATE")
+    if sigi_script:
+        text = sigi_script.string or sigi_script.get_text() or ""
+        if '"UserModule"' in text:
+            return "profile"
 
     return "unknown"
 
@@ -91,18 +110,28 @@ def parse_count_text(text: str) -> int:
         return 0
 
 
-def parse_stat_value(val) -> int:
-    """Parse stat value from int, float, or string representations."""
+def parse_stat_value(val) -> int | None:
+    """
+    Parse stat value from int, float, or string representations.
+    Returns None if the value is missing or unparseable.
+    Preserves 0 when value is legitimately zero.
+    """
     if val is None:
-        return 0
+        return None
     if isinstance(val, (int, float)):
         return int(val)
     if isinstance(val, str):
         val_clean = val.strip().replace(",", "")
+        if not val_clean:
+            return None
         if val_clean.isdigit():
             return int(val_clean)
-        return parse_count_text(val_clean)
-    return 0
+        res = parse_count_text(val_clean)
+        # Verify if 0 was parsed from a legitimate '0' or unparseable string
+        if res == 0 and not val_clean.startswith("0"):
+            return None
+        return res
+    return None
 
 
 def normalize_avatar_url(value: str | None) -> str | None:
@@ -120,103 +149,123 @@ def normalize_avatar_url(value: str | None) -> str | None:
     return None
 
 
-def find_profile_data_in_json(value) -> dict:
-    """Recursively search for user stats and metadata in embedded TikTok JSON."""
+def _extract_first_present(data: dict, *keys: str):
+    """Return the value of the first key present in data whose value is not None (preserving 0)."""
+    for key in keys:
+        if key in data and data[key] is not None:
+            return data[key]
+    return None
+
+
+def _is_matching_user(candidate: str | None, target: str | None) -> bool:
+    """Check if candidate username matches target username (case-insensitive, clean)."""
+    if not target or not candidate:
+        return True
+    return candidate.strip().lstrip("@").lower() == target.strip().lstrip("@").lower()
+
+
+def find_profile_data_in_json(value, target_username: str | None = None) -> dict:
+    """
+    Recursively search for user stats and metadata in embedded TikTok JSON.
+    If target_username is provided, verifies that candidate username matches.
+    """
+    target_clean = target_username.strip().lstrip("@").lower() if target_username else None
+
     if isinstance(value, dict):
         # 1. Direct userInfo match (standard in __UNIVERSAL_DATA_FOR_REHYDRATION__)
         if "userInfo" in value and isinstance(value["userInfo"], dict):
             user_info = value["userInfo"]
-            stats = user_info.get("stats") or user_info.get("statsV2") or {}
             user = user_info.get("user") or {}
+            cand_user = user.get("uniqueId") or user.get("unique_id")
 
-            followers = parse_stat_value(stats.get("followerCount"))
-            following = parse_stat_value(stats.get("followingCount"))
-            likes = parse_stat_value(
-                stats.get("heartCount") or stats.get("heart") or stats.get("likesCount")
-            )
-            username = user.get("uniqueId") or user.get("unique_id")
-            avatar_url = (
-                user.get("avatarLarger")
-                or user.get("avatarMedium")
-                or user.get("avatarThumb")
-                or user.get("avatar_url")
-            )
-            return {
-                "username": username,
-                "followers": followers,
-                "following": following,
-                "likes": likes,
-                "avatar_url": normalize_avatar_url(avatar_url),
-            }
+            if _is_matching_user(cand_user, target_clean):
+                stats = user_info.get("stats") or user_info.get("statsV2") or {}
+                followers = parse_stat_value(_extract_first_present(stats, "followerCount", "follower_count"))
+                following = parse_stat_value(_extract_first_present(stats, "followingCount", "following_count"))
+                likes = parse_stat_value(
+                    _extract_first_present(stats, "heartCount", "heart", "likesCount", "likes_count")
+                )
+                avatar_url = (
+                    user.get("avatarLarger")
+                    or user.get("avatarMedium")
+                    or user.get("avatarThumb")
+                    or user.get("avatar_url")
+                )
+                return {
+                    "username": cand_user,
+                    "followers": followers,
+                    "following": following,
+                    "likes": likes,
+                    "avatar_url": normalize_avatar_url(avatar_url),
+                }
 
-        # 2. Stats container match
-        if "followerCount" in value and (
-            "followingCount" in value or "heartCount" in value or "heart" in value
-        ):
-            followers = parse_stat_value(value.get("followerCount"))
-            following = parse_stat_value(value.get("followingCount"))
-            likes = parse_stat_value(
-                value.get("heartCount") or value.get("heart") or value.get("likesCount")
-            )
-            return {
-                "followers": followers,
-                "following": following,
-                "likes": likes,
-            }
-
-        # 3. SIGI_STATE UserModule pattern
+        # 2. SIGI_STATE UserModule pattern
         if "UserModule" in value and isinstance(value["UserModule"], dict):
             user_module = value["UserModule"]
             stats_dict = user_module.get("stats", {})
             users_dict = user_module.get("users", {})
 
-            for uname, u_stats in stats_dict.items():
-                if isinstance(u_stats, dict):
-                    followers = parse_stat_value(u_stats.get("followerCount"))
-                    following = parse_stat_value(u_stats.get("followingCount"))
-                    likes = parse_stat_value(
-                        u_stats.get("heartCount") or u_stats.get("heart")
-                    )
-                    u_info = users_dict.get(uname, {})
-                    avatar_url = (
-                        u_info.get("avatarLarger")
-                        or u_info.get("avatarMedium")
-                        or u_info.get("avatarThumb")
-                    ) if isinstance(u_info, dict) else None
-                    return {
-                        "username": uname,
-                        "followers": followers,
-                        "following": following,
-                        "likes": likes,
-                        "avatar_url": normalize_avatar_url(avatar_url),
-                    }
+            matched_uname = None
+            if target_clean:
+                for k in stats_dict:
+                    if k.strip().lstrip("@").lower() == target_clean:
+                        matched_uname = k
+                        break
+            elif stats_dict:
+                matched_uname = next(iter(stats_dict.keys()))
+
+            if matched_uname:
+                u_stats = stats_dict[matched_uname]
+                u_info = users_dict.get(matched_uname, {})
+                followers = parse_stat_value(_extract_first_present(u_stats, "followerCount", "follower_count"))
+                following = parse_stat_value(_extract_first_present(u_stats, "followingCount", "following_count"))
+                likes = parse_stat_value(
+                    _extract_first_present(u_stats, "heartCount", "heart", "likesCount", "likes_count")
+                )
+                avatar_url = (
+                    u_info.get("avatarLarger")
+                    or u_info.get("avatarMedium")
+                    or u_info.get("avatarThumb")
+                ) if isinstance(u_info, dict) else None
+                return {
+                    "username": matched_uname,
+                    "followers": followers,
+                    "following": following,
+                    "likes": likes,
+                    "avatar_url": normalize_avatar_url(avatar_url),
+                }
+
+        # 3. Stats container match (only if no target username filter or target matches)
+        if "followerCount" in value and (
+            "followingCount" in value or "heartCount" in value or "heart" in value
+        ):
+            followers = parse_stat_value(_extract_first_present(value, "followerCount", "follower_count"))
+            following = parse_stat_value(_extract_first_present(value, "followingCount", "following_count"))
+            likes = parse_stat_value(
+                _extract_first_present(value, "heartCount", "heart", "likesCount", "likes_count")
+            )
+            return {
+                "followers": followers,
+                "following": following,
+                "likes": likes,
+            }
 
         # Traverse nested dict values
         for nested_val in value.values():
-            res = find_profile_data_in_json(nested_val)
-            if res and (
-                res.get("followers", 0) > 0
-                or res.get("following", 0) > 0
-                or res.get("likes", 0) > 0
-                or res.get("username")
-            ):
+            res = find_profile_data_in_json(nested_val, target_username=target_username)
+            if res:
                 return res
 
     elif isinstance(value, list):
         for item in value:
-            res = find_profile_data_in_json(item)
-            if res and (
-                res.get("followers", 0) > 0
-                or res.get("following", 0) > 0
-                or res.get("likes", 0) > 0
-                or res.get("username")
-            ):
+            res = find_profile_data_in_json(item, target_username=target_username)
+            if res:
                 return res
 
     return {}
 
 
-def extract_profile_from_scripts(soup: BeautifulSoup) -> dict:
+def extract_profile_from_scripts(soup: BeautifulSoup, target_username: str | None = None) -> dict:
     """Extract profile data from embedded JSON script tags (SSR rehydration payload)."""
     priority_ids = (
         "__UNIVERSAL_DATA_FOR_REHYDRATION__",
@@ -230,7 +279,7 @@ def extract_profile_from_scripts(soup: BeautifulSoup) -> dict:
             if script_text:
                 try:
                     data = json.loads(script_text)
-                    profile_data = find_profile_data_in_json(data)
+                    profile_data = find_profile_data_in_json(data, target_username=target_username)
                     if profile_data:
                         return profile_data
                 except (TypeError, json.JSONDecodeError):
@@ -245,7 +294,7 @@ def extract_profile_from_scripts(soup: BeautifulSoup) -> dict:
             continue
         try:
             data = json.loads(script_text)
-            profile_data = find_profile_data_in_json(data)
+            profile_data = find_profile_data_in_json(data, target_username=target_username)
             if profile_data:
                 return profile_data
         except (TypeError, json.JSONDecodeError):
@@ -320,7 +369,7 @@ def _find_avatar_in_dict(value, avatar_keys: tuple[str, ...]) -> str | None:
 
 
 def extract_profile_from_dom(soup: BeautifulSoup) -> dict:
-    """Extract profile metadata and stats from DOM elements."""
+    """Extract profile metadata and stats from DOM elements, distinguishing 0 from missing."""
     username_tag = soup.find(
         "h2",
         {"data-e2e": "user-subtitle"},
@@ -337,7 +386,7 @@ def extract_profile_from_dom(soup: BeautifulSoup) -> dict:
         "strong",
         {"title": "Followers"},
     )
-    followers = parse_count_text(followers_tag.get_text(strip=True)) if followers_tag else 0
+    followers = parse_stat_value(followers_tag.get_text(strip=True)) if followers_tag else None
 
     following_tag = soup.find(
         "strong",
@@ -346,7 +395,7 @@ def extract_profile_from_dom(soup: BeautifulSoup) -> dict:
         "strong",
         {"title": "Following"},
     )
-    following = parse_count_text(following_tag.get_text(strip=True)) if following_tag else 0
+    following = parse_stat_value(following_tag.get_text(strip=True)) if following_tag else None
 
     likes_tag = soup.find(
         "strong",
@@ -355,7 +404,7 @@ def extract_profile_from_dom(soup: BeautifulSoup) -> dict:
         "strong",
         {"title": "Likes"},
     )
-    likes = parse_count_text(likes_tag.get_text(strip=True)) if likes_tag else 0
+    likes = parse_stat_value(likes_tag.get_text(strip=True)) if likes_tag else None
 
     avatar_url = extract_avatar_url(soup)
 
@@ -371,58 +420,83 @@ def extract_profile_from_dom(soup: BeautifulSoup) -> dict:
 def extract_profile(
     html: str,
     profile_url: str,
+    target_username: str | None = None,
 ) -> tuple[TikTokAccount, list[str]]:
     """
     Extract TikTok profile information from HTML.
 
-    Combines both SSR embedded JSON scripts (for exact raw integers)
-    and DOM elements (as fallback).
+    1. Classifies page type before extraction, rejecting challenges and not-found pages.
+    2. Verifies candidate username against target_username to prevent cross-account contamination.
+    3. Accurately distinguishes between legitimate 0 counts and missing fields.
+
+    Raises:
+        ExtractorPageError: If page is a challenge or non-existent account.
 
     Returns:
         tuple[TikTokAccount, list[str]]: The extracted account and a list of missing field names.
     """
     soup = BeautifulSoup(html, "html.parser")
 
-    # 1. Extract from SSR JSON scripts
-    json_data = extract_profile_from_scripts(soup)
+    # Step 1: Classify page before extraction
+    page_type = check_page_type(soup, html)
+    if page_type == "challenge":
+        raise ExtractorPageError(page_type, "TikTok anti-bot WAF or CAPTCHA challenge encountered")
+    if page_type == "not_found":
+        raise ExtractorPageError(page_type, f"TikTok account not found or deleted on {profile_url}")
 
-    # 2. Extract from DOM elements
+    # Derive target username from URL if not explicitly provided
+    if not target_username and "/@" in profile_url:
+        target_username = profile_url.rstrip("/").split("/@")[-1].split("?")[0]
+
+    # Step 2: Extract from SSR JSON scripts
+    json_data = extract_profile_from_scripts(soup, target_username=target_username)
+
+    # Step 3: Extract from DOM elements
     dom_data = extract_profile_from_dom(soup)
 
     # Prefer SSR JSON data (exact integer accuracy & bypasses client hydration lag)
     # Fallback to DOM data when JSON is empty or missing
     username = json_data.get("username") or dom_data.get("username")
 
-    followers = (
-        json_data["followers"]
-        if "followers" in json_data and json_data["followers"] > 0
-        else dom_data.get("followers", 0)
-    )
-    following = (
-        json_data["following"]
-        if "following" in json_data and json_data["following"] > 0
-        else dom_data.get("following", 0)
-    )
-    likes = (
-        json_data["likes"]
-        if "likes" in json_data and json_data["likes"] > 0
-        else dom_data.get("likes", 0)
-    )
+    followers_val = json_data.get("followers")
+    if followers_val is None:
+        followers_val = dom_data.get("followers")
+
+    following_val = json_data.get("following")
+    if following_val is None:
+        following_val = dom_data.get("following")
+
+    likes_val = json_data.get("likes")
+    if likes_val is None:
+        likes_val = dom_data.get("likes")
 
     avatar_url = json_data.get("avatar_url") or dom_data.get("avatar_url")
 
-    # Check for missing fields
+    # Check for truly missing fields (distinguished from 0)
     missing_fields: list[str] = []
     if not username:
         missing_fields.append("username")
-    if followers == 0 and dom_data.get("followers", 0) == 0:
+    if followers_val is None:
         missing_fields.append("followers")
-    if following == 0 and dom_data.get("following", 0) == 0:
+    if following_val is None:
         missing_fields.append("following")
-    if likes == 0 and dom_data.get("likes", 0) == 0:
+    if likes_val is None:
         missing_fields.append("likes")
     if not avatar_url:
         missing_fields.append("avatar_url")
+
+    # Map to final integers (default to 0 when missing)
+    followers = followers_val if followers_val is not None else 0
+    following = following_val if following_val is not None else 0
+    likes = likes_val if likes_val is not None else 0
+
+    # Account status rule
+    if not username:
+        account_status = "inactive"
+    elif page_type == "private":
+        account_status = "private"
+    else:
+        account_status = "active"
 
     now = datetime.now()
     account = TikTokAccount(
@@ -433,7 +507,7 @@ def extract_profile(
         profile_url=profile_url,
         avatar_url=avatar_url,
         crawled_at=now,
-        status="active" if username else "inactive",
+        status=account_status,
         last_crawled_at=now,
     )
 

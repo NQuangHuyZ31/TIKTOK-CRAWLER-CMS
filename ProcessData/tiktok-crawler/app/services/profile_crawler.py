@@ -3,7 +3,7 @@ import logging
 from bs4 import BeautifulSoup
 from playwright.async_api import Page
 
-from extractor import check_page_type, extract_profile
+from extractor import ExtractorPageError, check_page_type, extract_profile
 from models import TikTokAccount
 from services.avatar_service import AvatarService
 from utils.browser_utils import NavigationError, open_url
@@ -69,23 +69,17 @@ class ProfileCrawler:
         await self._wait_for_profile_ready(page, timeout=10000)
 
         # ----------------------------------------------------------------------
-        # Step 5: Check Page Validity
+        # Step 5 & 6: Validate Page & Extract Profile Data (SSR JSON first, DOM fallback)
         # ----------------------------------------------------------------------
-        html = await page.content()
-        soup = BeautifulSoup(html, "html.parser")
-        page_type = check_page_type(soup, html)
-
-        if page_type == "challenge":
+        try:
+            account, missing_fields = extract_profile(
+                html=html,
+                profile_url=profile_url,
+                target_username=clean_username,
+            )
+        except ExtractorPageError as page_error:
             page_title = await self._safe_title(page)
-            return None, "failed", f"TikTok challenge/captcha encountered (Page title: '{page_title}')"
-
-        if page_type == "not_found":
-            return None, "failed", f"TikTok account @{clean_username} does not exist or was deleted"
-
-        # ----------------------------------------------------------------------
-        # Step 6: Extract Profile Data (SSR JSON first, DOM fallback)
-        # ----------------------------------------------------------------------
-        account, missing_fields = extract_profile(html, profile_url)
+            return None, "failed", f"{page_error} (Page title: '{page_title}')"
 
         if account.username:
             account.username = normalize_username(account.username)
@@ -95,15 +89,18 @@ class ProfileCrawler:
         # ----------------------------------------------------------------------
         # Step 7: Validate Results
         # ----------------------------------------------------------------------
-        # If all counts are 0, check if DOM hydration was delayed on slow containers
+        # If all counts are 0 and not private, check if DOM hydration was delayed on slow containers
         if account.followers == 0 and account.following == 0 and account.likes == 0:
             if page_type != "private":
                 # Brief secondary wait for DOM hydration in case React was lagging
                 try:
                     await page.wait_for_selector('strong[data-e2e="followers-count"]', timeout=3000)
                     rehydrated_html = await page.content()
-                    rehydrated_soup = BeautifulSoup(rehydrated_html, "html.parser")
-                    account, missing_fields = extract_profile(rehydrated_html, profile_url)
+                    account, missing_fields = extract_profile(
+                        html=rehydrated_html,
+                        profile_url=profile_url,
+                        target_username=clean_username,
+                    )
                     if account.username:
                         account.username = normalize_username(account.username)
                     elif clean_username:
