@@ -20,7 +20,9 @@
    - 100% Strict TypeScript: `npm.cmd run check-types` (0 errors). React 19. No untyped `any`.
    - Windows PowerShell: Execute via `npm.cmd` / `npx.cmd`.
    - Direct imports only: `import ListLayout from '@core/components/ListLayout'`. No barrel `index.ts`.
-7. **Milestone Tracking**: Append a milestone entry in `PROJECT_SUMMARY.md` before reporting completion.
+7. **Mandatory Documentation Update**: Upon completing any task, feature, bugfix, or workflow change:
+   - **Update `README.md`**: Document newly added capabilities, commands, environment variables, or architecture changes.
+   - **Update `PROJECT_SUMMARY.md`**: Append a milestone entry detailing the solution, touched files, and test results before reporting completion.
 
 ## 2. Core Reusability Matrix (DO NOT REINVENT)
 | Layer | Core Asset | Usage Standard |

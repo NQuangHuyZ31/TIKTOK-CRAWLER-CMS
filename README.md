@@ -31,9 +31,10 @@ The root repository is strictly an **idle anchor** tracking `main`. All tasks, f
 👉 Read the [Git Worktree Architecture Manual](cms-tiktok-crawler/docs/development/git-worktree-workflow.md).
 
 ### 2. Standard Branch Naming & Conventional Commits
-- Branches: `<type>/<task-id>-<description>` (`feature/`, `fix/`, `hotfix/`, `refactor/`, `test/`, `docs/`, `chore/`, `ci/`).
+- Branches: `<type>/<task-id>-<description>` (`feature/`, `fix/`, `hotfix/`, `release/v<version>`, `refactor/`, `test/`, `docs/`, `chore/`, `ci/`).
 - Commits: Conventional Commits in clear English (`feat:`, `fix:`, `chore:`, etc.).
-- Direct pushes to `main` are strictly forbidden; all integration requires Pull Requests with passing CI status checks.
+- Direct pushes to `main` are strictly forbidden; all integration requires Pull Requests via `.\scripts\agent-pr.ps1 -Branch "<branch>"`.
+- Merging into `main` requires human review and passing CI status checks.
 
 ### 3. CI/CD Quality Gates (`.github/workflows/ci.yml`)
 Every push and PR undergoes automated validation:
