@@ -110,6 +110,55 @@ python app/main.py   # Crawler listening on http://0.0.0.0:8001
 
 ---
 
+## 🤖 AI Agent Worktree Protocol & Concurrency Matrix
+
+To maintain codebase hygiene, avoid branch conflicts, and support multi-agent workflows, development is isolated into **5 dedicated persistent worktree slots**:
+
+| Slot | Role | Allowed Branch Prefixes | Local Ports | Scope & Responsibilities |
+| :---: | :--- | :--- | :--- | :--- |
+| **Slot 1** | `feature` | `feature/*` | Laravel: 8010, Vite: 5181 | New features, capabilities, ingestion flows |
+| **Slot 2** | `fix` | `fix/*` | Laravel: 8020, Vite: 5182 | Defect repairs, bug fixes, error resolution |
+| **Slot 3** | `hotfix` | `hotfix/*` | Laravel: 8030, Vite: 5183 | Emergency production patches & critical security fixes |
+| **Slot 4** | `refactor` / `test` | `refactor/*`, `test/*` | Laravel: 8040, Vite: 5184 | Code refactoring, optimization, test suites |
+| **Slot 5** | `release` / `docs` | `release/*`, `chore/*`, `docs/*`, `ci/*` | Laravel: 8050, Vite: 5185 | Release candidate preparation, documentation, dependencies |
+
+### Worktree Management Commands
+```powershell
+# List all worktree slots, assigned roles, and status
+.\scripts\agent-worktree.ps1 -Action List
+
+# Switch to a slot by role and create a new task branch
+.\scripts\agent-worktree.ps1 -Role feature -Branch "feature/TIK-101-profile-sync" -CreateBranch
+.\scripts\agent-worktree.ps1 -Role fix -Branch "fix/TIK-102-null-author" -CreateBranch
+.\scripts\agent-worktree.ps1 -Role hotfix -Branch "hotfix/SEC-001-api-key" -CreateBranch
+
+# Inspect active status across all worktrees
+.\scripts\agent-worktree.ps1 -Action Status
+
+# Clean and reset a slot back to idle state after PR merge
+.\scripts\agent-worktree.ps1 -Action Clean -Slot 1
+```
+
+---
+
+## 🚀 Controlled Release & Deployment Lifecycle
+
+Production deployment follows a strict gate: **DEPLOY ONLY WHEN A NEW RELEASE IS PUBLISHED**.
+
+1. **Development & Isolation**: Agent develops inside the dedicated worktree slot (`Slot 1` to `Slot 5`).
+2. **Quality Gates**: Local validation via TypeScript strict check (`npm.cmd run check-types`) and backend tests.
+3. **Pull Request Gate**: Agent runs `.\scripts\agent-pr.ps1 -Branch "<branch>"` to push branch and generate a PR link to `main`. Agent halts.
+4. **Draft Release Generation**: Human merges PR into `main`. Merging triggers `.github/workflows/auto-draft-release.yml` which builds distribution bundles and generates a **Draft Release** (`draft: true`). **No deployment occurs at this stage**.
+5. **Human Release Gate**: Repository owner reviews the Draft Release notes on GitHub Releases and clicks **"Publish release"**.
+6. **Automated Production Deployment**: Publishing triggers `.github/workflows/deploy.yml` which deploys to Render.com and runs automated `/api/health` probes with rollback protection.
+
+```powershell
+# Run the automated verification suite to validate worktree, regex, and workflow safety:
+powershell -ExecutionPolicy Bypass -File .\scripts\verify-workflow.ps1
+```
+
+---
+
 ## 🐳 Docker & Production Deployment
 
 The platform is fully containerized and deployable via Docker:
