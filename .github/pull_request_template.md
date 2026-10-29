@@ -1,9 +1,9 @@
 ## Summary of Changes
 <!-- Provide a clear, concise overview of what this pull request changes or accomplishes. -->
 
-### Task Reference
-- **Task ID**: <!-- e.g., TIK-123 or Issue # -->
-- **Branch Type**: `feature` | `fix` | `hotfix` | `refactor` | `test` | `release` | `docs` | `chore` | `ci`
+### Branch Category
+- **Category Branch**: `feature` | `fix` | `refactor` | `hotfix` | `test` | `chore`
+- **Target Branch**: `main`
 
 ---
 
@@ -11,7 +11,7 @@
 
 Please verify all items before requesting review:
 
-- [ ] **Branch Naming Standard**: Follows `<type>/<task-id>-<description>` or `release/v<version>`.
+- [ ] **Category Branch Compliance**: Pushed to the fixed category branch (`feature`, `fix`, `refactor`, etc.) — zero direct pushes to `main`.
 - [ ] **Strict English**: All UI text, commit messages, comments, and identifiers are strictly in English.
 - [ ] **TypeScript Check**: `npm.cmd run check-types` passed with **0 errors**.
 - [ ] **Backend Test Suite**: Backend tests passed with **100% success** (0 failures).
