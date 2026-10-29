@@ -1,6 +1,6 @@
 ---
 name: git-workflow
-description: Git branching conventions, Conventional Commits formatting, direct branch workflow, and validation checklist for the project.
+description: Direct branch protocol, Conventional Commits, and pre-commit checks.
 ---
 
 # Git & GitHub Workflow Standards
@@ -18,8 +18,8 @@ Work directly in the root workspace on dedicated task branches. Worktree isolati
 # 1. Fetch latest and switch/create task branch (e.g. 'fix')
 git checkout main
 git pull origin main
-git checkout -b feature/TIK-101-new-feature
-# or: fix/TIK-102-bug-fix, refactor/TIK-103-clean-code
+git checkout -B fix origin/main
+# or: git checkout -B feature origin/main
 
 # 2. Develop and run validation checks
 npm.cmd run check-types
@@ -27,10 +27,10 @@ php artisan test
 
 # 3. Commit with Conventional Commits
 git add .
-git commit -m "feat(crawler): your descriptive commit message"
+git commit -m "fix(crawler): your descriptive commit message"
 
 # 4. Push branch to remote origin
-git push -u origin feature/TIK-101-new-feature
+git push -u origin fix
 ```
 
 ---

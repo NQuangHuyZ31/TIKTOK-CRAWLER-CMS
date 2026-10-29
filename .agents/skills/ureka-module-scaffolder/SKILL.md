@@ -1,11 +1,6 @@
 ---
 name: ureka-module-scaffolder
-description: >-
-  Scaffolds a new Ureka module or expands an existing module following the strict Ureka
-  Modular Architecture pattern across Backend (Model, Repository, Service, FormRequest,
-  Resource, Controller, ServiceProvider, routes/api.php) and Frontend (Action API,
-  components, configs, pages, routes, store). Use this skill when asked to create a new module,
-  add a major feature domain, or generate standardized architectural boilerplate.
+description: Scaffolds Ureka modular architecture boilerplate for Backend and Frontend.
 ---
 
 # Ureka Module Scaffolder Runbook

@@ -1,10 +1,6 @@
 ---
 name: self-evolution-guide
-description: >-
-  Empowers the AI agent to autonomously author, refine, and maintain workspace documentation
-  in docs/ and custom skills in .agents/skills/ as the project evolves. Use this skill whenever
-  recurring complex workflows are identified, architecture changes occur, or when new
-  developer runbooks are needed.
+description: Maintains documentation in docs/ and custom skills in .agents/skills/.
 ---
 
 # Autonomous Self-Evolution Guide: Skills & Documentation
@@ -38,9 +34,7 @@ Each skill must follow the standard Antigravity structure:
 ```markdown
 ---
 name: <kebab-case-name>
-description: >-
-  A concise 3rd person description of what this skill accomplishes and exactly
-  when the agent should activate it.
+description: Maintains documentation in docs/ and custom skills in .agents/skills/.
 ---
 
 # <Skill Title>

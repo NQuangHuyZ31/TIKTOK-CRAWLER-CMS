@@ -1,10 +1,6 @@
 ---
 name: core-reusability-promoter
-description: >-
-  Inspects modules/Core/ before building any new component or service, checks for existing
-  solutions to reuse, evaluates whether new logic should be promoted to Core, and guides
-  refactoring to keep Core modular, DRY, and well-exported. Use this skill when implementing
-  generic UI widgets, utilities, traits, or when refactoring duplicate logic into modules/Core/.
+description: Reuses and promotes shared logic into modules/Core/.
 ---
 
 # Core Reusability & Promotion Runbook

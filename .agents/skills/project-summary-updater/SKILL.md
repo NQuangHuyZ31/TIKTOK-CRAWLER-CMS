@@ -1,54 +1,48 @@
 ---
 name: project-summary-updater
-description: >-
-  Systematically updates PROJECT_SUMMARY.md at the completion of any task, recording
-  architectural decisions, newly created or modified files, API endpoint updates, state changes,
-  and verification test results. Use this skill at the end of any coding session, feature
-  implementation, or bugfix before reporting completion to the user.
+description: Records major architectural milestones in PROJECT_SUMMARY.md.
 ---
 
 # Project Summary Updater Runbook
 
-This runbook guides the agent through the mandatory process of maintaining and updating [`PROJECT_SUMMARY.md`](file:///E:/Urekamedia/TIKTOK-CRAWLER/PROJECT_SUMMARY.md) upon the conclusion of any task.
+This runbook guides the agent through the process of maintaining [PROJECT_SUMMARY.md](file:///E:/Urekamedia/TIKTOK-CRAWLER/PROJECT_SUMMARY.md) upon the conclusion of significant feature milestones.
 
 ---
 
-## 1. Why Updating `PROJECT_SUMMARY.md` Is Mandatory
+## 1. Scope & Token Conservation Policy
 
-`PROJECT_SUMMARY.md` is the single source of truth for the project's historical evolution, architectural decisions, and current technical state. Maintaining it guarantees:
-1. Seamless context handoff between different agent sessions and developer pair programming.
-2. Complete traceability of changes, bug fixes, and new features across all modules and subprojects.
-3. Accurate documentation of schema changes, new endpoints, and reusable Core components.
+To conserve tokens and keep documentation lean:
+1. **Major Milestones Only**: Update PROJECT_SUMMARY.md ONLY when completing new architectural modules, major features, or significant database/API overhauls.
+2. **Skip Minor Fixes**: Do NOT invoke or update PROJECT_SUMMARY.md for routine bug fixes, trivial tweaks, or single-file patches.
+3. **Keep It Lean**: Historical milestones (Milestones 1-50) are archived in docs/archive/historical-milestones.md. Keep only recent active milestones in PROJECT_SUMMARY.md.
 
 ---
 
 ## 2. Standard Update Format
 
-Append a new numbered milestone or sub-section under the appropriate main section (or create the next sequential section at the bottom of the document):
+Append a new milestone entry at the bottom of the document:
 
-```markdown
-### <Section Number>. <Descriptive Title of Change or Feature>
-- **Context & Problem**:
-  - Briefly explain the motivation, user request, or issue resolved.
-- **Architectural & Technical Solution**:
-  - Backend changes: Controllers, Repositories, Services, Migrations, or Middleware modified.
-  - Frontend changes: Pages, Components, Redux actions/slices, or Styles added.
-  - Crawler engine: Changes in ProcessData/tiktok-crawler.
-  - Core reusability: Any new components promoted to or reused from `modules/Core/`.
-- **Created or Modified Files**:
-  - List all relevant files with clickable markdown links (`file:///...`).
-- **Quality & Verification**:
-  - Specify the verification steps executed:
-    - TypeScript check: `npm.cmd run check-types` (0 errors).
-    - Automated tests: `php artisan test --filter <TestName>` (passing).
-```
+\\markdown
+## Milestone: <Descriptive Title of Significant Feature>
+- **Date**: YYYY-MM-DD
+- **Author**: Antigravity AI Assistant
+- **Branch**: main (or task branch)
 
+### 1. Objectives & Delivered Solution
+- Context and key architectural changes.
+
+### 2. Files Modified & Added
+- List primary modified files.
+
+### 3. Verification Test Results
+- TypeScript: npm.cmd run check-types
+- Automated tests: php artisan test
+\
 ---
 
 ## 3. Step-by-Step Procedure
 
-1. **Review Changed Files**: Inspect `git status` or review the list of files touched during the turn.
-2. **Read Current End of `PROJECT_SUMMARY.md`**: Check the last section number and format used in `PROJECT_SUMMARY.md`.
-3. **Draft the Summary Block**: Follow the standard format above. Keep descriptions factual, technical, and in English.
-4. **Append or Update**: Use the `edit_file` or `write_file` tool to append the new milestone entry to `PROJECT_SUMMARY.md`.
-5. **Verify**: Ensure markdown links are valid and headers maintain proper sequential hierarchy.
+1. **Check Eligibility**: Verify that the completed work represents a significant milestone (not a trivial bug fix).
+2. **Read Current End**: Read only the last 30-50 lines of PROJECT_SUMMARY.md using 
+ead_file with StartLine.
+3. **Append Entry**: Append the concise milestone block using write_file with Append: true.
