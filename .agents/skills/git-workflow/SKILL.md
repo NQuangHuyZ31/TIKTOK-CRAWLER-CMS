@@ -1,9 +1,9 @@
 ---
 name: git-workflow
-description: Git branching conventions, Conventional Commits formatting, direct branch workflow, and validation checklist for the project.
+description: Fixed category branching conventions (feature, fix, refactor, hotfix, test, chore) with zero direct push to main.
 ---
 
-# Git & GitHub Workflow Standards
+# Git Workflow Standards
 
 ## 1. Direct Branch Protocol
 
@@ -66,3 +66,8 @@ Before staging or committing:
 - Push the task branch and create a Pull Request targeting `main`.
 - Merging into `main` creates an automated **Draft Release** (`draft: true`).
 - Production deployment to Render triggers **ONLY** when the human user clicks **"Publish release"** on GitHub.
+1. **Fixed Category Branches**: Work strictly on `feature`, `fix`, `refactor`, `hotfix`, `test`, or `chore`. Never create dynamic branch names (`<type>/<description>`).
+2. **Zero Push to `main`**: All commits push to category branches: `git push -u origin <branch>`.
+3. **Commit Format**: Conventional Commits in English (`feat:`, `fix:`, `refactor:`, `chore:`).
+4. **Validation**: Run `npm.cmd run check-types` and `php artisan test` before pushing.
+5. **PR & Release**: Open PR targeting `main`. Human approval required to publish releases for Render deployment.

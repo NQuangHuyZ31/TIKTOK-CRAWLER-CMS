@@ -1,12 +1,22 @@
-# AGENTS.md - AI Operating Manual & Invariants
+# AGENTS.md - AI Operating Rules & Invariants
 
 > [!IMPORTANT]
-> **MANDATORY RULES FOR ALL AI AGENTS**: Direct branch workflow, strict Conventional Commits, clean TypeScript and backend test validations, Draft Release lifecycle, and the **Mandatory Human Approval Gate for Production Deployment (Deploy ONLY when a new release is published)**.
+> **CORE INVARIANTS FOR ALL AI AGENTS**:
+> 1. **Zero Push to `main`**: Push strictly to fixed category branches (`feature`, `fix`, `refactor`, `hotfix`, `test`, `chore`). Never push or commit on `main`.
+> 2. **Production Release Gate**: Merging to `main` creates a Draft Release (`draft: true`). Deploy to production ONLY when the human user clicks "Publish release".
+> 3. **Validation Gates**: 100% TypeScript (`npm.cmd run check-types`, 0 errors) and Backend tests passing (`php artisan test`).
+> 4. **Token Efficiency**: Keep terminal commands concise, avoid full tree dumps, and keep documentation compact.
 
 ---
 
-## 1. Branch Workflow (Direct Branch Protocol)
-Work directly in the project workspace on dedicated task branches. Worktree isolation is disabled.
+## 1. Fixed Category Branch Workflow
+Always checkout and push directly to the matching category branch:
+- `feature`: New features, crawler workers, UI screens.
+- `fix`: Bug repairs, defect resolution, query optimization.
+- `refactor`: Code cleanup, modularization, structure restructuring.
+- `hotfix`: Emergency live production patches.
+- `test`: Test automation (Pest, PHPUnit, Vitest).
+- `chore`: Dependencies, CI/CD, documentation.
 
 ### Branch Naming Conventions
 > [!IMPORTANT]
@@ -42,7 +52,6 @@ git commit -m "fix(crawler): add error retry exponential backoff"
 git push -u origin fix
 ```
 
----
 
 ## 2. Pull Request & Merging Standard
 1. **Agent MUST NOT push unreviewed breaking changes directly to `main`**. Always work on task branches.
@@ -70,35 +79,21 @@ flowchart TD
     I --> J["Render Production Deploy Hook"]
     J --> K["Health Check: /api/health (HTTP 200)"]
     K --> L["✅ Production Live"]
+    
+```powershell
+# Standard workflow
+git checkout <category-branch> # e.g. refactor, feature, fix
+git merge main
+# Code, validate: npm.cmd run check-types & php artisan test
+git add .
+git commit -m "<type>(<scope>): <English summary>"
+git push -u origin <category-branch> # NEVER push to main!
 ```
-
-### Invariants for Production Deployment:
-1. **Deploy CHỈ KHI NÀO release bản mới**:
-   - Pushing code or merging PRs into `main` **NEVER** deploys to production.
-   - Merging into `main` ONLY triggers `.github/workflows/auto-draft-release.yml`, generating a **GitHub Draft Release** (`draft: true`).
-2. **🛑 MANDATORY HUMAN RELEASE GATE**:
-   - **Agent is STRICTLY FORBIDDEN from publishing a release or triggering production deployment**.
-   - Only the human User opens GitHub Releases, reviews notes and assets, and clicks **"Publish release"** (or pushes tag `v*.*.*`).
-   - Publication triggers `.github/workflows/deploy.yml` which executes Render deploy hooks and validates `/api/health`.
-
----
-
-## 4. Code Standards & Reusability Matrix
-- **Language**: English-only for all text, comments, docstrings, commits, and PR descriptions.
-- **Commits**: Strict Conventional Commits (`feat(scope): ...`, `fix(scope): ...`, `chore(release): ...`).
-- **TypeScript**: 100% Strict TypeScript. `npm.cmd run check-types` (0 compilation errors). React 19. No untyped `any`.
-- **PowerShell**: On Windows, invoke tools via `npm.cmd` / `npx.cmd`.
-- **Documentation Update**:
-  - Update `PROJECT_SUMMARY.md`: Append a milestone entry detailing the solution, touched files, and test results when completing significant features.
-
-### Core Reusability Matrix (DO NOT REINVENT)
-| Layer | Core Asset | Usage Standard |
-| :--- | :--- | :--- |
-| **Listings** | `@core/components/ListLayout` | **Mandatory** for entity listing pages. No custom wrapper divs. |
-| **Tables** | `@core/components/Table` | **Mandatory**. Use native `onEdit`, `onDelete`, `extraActions`. |
-| **Actions** | `@core/hooks/useAction` | **Mandatory** for row actions (delete, toggle). Handles toast/loading. |
-| **Forms/Modals** | `@core/components/ResourceForm`, `CustomModal` | Standard form controls and modal dialogs. |
-| **KPI/Tags** | `@core/components/CardKPI`, `StatusTag`, `NumericRangeFilter` | Standard dashboard and metric cards. |
-| **RBAC** | `@core/components/PermissionGate`, `usePermission` | Permission gates: `<PermissionGate module="x" action="y">`. |
-| **State** | Redux (`store/<domain>/`) | All entity lists, filters, pagination MUST use Redux. |
-| **Backend** | `BaseController`, `BaseRepository` | Thin controllers and repos strictly extending Base. Zero redundant overrides. |
+## 2. Code Standards & Reusability Matrix (Do Not Reinvent)
+- **Language**: English-only for all code, comments, commits, and PR descriptions.
+- **Commits**: Conventional Commits (`feat:`, `fix:`, `refactor:`, `chore:`).
+- **TypeScript**: Strict React 19 / TypeScript (`noImplicitAny`, no untyped `any`).
+- **Listings & Tables**: Use `@core/components/ListLayout` and `@core/components/Table`.
+- **Actions & State**: Use `@core/hooks/useAction` for row actions; use Redux for state/filters.
+- **Backend**: Extend `BaseController` and `BaseRepository`. Keep controllers thin.
+- **Summary**: Record completed milestones in `PROJECT_SUMMARY.md` before reporting completion.
