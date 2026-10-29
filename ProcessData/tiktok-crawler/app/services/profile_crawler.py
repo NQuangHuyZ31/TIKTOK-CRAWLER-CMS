@@ -22,12 +22,14 @@ class ProfileCrawler:
         profile_url: str,
     ) -> TikTokAccount:
 
+        logger.info("Navigating to profile URL: %s", profile_url)
         await open_url(
             page,
             profile_url,
             wait_time=3000,
         )
 
+        logger.info("Extracting profile HTML content for @%s", username)
         profile = extract_profile(
             html=await page.content(),
             profile_url=profile_url,
@@ -40,11 +42,21 @@ class ProfileCrawler:
 
         if not profile.username:
             raise RuntimeError(
-                "Could not extract profile username"
+                f"Could not extract profile username from {profile_url}"
             )
+
+        logger.info(
+            "Extracted @%s data: followers=%d, following=%d, likes=%d, avatar_url=%s",
+            profile.username,
+            profile.followers,
+            profile.following,
+            profile.likes,
+            bool(profile.avatar_url),
+        )
 
         if profile.avatar_url:
             try:
+                logger.info("Downloading avatar for @%s from: %s", profile.username, profile.avatar_url)
                 profile.avatar_path = (
                     await self.avatar_service.download(
                         page,
@@ -52,6 +64,10 @@ class ProfileCrawler:
                         profile.avatar_url,
                     )
                 )
+                if profile.avatar_path:
+                    logger.info("Avatar saved locally at: %s", profile.avatar_path)
+                else:
+                    logger.info("Avatar download skipped (no local storage configured), using direct CDN URL")
             except Exception as error:
                 logger.warning(
                     "Could not download avatar for @%s: %s",

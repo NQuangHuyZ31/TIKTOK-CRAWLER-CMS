@@ -1,10 +1,17 @@
-from fastapi import BackgroundTasks, FastAPI, HTTPException
+import logging
 from typing import Literal
 
+from fastapi import BackgroundTasks, FastAPI, HTTPException
 from pydantic import BaseModel, Field, model_validator
 
 from config import CALLBACK_TOKEN, normalize_callback_url
 from crawler import TikTokCrawler
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] [%(name)s] %(message)s",
+)
+logger = logging.getLogger(__name__)
 
 
 class CrawlRequest(BaseModel):
@@ -49,6 +56,7 @@ running_jobs: set[int] = set()
 
 
 async def execute_crawl(request: CrawlRequest) -> None:
+    logger.info("Executing crawl job #%d in background task (mode: %s)...", request.job_id, request.source_type)
     try:
         # Chạy crawler nền để API có thể trả response 202 ngay cho frontend.
         await TikTokCrawler(
@@ -60,8 +68,12 @@ async def execute_crawl(request: CrawlRequest) -> None:
             urls=request.urls,
             target_count=request.total_accounts,
         )
+        logger.info("Job #%d background task completed successfully.", request.job_id)
+    except Exception as error:
+        logger.exception("Job #%d background task terminated with error: %s", request.job_id, error)
     finally:
         running_jobs.discard(request.job_id)
+        logger.info("Job #%d removed from active running_jobs set. Active jobs remaining: %d", request.job_id, len(running_jobs))
 
 
 @app.get("/health")
@@ -71,9 +83,12 @@ async def health():
 
 @app.post("/api/crawl-jobs/start", status_code=202)
 async def start_crawl(request: CrawlRequest, background_tasks: BackgroundTasks):
+    logger.info("Received request to start crawl job #%d (mode: %s)", request.job_id, request.source_type)
     # Không cho phép chạy đồng thời hai process cho cùng một crawl job.
     if request.job_id in running_jobs:
+        logger.warning("Crawl job #%d is already running", request.job_id)
         raise HTTPException(status_code=409, detail="Crawl job is already running")
     running_jobs.add(request.job_id)
     background_tasks.add_task(execute_crawl, request)
+    logger.info("Crawl job #%d queued in background_tasks, returned 202 Accepted", request.job_id)
     return {"job_id": request.job_id, "status": "started"}

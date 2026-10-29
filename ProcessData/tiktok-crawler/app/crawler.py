@@ -14,6 +14,22 @@ from utils.tiktok_utils import (
 
 logger = logging.getLogger(__name__)
 
+# Resource types and analytics domains to block for lightweight crawling.
+BLOCKED_RESOURCE_TYPES = {"media", "websocket"}
+BLOCKED_URL_PATTERNS = (
+    "analytics.tiktok.com",
+    "mon.tiktokv.com",
+    "mcs.tiktok.com",
+    "google-analytics.com",
+    "googletagmanager.com",
+    "doubleclick.net",
+    "facebook.net",
+    "byteactivity",
+    "/monitor/collect",
+    "/web/report",
+    "/slardar/",
+)
+
 
 class TikTokCrawler:
     """Coordinates feed discovery, profile crawling, and backend callbacks."""
@@ -31,6 +47,33 @@ class TikTokCrawler:
             callback_url=normalize_callback_url(callback_url),
             callback_token=callback_token,
         )
+        self.blocked_requests_count = 0
+
+    async def _smart_block_route(self, route) -> None:
+        """Smart Blocking: Abort video/audio media streams and analytics trackers to save RAM and network."""
+        request = route.request
+        url_lower = request.url.lower()
+
+        if request.resource_type in BLOCKED_RESOURCE_TYPES:
+            self.blocked_requests_count += 1
+            try:
+                await route.abort()
+            except Exception:
+                pass
+            return
+
+        if any(pattern in url_lower for pattern in BLOCKED_URL_PATTERNS):
+            self.blocked_requests_count += 1
+            try:
+                await route.abort()
+            except Exception:
+                pass
+            return
+
+        try:
+            await route.continue_()
+        except Exception:
+            pass
 
     async def run(
         self,
@@ -49,6 +92,14 @@ class TikTokCrawler:
                 "At least one username, URL, or positive count is required"
             )
 
+        logger.info(
+            "[Job #%d] Starting crawl task: expected_count=%d, mode=%s (targets=%d)",
+            job_id,
+            expected_count,
+            "targets" if targets else "feed",
+            len(targets),
+        )
+
         success_count = 0
         failed_count = 0
         crawled_usernames: set[str] = set()
@@ -60,6 +111,12 @@ class TikTokCrawler:
                     if HEADLESS
                     else []
                 )
+                logger.info(
+                    "[Job #%d] Launching Chromium browser (headless=%s, args=%s)",
+                    job_id,
+                    HEADLESS,
+                    launch_args,
+                )
                 browser = await playwright.chromium.launch(
                     headless=HEADLESS,
                     args=launch_args,
@@ -67,14 +124,32 @@ class TikTokCrawler:
                 context = await browser.new_context(
                     viewport={"width": 1280, "height": 720}
                 )
+                # Attach smart blocking route handler to context
+                await context.route("**/*", self._smart_block_route)
+                logger.info(
+                    "[Job #%d] Smart Blocking active: Aborting media streams (video/audio) and trackers",
+                    job_id,
+                )
+
                 page = await context.new_page()
 
                 try:
                     if crawl_from_feed:
+                        logger.info(
+                            "[Job #%d] Navigating to TikTok home feed: %s",
+                            job_id,
+                            self.HOME_URL,
+                        )
                         await open_url(page, self.HOME_URL, wait_time=3000)
 
                     target_index = 0
                     while len(crawled_usernames) < expected_count:
+                        logger.info(
+                            "[Job #%d] Resolving next target account (%d/%d)...",
+                            job_id,
+                            len(crawled_usernames) + 1,
+                            expected_count,
+                        )
                         target = await self._next_target(
                             targets=targets,
                             target_index=target_index,
@@ -90,16 +165,24 @@ class TikTokCrawler:
                             profile_url = build_profile_url(username)
 
                         if username in crawled_usernames:
+                            logger.debug(
+                                "[Job #%d] @%s already crawled in this session, skipping",
+                                job_id,
+                                username,
+                            )
                             if crawl_from_feed:
                                 await scroll_page(page)
                             continue
 
                         crawled_usernames.add(username)
                         logger.info(
-                            "Crawling account %d/%d: @%s",
+                            "[Job #%d] [%d/%d] Crawling account: @%s | Profile: %s (Blocked %d media/tracker requests so far)",
+                            job_id,
                             len(crawled_usernames),
                             expected_count,
                             username,
+                            profile_url,
+                            self.blocked_requests_count,
                         )
                         account, crawl_error = await self._crawl_account(
                             profile_page=page,
@@ -117,17 +200,40 @@ class TikTokCrawler:
 
                         if account is not None and callback_succeeded:
                             success_count += 1
+                            logger.info(
+                                "[Job #%d] Account @%s successfully crawled & saved (Success: %d/%d)",
+                                job_id,
+                                username,
+                                success_count,
+                                expected_count,
+                            )
                         else:
                             failed_count += 1
+                            logger.warning(
+                                "[Job #%d] Account @%s crawl or callback failed: %s (Failed: %d)",
+                                job_id,
+                                username,
+                                crawl_error or "Callback failed",
+                                failed_count,
+                            )
 
                         if crawl_from_feed:
                             # Profile was opened on the same page. Return to the
                             # feed before looking for and scrolling to the next video.
+                            logger.info(
+                                "[Job #%d] Returning to feed from @%s and scrolling down for next video...",
+                                job_id,
+                                username,
+                            )
                             await go_back(page)
                             await scroll_page(page)
                 finally:
                     await context.close()
 
+            logger.info(
+                "[Job #%d] All targets processed. Sending final completion callback...",
+                job_id,
+            )
             await self._publish_completed(
                 job_id=job_id,
                 status="completed",
@@ -136,6 +242,7 @@ class TikTokCrawler:
                 failed_count=failed_count,
             )
         except Exception as error:
+            logger.exception("[Job #%d] Fatal crawl error encountered: %s", job_id, error)
             await self._publish_completed(
                 job_id=job_id,
                 status="failed",
@@ -177,6 +284,14 @@ class TikTokCrawler:
                 "status": "success",
                 "account": account.model_dump(mode="json"),
             }
+            logger.info(
+                "[Job #%d] Publishing success data for @%s (followers=%d, following=%d, likes=%d) to backend...",
+                job_id,
+                username,
+                account.followers,
+                account.following,
+                account.likes,
+            )
         else:
             data = {
                 "status": "failed",
@@ -184,12 +299,19 @@ class TikTokCrawler:
                 "profile_url": profile_url,
                 "error_message": error_message or "Profile crawl failed",
             }
+            logger.warning(
+                "[Job #%d] Publishing failure event for @%s to backend: %s",
+                job_id,
+                username,
+                data["error_message"],
+            )
 
         try:
             await self.callback_service.send("account", job_id, data)
+            logger.info("[Job #%d] Backend successfully received and acknowledged @%s", job_id, username)
             return True
         except Exception:
-            logger.exception("Could not save result for @%s", username)
+            logger.exception("[Job #%d] Could not deliver result for @%s to backend", job_id, username)
             return False
 
     async def _publish_completed(
@@ -210,7 +332,17 @@ class TikTokCrawler:
         if error_message:
             data["error_message"] = error_message
 
+        logger.info(
+            "[Job #%d] Publishing final '%s' event (Total: %d, Success: %d, Failed: %d, Blocked requests: %d)",
+            job_id,
+            status,
+            total_accounts,
+            success_count,
+            failed_count,
+            self.blocked_requests_count,
+        )
         await self.callback_service.send("completed", job_id, data)
+        logger.info("[Job #%d] Completion event delivered successfully.", job_id)
 
     @staticmethod
     def _build_targets(
