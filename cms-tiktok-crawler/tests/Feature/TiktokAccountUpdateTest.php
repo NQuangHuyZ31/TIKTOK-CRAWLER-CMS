@@ -112,4 +112,32 @@ class TiktokAccountUpdateTest extends TestCase
         $response->assertStatus(422);
         $response->assertJsonValidationErrors(['username']);
     }
+
+    public function test_seeded_khaby_lame_avatar_uses_local_public_asset(): void
+    {
+        $response = $this->actingAs($this->adminUser)->getJson(
+            $this->apiUri((string) $this->khabyAccount->id)
+        );
+
+        $response->assertStatus(200);
+        $avatarPath = $response->json('data.avatar_path');
+        $this->assertNotNull($avatarPath);
+        $this->assertStringContainsString('tiktok-accounts/avatars/khaby.lame.jpg', $avatarPath);
+        $this->assertStringNotContainsString('tiktokcdn.com', $avatarPath);
+    }
+
+    public function test_external_avatar_url_never_served_as_display_avatar_path(): void
+    {
+        $this->khabyAccount->update([
+            'avatar_url' => 'https://p16-sign-va.tiktokcdn.com/tos-maliva-avt-0068/external.jpeg',
+            'avatar_path' => null,
+        ]);
+
+        $response = $this->actingAs($this->adminUser)->getJson(
+            $this->apiUri((string) $this->khabyAccount->id)
+        );
+
+        $response->assertStatus(200);
+        $this->assertNull($response->json('data.avatar_path'));
+    }
 }

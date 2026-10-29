@@ -70,7 +70,7 @@ export default function TiktokAccountFormPage() {
 				video_count: currentAccount.video_count ?? 0,
 				status: currentAccount.status === 'active',
 				is_verified: Boolean(currentAccount.is_verified),
-				avatar: currentAccount.avatar_url ?? currentAccount.avatar_path ?? null,
+				avatar: currentAccount.avatar_path ?? null,
 			})}
 			initialValues={initialFormValues}
 			onCreate={async (values) => {

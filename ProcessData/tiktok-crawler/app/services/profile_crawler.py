@@ -153,10 +153,10 @@ class ProfileCrawler:
                 except Exception as err:
                     logger.debug("[@%s] Secondary DOM hydration wait error: %s", clean_username, err)
 
-        # P0-2: Explicit handling for private accounts
+        # P0-2: Explicit handling for private accounts (Laravel expects 'active' or 'inactive')
         if page_type == "private":
             account.username = clean_username
-            account.status = "private"
+            account.status = "active"
             logger.info("[@%s] Confirmed private profile (followers: %d, missing: %s)", clean_username, account.followers, missing_fields)
             if account.avatar_url:
                 account.avatar_path = await self._safe_download_avatar(page, account.username, account.avatar_url)

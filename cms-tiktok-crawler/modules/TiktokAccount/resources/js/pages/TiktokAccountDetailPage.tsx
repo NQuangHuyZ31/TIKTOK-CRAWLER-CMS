@@ -125,7 +125,7 @@ export default function TiktokAccountDetailPage() {
 
 			<Card>
 				<Space align="start" size={20} wrap>
-					<Avatar size={96} src={accountData?.avatar_path || accountData?.avatar_url} icon={<UserOutlined />} />
+					<Avatar size={96} src={accountData?.avatar_path} icon={<UserOutlined />} />
 					<Space direction="vertical" size={6}>
 						<Space align="center" wrap>
 							<Title level={4} style={{ margin: 0 }}>

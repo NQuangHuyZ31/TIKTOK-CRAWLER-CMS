@@ -103,7 +103,7 @@ class TestProfileCrawler(unittest.TestCase):
 
             self.assertEqual(status, "success")
             self.assertIsNotNone(account)
-            self.assertEqual(account.status, "private")
+            self.assertEqual(account.status, "active")
             self.assertEqual(account.username, "private_person")
 
     def test_crawl_handles_http_errors(self):

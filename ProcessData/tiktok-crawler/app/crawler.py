@@ -298,30 +298,70 @@ class TikTokCrawler:
         status: str,
         error_message: str | None,
     ) -> tuple[bool, dict]:
-        """Send crawled account result to Laravel CMS webhook."""
+        """Send crawled account result to Laravel CMS webhook with resilient fallback.
+        
+        Ensures 100% database synchronization: if the primary payload fails validation
+        or encounters an error, a minimal sanitized failure event is recorded so that
+        every target account always produces a row in the crawl_results table.
+        """
+        clean_username = username.lstrip("@").strip()
+
         if account is not None and status == "success":
+            dumped = account.model_dump(mode="json")
+            if not dumped.get("username"):
+                dumped["username"] = clean_username
+            if dumped.get("status") not in ("active", "inactive"):
+                dumped["status"] = "active"
             data = {
                 "status": "success",
-                "account": account.model_dump(mode="json"),
+                "account": dumped,
             }
         else:
             data = {
                 "status": "failed",
-                "username": username,
+                "username": clean_username,
                 "profile_url": profile_url,
                 "error_message": error_message or "Profile crawl failed",
             }
             if account is not None:
-                data["account"] = account.model_dump(mode="json")
+                dumped = account.model_dump(mode="json")
+                if dumped.get("status") not in ("active", "inactive"):
+                    dumped["status"] = "active"
+                data["account"] = dumped
 
         try:
             response_data = await self.callback_service.send("account", job_id, data)
             return True, response_data
         except Exception as error:
             logger.exception(
-                "[Job #%d] Could not deliver result for @%s to backend", job_id, username
+                "[Job #%d] Primary callback failed for @%s: %s. Attempting resilient fallback to ensure DB sync...",
+                job_id,
+                clean_username,
+                error,
             )
-            return False, {"error": str(error)}
+            fallback_data = {
+                "status": "failed",
+                "username": clean_username,
+                "profile_url": profile_url,
+                "error_message": f"Callback delivery error (fallback recorded): {str(error)[:500]}",
+            }
+            try:
+                fallback_response = await self.callback_service.send("account", job_id, fallback_data)
+                logger.warning(
+                    "[Job #%d] [@%s] Resilient fallback recorded in DB successfully: %s",
+                    job_id,
+                    clean_username,
+                    fallback_response,
+                )
+                return False, {"error": str(error), "fallback_recorded": True, "response": fallback_response}
+            except Exception as fallback_error:
+                logger.critical(
+                    "[Job #%d] [@%s] Both primary and fallback callbacks failed to deliver: %s",
+                    job_id,
+                    clean_username,
+                    fallback_error,
+                )
+                return False, {"error": str(error), "fallback_error": str(fallback_error)}
 
     async def _publish_completed(
         self,

@@ -510,11 +510,9 @@ def extract_profile(
     following = following_val if following_val is not None else 0
     likes = likes_val if likes_val is not None else 0
 
-    # Account status rule
+    # Account status rule (Laravel expects 'active' or 'inactive')
     if not username:
         account_status = "inactive"
-    elif page_type == "private":
-        account_status = "private"
     else:
         account_status = "active"
 
