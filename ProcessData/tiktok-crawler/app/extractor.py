@@ -15,6 +15,8 @@ def extract_profile(
     """
     Extract TikTok account information from HTML.
     """
+    if "slardar_us_waf" in html or "verify-center" in html:
+        raise RuntimeError("TikTok anti-bot WAF challenge encountered on profile page")
 
     soup = BeautifulSoup(html, "html.parser")
 
@@ -22,6 +24,9 @@ def extract_profile(
     username_tag = soup.find(
         "h2",
         {"data-e2e": "user-subtitle"}
+    ) or soup.find(
+        "h1",
+        {"data-e2e": "user-title"}
     )
 
     username = (
@@ -33,6 +38,9 @@ def extract_profile(
     followers_tag = soup.find(
         "strong",
         {"data-e2e": "followers-count"}
+    ) or soup.find(
+        "strong",
+        {"title": "Followers"}
     )
 
     followers = parse_count(followers_tag)
@@ -40,6 +48,9 @@ def extract_profile(
     following_tag = soup.find(
         "strong",
         {"data-e2e": "following-count"}
+    ) or soup.find(
+        "strong",
+        {"title": "Following"}
     )
 
     following = parse_count(following_tag)
@@ -47,6 +58,9 @@ def extract_profile(
     likes_tag = soup.find(
         "strong",
         {"data-e2e": "likes-count"}
+    ) or soup.find(
+        "strong",
+        {"title": "Likes"}
     )
 
     likes = parse_count(likes_tag)
@@ -167,7 +181,6 @@ def parse_count(tag) -> int:
 
 
 def parse_count_text(text: str) -> int:
-
 
     if not text:
         return 0

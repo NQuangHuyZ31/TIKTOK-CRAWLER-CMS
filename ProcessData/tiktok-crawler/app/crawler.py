@@ -2,7 +2,12 @@ import logging
 
 from playwright.async_api import async_playwright
 
-from config import BACKEND_CALLBACK_URL, HEADLESS, normalize_callback_url
+from config import (
+    BACKEND_CALLBACK_URL,
+    DEFAULT_USER_AGENT,
+    HEADLESS,
+    normalize_callback_url,
+)
 from services.callback_service import CallbackService
 from services.profile_crawler import ProfileCrawler
 from utils.browser_utils import go_back, open_url, scroll_page
@@ -14,20 +19,16 @@ from utils.tiktok_utils import (
 
 logger = logging.getLogger(__name__)
 
-# Resource types and analytics domains to block for lightweight crawling.
-BLOCKED_RESOURCE_TYPES = {"media", "websocket"}
+# Resource types and 3rd-party tracker domains to block.
+# Video/audio media streams are aborted to eliminate memory and bandwidth usage.
+# TikTok's internal scripts (such as webmssdk, slardar) are PRESERVED so that React can hydrate profile data.
+BLOCKED_RESOURCE_TYPES = {"media"}
 BLOCKED_URL_PATTERNS = (
-    "analytics.tiktok.com",
-    "mon.tiktokv.com",
-    "mcs.tiktok.com",
     "google-analytics.com",
     "googletagmanager.com",
     "doubleclick.net",
     "facebook.net",
-    "byteactivity",
-    "/monitor/collect",
-    "/web/report",
-    "/slardar/",
+    "analytics.tiktok.com",
 )
 
 
@@ -50,7 +51,7 @@ class TikTokCrawler:
         self.blocked_requests_count = 0
 
     async def _smart_block_route(self, route) -> None:
-        """Smart Blocking: Abort video/audio media streams and analytics trackers to save RAM and network."""
+        """Smart Blocking: Abort video/audio media streams and 3rd-party trackers to save RAM and bandwidth."""
         request = route.request
         url_lower = request.url.lower()
 
@@ -110,7 +111,8 @@ class TikTokCrawler:
                     args=launch_args,
                 )
                 context = await browser.new_context(
-                    viewport={"width": 1280, "height": 720}
+                    viewport={"width": 1280, "height": 720},
+                    user_agent=DEFAULT_USER_AGENT,
                 )
                 # Attach smart blocking route handler to context
                 await context.route("**/*", self._smart_block_route)
@@ -149,7 +151,7 @@ class TikTokCrawler:
                             profile_url=profile_url,
                         )
 
-                        if account:
+                        if account and (account.followers > 0 or account.following > 0 or account.likes > 0):
                             logger.info(
                                 "[Job #%d] [@%s] Extracted profile: %d followers, %d following, %d likes",
                                 job_id,
@@ -163,7 +165,7 @@ class TikTokCrawler:
                                 "[Job #%d] [@%s] Profile extraction failed: %s",
                                 job_id,
                                 username,
-                                crawl_error or "Unknown error",
+                                crawl_error or "0 followers, 0 following, 0 likes extracted (empty DOM)",
                             )
 
                         callback_succeeded = await self._publish_account_result(

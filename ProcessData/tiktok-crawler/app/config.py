@@ -1,7 +1,6 @@
 import os
 from urllib.parse import urlparse, urlunparse
 
-
 # Backend endpoint nhận callback account và trạng thái hoàn tất crawl.
 BACKEND_CALLBACK_URL = os.getenv(
     "BACKEND_CALLBACK_URL",
@@ -14,6 +13,12 @@ CALLBACK_TOKEN = os.getenv("CALLBACK_TOKEN") or None
 # Cấu hình địa chỉ service Python.
 SERVICE_HOST = os.getenv("CRAWLER_HOST", "0.0.0.0")
 SERVICE_PORT = int(os.getenv("CRAWLER_PORT", "8001"))
+
+# Standard desktop User-Agent to avoid TikTok WAF HeadlessChrome detection
+DEFAULT_USER_AGENT = os.getenv(
+    "USER_AGENT",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+)
 
 
 def _resolve_headless_mode() -> bool:
