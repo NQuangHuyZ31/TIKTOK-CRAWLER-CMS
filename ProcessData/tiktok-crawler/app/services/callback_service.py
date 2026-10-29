@@ -16,7 +16,7 @@ class CallbackService:
         self.callback_url = callback_url.rstrip("/")
         self.callback_token = callback_token
 
-    async def send(self, event: str, job_id: int, data: dict) -> None:
+    async def send(self, event: str, job_id: int, data: dict) -> dict:
         payload = {
             "event": event,
             "job_id": job_id,
@@ -36,7 +36,10 @@ class CallbackService:
                         headers=self._build_headers(),
                     )
                     response.raise_for_status()
-                    return
+                    try:
+                        return response.json()
+                    except ValueError:
+                        return {"status_code": response.status_code, "text": response.text}
                 except httpx.HTTPError as error:
                     last_error = self._format_error(error, response)
 
