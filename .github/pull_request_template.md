@@ -3,7 +3,6 @@
 
 ### Task Reference
 - **Task ID**: <!-- e.g., TIK-123 or Issue # -->
-- **Worktree Slot**: Slot 1 (`feature`) | Slot 2 (`fix`) | Slot 3 (`hotfix`) | Slot 4 (`refactor`/`test`) | Slot 5 (`release`/`docs`)
 - **Branch Type**: `feature` | `fix` | `hotfix` | `refactor` | `test` | `release` | `docs` | `chore` | `ci`
 
 ---
@@ -12,7 +11,6 @@
 
 Please verify all items before requesting review:
 
-- [ ] **Worktree Isolation**: Branch developed and tested inside the designated worktree slot (`Slot 1` to `Slot 5` via `.\scripts\agent-worktree.ps1`).
 - [ ] **Branch Naming Standard**: Follows `<type>/<task-id>-<description>` or `release/v<version>`.
 - [ ] **Strict English**: All UI text, commit messages, comments, and identifiers are strictly in English.
 - [ ] **TypeScript Check**: `npm.cmd run check-types` passed with **0 errors**.

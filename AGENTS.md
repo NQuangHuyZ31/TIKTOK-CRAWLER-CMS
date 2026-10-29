@@ -1,54 +1,52 @@
 # AGENTS.md - AI Operating Manual & Invariants
 
 > [!IMPORTANT]
-> **MANDATORY RULES FOR ALL AI AGENTS**: Adhere to worktree slot isolation, strict PR review gates, Draft Release lifecycle, and the **Mandatory Human Approval Gate for Production Deployment (Deploy ONLY when a new release is published)**.
+> **MANDATORY RULES FOR ALL AI AGENTS**: Direct branch workflow, strict Conventional Commits, clean TypeScript and backend test validations, Draft Release lifecycle, and the **Mandatory Human Approval Gate for Production Deployment (Deploy ONLY when a new release is published)**.
 
 ---
 
-## 1. Worktree Protocol & Dedicated Role Matrix
-The root workspace is an **idle anchor** strictly tracking `main`. All dev, commits, testing, and branch switches **MUST** occur inside persistent worktree slots managed by `.\scripts\agent-worktree.ps1`.
+## 1. Branch Workflow (Direct Branch Protocol)
+Work directly in the project workspace on dedicated task branches. Worktree isolation is disabled.
 
-### Dedicated Worktree Slot Matrix for AI Agents
-| Slot | Dedicated Role | Allowed Branch Prefixes | Port Mapping | Purpose & Scope |
-| :---: | :--- | :--- | :--- | :--- |
-| **1** | `feature` | `feature/*` | Laravel: 8010<br>Vite: 5181 | **New Features & Capabilities**: Ingest workflows, UI screens, crawler workers. |
-| **2** | `fix` | `fix/*` | Laravel: 8020<br>Vite: 5182 | **Bug Fixes & Defect Repairs**: Issue resolution, null checks, query optimization. |
-| **3** | `hotfix` | `hotfix/*` | Laravel: 8030<br>Vite: 5183 | **Critical Production Patches**: Emergency security fixes, hot patches for live services. |
-| **4** | `refactor` / `test` | `refactor/*`, `test/*` | Laravel: 8040<br>Vite: 5184 | **Refactoring & Test Automation**: Code cleanup, modularization, Pest/PHPUnit & Vitest. |
-| **5** | `release` / `docs` | `release/*`, `chore/*`, `docs/*`, `ci/*` | Laravel: 8050<br>Vite: 5185 | **Release Packaging & Maintenance**: SemVer bumping, changelog, documentation, CI workflows. |
+### Branch Naming Conventions
+| Prefix | Type | Purpose & Scope |
+| :--- | :--- | :--- |
+| `feature/*` | Feature | New features & capabilities: Ingest workflows, UI screens, crawler workers. |
+| `fix/*` | Bug Fix | Defect repairs: Issue resolution, null checks, query optimization. |
+| `hotfix/*` | Hotfix | Critical production patches: Emergency fixes for live services. |
+| `refactor/*` | Refactoring | Code cleanup, modularization, structure improvements. |
+| `test/*` | Testing | Test automation: Pest/PHPUnit, Vitest. |
+| `release/*`, `chore/*` | Release/Maintenance | SemVer bumping, changelog, dependencies, CI workflows. |
 
-### Worktree CLI Commands for Agent
+### Standard Git Commands for Agent
 ```powershell
-# 1. Inspect all slots, roles, and status
-.\scripts\agent-worktree.ps1 -Action List
+# 1. Ensure latest main and create task branch
+git checkout main
+git pull origin main
+git checkout -b feature/TIK-101-profile-sync
 
-# 2. Switch to a dedicated slot by Role and create branch
-.\scripts\agent-worktree.ps1 -Role feature -Branch "feature/TIK-101-profile-sync" -CreateBranch
-.\scripts\agent-worktree.ps1 -Role fix -Branch "fix/TIK-102-null-author" -CreateBranch
-.\scripts\agent-worktree.ps1 -Role hotfix -Branch "hotfix/SEC-001-api-key" -CreateBranch
-.\scripts\agent-worktree.ps1 -Role refactor -Branch "refactor/clean-routes" -CreateBranch
-.\scripts\agent-worktree.ps1 -Role release -Branch "release/v1.1.0" -CreateBranch
+# 2. Develop and run validation checks
+npm.cmd run check-types
+php artisan test
 
-# 3. Inspect status across all worktrees
-.\scripts\agent-worktree.ps1 -Action Status
+# 3. Commit with Conventional Commits
+git add .
+git commit -m "feat(crawler): add error retry exponential backoff"
 
-# 4. Clean and reset a slot to idle state after PR merge
-.\scripts\agent-worktree.ps1 -Action Clean -Slot 1
+# 4. Push branch to remote
+git push -u origin feature/TIK-101-profile-sync
 ```
 
 ---
 
-## 2. Strict PR Gate (ZERO Direct Push to `main`)
-1. **Agent MUST NEVER push directly to `main`**. Working or committing directly on `main` is strictly prohibited.
+## 2. Pull Request & Merging Standard
+1. **Agent MUST NOT push unreviewed breaking changes directly to `main`**. Always work on task branches.
 2. Push branch to remote origin:
    ```powershell
-   git -C "<worktree-path>" push -u origin <branch>
+   git push -u origin <branch>
    ```
-3. Prepare and output Pull Request targeting `main`:
-   ```powershell
-   .\scripts\agent-pr.ps1 -Role feature -Branch "feature/TIK-101-profile-sync"
-   ```
-4. **🛑 AGENT STOPS**: Hand over the PR link to the human User. **Only the human User reviews and merges the PR into `main`**.
+3. Create Pull Request targeting `main`.
+4. Hand over the PR link to the human User, or merge after all CI/local validations pass if instructed.
 
 ---
 
@@ -56,7 +54,7 @@ The root workspace is an **idle anchor** strictly tracking `main`. All dev, comm
 
 ```mermaid
 flowchart TD
-    A["Agent Dev in Worktree Slot<br>(Slot 1: feature, Slot 2: fix, etc.)"] --> B["Local Checks & Tests<br>(check-types, pest/phpunit)"]
+    A["Agent Dev on Branch<br>(feature/*, fix/*, etc.)"] --> B["Local Checks & Tests<br>(check-types, pest/phpunit)"]
     B --> C["git push origin <branch> & Open PR to main"]
     C --> D["Human Code Review & Merge into main"]
     D --> E["GitHub Action: auto-draft-release.yml<br>(draft: true)"]
@@ -85,9 +83,8 @@ flowchart TD
 - **Commits**: Strict Conventional Commits (`feat(scope): ...`, `fix(scope): ...`, `chore(release): ...`).
 - **TypeScript**: 100% Strict TypeScript. `npm.cmd run check-types` (0 compilation errors). React 19. No untyped `any`.
 - **PowerShell**: On Windows, invoke tools via `npm.cmd` / `npx.cmd`.
-- **Mandatory Documentation Update**:
-  - Update `README.md`: Document new capabilities, commands, or workflows.
-  - Update `PROJECT_SUMMARY.md`: Append a milestone entry detailing the solution, touched files, and test results before reporting completion.
+- **Documentation Update**:
+  - Update `PROJECT_SUMMARY.md`: Append a milestone entry detailing the solution, touched files, and test results when completing significant features.
 
 ### Core Reusability Matrix (DO NOT REINVENT)
 | Layer | Core Asset | Usage Standard |
