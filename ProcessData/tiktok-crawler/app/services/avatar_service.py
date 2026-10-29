@@ -11,26 +11,32 @@ class AvatarService:
     def __init__(self):
         self.project_root = self._find_project_root()
 
-        configured_public_storage = os.getenv("PUBLIC_STORAGE_DIR")
-        if configured_public_storage:
-            self.public_storage_dir = Path(configured_public_storage).resolve()
+        # Save directly to Laravel's public directory (cms-tiktok-crawler/public/)
+        configured_public = (
+            os.getenv("PUBLIC_DIR")
+            or os.getenv("PUBLIC_PATH")
+            or os.getenv("PUBLIC_STORAGE_DIR")
+        )
+        if configured_public:
+            self.public_dir = Path(configured_public).resolve()
         elif self.project_root:
-            self.public_storage_dir = (
+            self.public_dir = (
                 self.project_root
                 / "cms-tiktok-crawler"
-                / "storage"
-                / "app"
                 / "public"
             ).resolve()
         else:
-            self.public_storage_dir = None
+            self.public_dir = None
+
+        # Alias for backward compatibility
+        self.public_storage_dir = self.public_dir
 
         configured_avatar_dir = os.getenv("AVATAR_DIR")
         if configured_avatar_dir:
             self.avatar_dir = Path(configured_avatar_dir).resolve()
-        elif self.public_storage_dir:
+        elif self.public_dir:
             self.avatar_dir = (
-                self.public_storage_dir
+                self.public_dir
                 / "tiktok-accounts"
                 / "avatars"
             ).resolve()
@@ -122,8 +128,8 @@ class AvatarService:
         )
 
         try:
-            if self.public_storage_dir:
-                relative_path = path.relative_to(self.public_storage_dir)
+            if self.public_dir:
+                relative_path = path.relative_to(self.public_dir)
             else:
                 relative_path = path
         except ValueError:
