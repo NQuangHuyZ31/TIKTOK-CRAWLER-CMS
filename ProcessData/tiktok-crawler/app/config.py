@@ -16,6 +16,20 @@ SERVICE_HOST = os.getenv("CRAWLER_HOST", "0.0.0.0")
 SERVICE_PORT = int(os.getenv("CRAWLER_PORT", "8001"))
 
 
+def _resolve_headless_mode() -> bool:
+    """Resolve headless mode from HEADLESS env var, falling back to True in non-GUI Linux environments."""
+    env_headless = os.getenv("HEADLESS")
+    if env_headless is not None:
+        return env_headless.lower() in ("true", "1", "yes")
+    # Default to True when running in Linux environments without a display server (e.g. Docker container)
+    if os.name != "nt" and not os.getenv("DISPLAY"):
+        return True
+    return False
+
+
+HEADLESS = _resolve_headless_mode()
+
+
 def normalize_callback_url(callback_url: str | None) -> str:
     """Ensure local Laravel callbacks use the configured backend port."""
     callback_url = (callback_url or BACKEND_CALLBACK_URL).rstrip("/")
