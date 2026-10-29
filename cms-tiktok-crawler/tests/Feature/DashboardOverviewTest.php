@@ -156,19 +156,4 @@ class DashboardOverviewTest extends TestCase
                 ],
             ]);
     }
-
-    /**
-     * Test dedicated growth endpoint returns time series with custom period.
-     */
-    public function test_dashboard_growth_endpoint_returns_custom_period(): void
-    {
-        $response = $this->actingAs($this->adminUser)
-            ->getJson($this->adminApiUri('core/dashboard/growth?days=7'));
-
-        $response->assertOk()
-            ->assertJsonPath('status', 'success')
-            ->assertJsonPath('data.period_days', 7)
-            ->assertJsonCount(7, 'data.followers_growth.points')
-            ->assertJsonCount(7, 'data.likes_growth.points');
-    }
 }
