@@ -1,5 +1,5 @@
 import logging
-from playwright.async_api import Page
+from playwright.async_api import Page, Response
 
 logger = logging.getLogger(__name__)
 
@@ -7,57 +7,65 @@ logger = logging.getLogger(__name__)
 async def open_url(
     page: Page,
     url: str,
-    timeout: int = 15000,
-    wait_time: int = 3000,
-):
+    wait_until: str = "domcontentloaded",
+    timeout: int = 25000,
+) -> Response | None:
+    """
+    Navigate the browser page to the specified URL.
+
+    Returns the Playwright HTTP Response object so callers can inspect
+    the status code (e.g. 200, 404, 403, 500) and redirect chain.
+    """
     try:
-        await page.goto(
+        response = await page.goto(
             url,
-            wait_until="domcontentloaded",
+            wait_until=wait_until,
             timeout=timeout,
         )
+        return response
     except Exception as error:
-        logger.warning("Navigation warning for %s: %s", url, error)
-
-    # Wait for either TikTok profile stats or feed to appear, or timeout gracefully
-    try:
-        await page.wait_for_selector(
-            'strong[data-e2e="followers-count"], [data-e2e="feed-video"]',
-            timeout=5000,
-        )
-    except Exception:
-        pass
-
-    await page.wait_for_timeout(wait_time)
+        logger.warning("Navigation failed or timed out for %s: %s", url, error)
+        return None
 
 
 async def go_back(
     page: Page,
+    wait_until: str = "domcontentloaded",
     timeout: int = 10000,
-    wait_time: int = 2500,
-):
-    """Return from a profile page to the TikTok feed."""
+) -> None:
+    """Return from a profile or sub-page to the previous page (e.g. TikTok feed)."""
     try:
         await page.go_back(
-            wait_until="domcontentloaded",
+            wait_until=wait_until,
             timeout=timeout,
         )
     except Exception as error:
         logger.warning("Back navigation warning: %s", error)
 
-    await page.wait_for_timeout(wait_time)
-
 
 async def scroll_page(
     page: Page,
     distance: int = 700,
-    wait_time: int = 2500,
-):
-    # Đảm bảo sự kiện scroll được gửi vào feed page, không phải profile page.
-    await page.bring_to_front()
-    await page.mouse.move(640, 360)
-    await page.mouse.wheel(0, distance)
-    await page.keyboard.press("PageDown")
+    wait_time: int = 1500,
+) -> None:
+    """Scroll down the current page (used for feed discovery)."""
+    try:
+        await page.bring_to_front()
+        await page.mouse.move(640, 360)
+        await page.mouse.wheel(0, distance)
+        await page.keyboard.press("PageDown")
+        if wait_time > 0:
+            await page.wait_for_timeout(wait_time)
+    except Exception as error:
+        logger.debug("Scroll page warning: %s", error)
 
-    # TikTok thường cập nhật video bằng JavaScript sau khi nhận wheel/PageDown.
-    await page.wait_for_timeout(wait_time)
+
+async def safe_wait(
+    page: Page,
+    milliseconds: int,
+) -> None:
+    """Pause execution for a specific duration in milliseconds."""
+    try:
+        await page.wait_for_timeout(milliseconds)
+    except Exception:
+        pass

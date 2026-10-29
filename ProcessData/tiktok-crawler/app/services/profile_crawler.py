@@ -1,6 +1,9 @@
+from html import unescape
 import logging
+from bs4 import BeautifulSoup
+from playwright.async_api import Page
 
-from extractor import extract_profile
+from extractor import check_page_type, extract_profile
 from models import TikTokAccount
 from services.avatar_service import AvatarService
 from utils.browser_utils import open_url
@@ -10,53 +13,166 @@ logger = logging.getLogger(__name__)
 
 
 class ProfileCrawler:
+    """
+    Crawls an individual TikTok profile following steps 3 through 7:
+      Step 3: Navigate to profile URL & verify HTTP status / redirect.
+      Step 4: Conditionally wait for SSR data or DOM render.
+      Step 5: Verify page validity (normal profile vs challenge vs 404).
+      Step 6: Extract profile metadata & statistics.
+      Step 7: Validate extracted data and download avatar.
+    """
 
     def __init__(self):
         self.avatar_service = AvatarService()
 
     async def crawl(
         self,
-        page,
+        page: Page,
         username: str,
         profile_url: str,
-    ) -> TikTokAccount:
+    ) -> tuple[TikTokAccount | None, str, str | None]:
+        """
+        Crawl a single TikTok profile.
 
-        await open_url(
-            page,
-            profile_url,
-            wait_time=3000,
-        )
+        Returns:
+            tuple[TikTokAccount | None, str, str | None]:
+              (account, status, error_message)
+              where status is 'success' or 'failed'.
+        """
+        clean_username = normalize_username(username)
 
-        profile = extract_profile(
-            html=await page.content(),
-            profile_url=profile_url,
-        )
+        # ----------------------------------------------------------------------
+        # Step 3: Navigation & HTTP Response Verification
+        # ----------------------------------------------------------------------
+        response = await open_url(page, profile_url, wait_until="domcontentloaded", timeout=25000)
 
-        if profile.username:
-            profile.username = normalize_username(profile.username)
-        elif username:
-            profile.username = normalize_username(username)
+        if response is not None:
+            status_code = response.status
+            if status_code == 404:
+                return None, "failed", f"HTTP 404: TikTok account @{clean_username} not found or deleted"
+            if status_code in (403, 429):
+                return None, "failed", f"HTTP {status_code}: Access forbidden or rate-limited by TikTok"
 
-        if not profile.username:
-            raise RuntimeError(
-                f"Could not extract profile username from {profile_url}"
+        current_url = page.url.lower()
+        if "/login" in current_url or "/verify" in current_url or "challenge" in current_url:
+            return None, "failed", f"Redirected to verification/login page: {page.url}"
+
+        # ----------------------------------------------------------------------
+        # Step 4: Conditional Wait for Profile Render
+        # ----------------------------------------------------------------------
+        await self._wait_for_profile_ready(page, timeout=10000)
+
+        # ----------------------------------------------------------------------
+        # Step 5: Check Page Validity
+        # ----------------------------------------------------------------------
+        html = await page.content()
+        soup = BeautifulSoup(html, "html.parser")
+        page_type = check_page_type(soup, html)
+
+        if page_type == "challenge":
+            page_title = await self._safe_title(page)
+            return None, "failed", f"TikTok challenge/captcha encountered (Page title: '{page_title}')"
+
+        if page_type == "not_found":
+            return None, "failed", f"TikTok account @{clean_username} does not exist or was deleted"
+
+        # ----------------------------------------------------------------------
+        # Step 6: Extract Profile Data (SSR JSON first, DOM fallback)
+        # ----------------------------------------------------------------------
+        account, missing_fields = extract_profile(html, profile_url)
+
+        if account.username:
+            account.username = normalize_username(account.username)
+        elif clean_username:
+            account.username = clean_username
+
+        # ----------------------------------------------------------------------
+        # Step 7: Validate Results
+        # ----------------------------------------------------------------------
+        # If all counts are 0, check if DOM hydration was delayed on slow containers
+        if account.followers == 0 and account.following == 0 and account.likes == 0:
+            if page_type != "private":
+                # Brief secondary wait for DOM hydration in case React was lagging
+                try:
+                    await page.wait_for_selector('strong[data-e2e="followers-count"]', timeout=3000)
+                    rehydrated_html = await page.content()
+                    rehydrated_soup = BeautifulSoup(rehydrated_html, "html.parser")
+                    account, missing_fields = extract_profile(rehydrated_html, profile_url)
+                    if account.username:
+                        account.username = normalize_username(account.username)
+                    elif clean_username:
+                        account.username = clean_username
+                except Exception:
+                    pass
+
+        # Validation evidence check
+        if not account.username:
+            page_title = await self._safe_title(page)
+            return (
+                None,
+                "failed",
+                f"Could not extract username for @{clean_username} (title: '{page_title}', missing: {missing_fields})",
             )
 
-        if profile.avatar_url:
+        # Avatar download
+        if account.avatar_url:
             try:
-                profile.avatar_path = (
-                    await self.avatar_service.download(
-                        page,
-                        profile.username,
-                        profile.avatar_url,
-                    )
+                account.avatar_path = await self.avatar_service.download(
+                    page,
+                    account.username,
+                    account.avatar_url,
                 )
             except Exception as error:
-                logger.warning(
-                    "Could not download avatar for @%s: %s",
-                    profile.username,
-                    error,
-                )
-                profile.avatar_path = None
+                logger.warning("Could not download avatar for @%s: %s", account.username, error)
+                account.avatar_path = None
 
-        return profile
+        logger.info(
+            "[@%s] Extracted profile: %d followers, %d following, %d likes (missing: %s)",
+            account.username,
+            account.followers,
+            account.following,
+            account.likes,
+            missing_fields or "none",
+        )
+
+        return account, "success", None
+
+    @staticmethod
+    async def _wait_for_profile_ready(page: Page, timeout: int = 10000) -> None:
+        """
+        Wait conditionally until either:
+          1. SSR rehydration JSON script is populated with userInfo.
+          2. Profile DOM stats/title elements are mounted.
+          3. Challenge / Captcha / Not-found elements appear.
+        """
+        try:
+            await page.wait_for_function(
+                """
+                () => {
+                    // 1. Challenge or Captcha
+                    if (document.querySelector('.captcha_verify_container, #captcha-verify-image, .verify-center, [id*="verify"]')) return true;
+                    // 2. SSR Data Script with content
+                    const rehydration = document.getElementById('__UNIVERSAL_DATA_FOR_REHYDRATION__');
+                    if (rehydration && rehydration.textContent && rehydration.textContent.includes('userInfo')) return true;
+                    const sigi = document.getElementById('SIGI_STATE');
+                    if (sigi && sigi.textContent && sigi.textContent.includes('UserModule')) return true;
+                    // 3. Profile DOM elements
+                    if (document.querySelector('strong[data-e2e="followers-count"], h1[data-e2e="user-title"], h2[data-e2e="user-subtitle"]')) return true;
+                    // 4. Not found
+                    if (document.querySelector('[data-e2e="user-not-found"]')) return true;
+                    return false;
+                }
+                """,
+                timeout=timeout,
+            )
+        except Exception:
+            # If wait_for_function times out, proceed to extraction anyway
+            pass
+
+    @staticmethod
+    async def _safe_title(page: Page) -> str:
+        """Safely retrieve the page title without throwing."""
+        try:
+            return await page.title()
+        except Exception:
+            return ""
