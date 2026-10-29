@@ -305,5 +305,69 @@ class TestTikTokCrawlerSmartBlocking(unittest.TestCase):
         self.assertEqual(self.crawler.blocked_requests_count, initial_blocked_count)
 
 
+class TestCrawlerCallbackResilience(unittest.TestCase):
+    """Test resilient callback mechanism ensuring 100% database synchronization."""
+
+    def setUp(self):
+        self.crawler = TikTokCrawler(callback_url="http://localhost:8000")
+
+    def test_account_model_normalizes_status(self):
+        """Account status must always be active or inactive for Laravel validation."""
+        from models import TikTokAccount
+
+        acc1 = TikTokAccount(username="user1", status="private")
+        self.assertEqual(acc1.status, "active")
+
+        acc2 = TikTokAccount(username="user2", status="banned")
+        self.assertEqual(acc2.status, "active")
+
+        acc3 = TikTokAccount(username="user3", status="inactive")
+        self.assertEqual(acc3.status, "inactive")
+
+        acc4 = TikTokAccount(username="user4", status="active")
+        self.assertEqual(acc4.status, "active")
+
+    def test_publish_account_result_resilient_fallback_on_422(self):
+        """When primary callback fails (e.g. 422), fallback must deliver sanitized failure event."""
+        from models import TikTokAccount
+
+        account = TikTokAccount(username="khaby.lame", followers=163000000, likes=2691757508)
+        self.crawler.callback_service = MagicMock()
+
+        # First call fails (simulating 422 validation error on primary payload),
+        # second call succeeds (the fallback failure event).
+        self.crawler.callback_service.send = AsyncMock(
+            side_effect=[
+                RuntimeError("Callback failed with HTTP 422: {'errors': {'account.status': ['invalid']}}"),
+                {"message": "Crawler result stored successfully.", "result_id": 99},
+            ]
+        )
+
+        ok, response = asyncio.run(
+            self.crawler._publish_account_result(
+                job_id=5,
+                username="@khaby.lame",
+                profile_url="https://www.tiktok.com/@khaby.lame",
+                account=account,
+                status="success",
+                error_message=None,
+            )
+        )
+
+        self.assertFalse(ok)
+        self.assertTrue(response.get("fallback_recorded"))
+        self.assertEqual(response.get("response", {}).get("result_id"), 99)
+        self.assertEqual(self.crawler.callback_service.send.call_count, 2)
+
+        # Inspect fallback call payload
+        fallback_call = self.crawler.callback_service.send.call_args_list[1]
+        event_name, job_id, payload = fallback_call.args
+        self.assertEqual(event_name, "account")
+        self.assertEqual(job_id, 5)
+        self.assertEqual(payload["status"], "failed")
+        self.assertEqual(payload["username"], "khaby.lame")
+        self.assertIn("Callback delivery error", payload["error_message"])
+
+
 if __name__ == "__main__":
     unittest.main()
