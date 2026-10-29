@@ -3465,3 +3465,27 @@ Centralized project assets previously confined inside `cms-tiktok-crawler/` subf
 ### 3. Verification Test Results
 - **TypeScript**: `npm.cmd --prefix cms-tiktok-crawler run check-types` (0 errors).
 - **Backend Tests**: `php artisan test` (145 passed / 145 tests, 786 assertions, 100%).
+
+
+## Milestone: Fix AvatarService IndexError in Deployed Container Environment
+- **Date**: 2026-10-29
+- **Author**: Antigravity AI Assistant
+- **Branch**: `fix/crawler-avatar-service-index-error`
+
+### 1. Root Cause & Solution
+- **Bug**: In `ProcessData/tiktok-crawler/app/services/avatar_service.py`, `self.project_root` was hardcoded to `Path(__file__).resolve().parents[4]`. When deployed inside a Docker container (where the app root is `/app`), `/app/app/services/avatar_service.py` has only 4 parent levels (`/app/app/services`, `/app/app`, `/app`, `/`). Accessing index `[4]` raised `IndexError: 4`, causing `TikTokCrawler` and the crawl job background task to crash immediately on `/api/crawl-jobs/start`.
+- **Solution**:
+  1. Replaced hardcoded `parents[4]` indexing with a safe upward traversal `_find_project_root()` that searches parent directories for `cms-tiktok-crawler` without risk of `IndexError`.
+  2. Supported flexible environment variable overrides (`AVATAR_DIR` and `PUBLIC_STORAGE_DIR`).
+  3. Made avatar downloading gracefully optional: if deployed in an isolated container without shared storage (`avatar_dir` is `None`), `download()` returns `None`, safely preserving the original CDN `avatar_url` without throwing errors or breaking web UI avatar rendering.
+  4. Added comprehensive unit tests in `ProcessData/tiktok-crawler/tests/test_avatar_service.py` to prevent regressions.
+
+### 2. Files Modified & Added
+- `ProcessData/tiktok-crawler/app/services/avatar_service.py`: Fixed `_find_project_root()` and added robust storage resolution.
+- `ProcessData/tiktok-crawler/tests/test_avatar_service.py`: Added automated unit test suite.
+- `PROJECT_SUMMARY.md`: Recorded milestone entry.
+
+### 3. Verification Test Results
+- **Python Unit Tests**: `python ProcessData/tiktok-crawler/tests/test_avatar_service.py` (4 passed / 4 tests, 0.013s, 100%).
+- **TypeScript**: `npm.cmd run check-types` (0 errors).
+- **Backend Tests**: `php artisan test` (145 passed / 145 tests, 786 assertions, 100%).

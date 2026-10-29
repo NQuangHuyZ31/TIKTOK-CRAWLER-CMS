@@ -263,7 +263,7 @@ if (-not $Branch) {
 }
 
 # Branch naming check
-$standardPattern = "^(feature|fix|hotfix|release|refactor|test|docs|chore|ci)/[a-zA-Z0-9._-]+$"
+$standardPattern = "^(feature|fix|hotfix|release|refactor|test|docs|chore|ci)(/[a-zA-Z0-9._-]+)?$"
 $isIdleBranch = ($Branch -match "^worktree-[1-5]-.*$") -or ($Branch -match "^worktree-[1-5]$") -or ($Branch -eq "main") -or ($Branch -eq "develop")
 
 if (-not $isIdleBranch -and ($Branch -notmatch $standardPattern)) {

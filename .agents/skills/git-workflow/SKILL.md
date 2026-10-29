@@ -9,8 +9,13 @@ description: Git branching conventions, Conventional Commits formatting, direct 
 
 Work directly in the root workspace on dedicated task branches. Worktree isolation is disabled.
 
+> [!IMPORTANT]
+> **Single Branch Policy (No Description Sub-branches)**:
+> When working on bug fixes, do NOT create branches with descriptions such as `fix/<description>` or `fix/TIK-...`.
+> Always use the direct branch name `fix` (or `feature`, `refactor`, `hotfix`) directly to avoid branch proliferation.
+
 ```powershell
-# 1. Fetch latest and create task branch
+# 1. Fetch latest and switch/create task branch (e.g. 'fix')
 git checkout main
 git pull origin main
 git checkout -b feature/TIK-101-new-feature

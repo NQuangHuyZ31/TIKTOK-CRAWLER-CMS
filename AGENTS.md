@@ -9,21 +9,26 @@
 Work directly in the project workspace on dedicated task branches. Worktree isolation is disabled.
 
 ### Branch Naming Conventions
+> [!IMPORTANT]
+> **Single Branch Policy (No Description Sub-branches)**:
+> When fixing bugs, agents MUST NOT append descriptions to the branch (e.g. do NOT create `fix/<description>` or `fix/TIK-...`).
+> Always checkout and push directly to branch `fix` (or `feature`, `refactor`) to prevent repository branch sprawl:
+> `git checkout fix` (or `git checkout -B fix origin/main`).
 | Prefix | Type | Purpose & Scope |
 | :--- | :--- | :--- |
-| `feature/*` | Feature | New features & capabilities: Ingest workflows, UI screens, crawler workers. |
-| `fix/*` | Bug Fix | Defect repairs: Issue resolution, null checks, query optimization. |
-| `hotfix/*` | Hotfix | Critical production patches: Emergency fixes for live services. |
-| `refactor/*` | Refactoring | Code cleanup, modularization, structure improvements. |
-| `test/*` | Testing | Test automation: Pest/PHPUnit, Vitest. |
-| `release/*`, `chore/*` | Release/Maintenance | SemVer bumping, changelog, dependencies, CI workflows. |
+| `feature` | Feature | New features & capabilities: Ingest workflows, UI screens, crawler workers. |
+| `fix` | Bug Fix | Defect repairs: Issue resolution, null checks, query optimization. Use **strictly `fix`** directly (do NOT append `/<description>` or `/<ticket>` to avoid branch proliferation). |
+| `hotfix` | Hotfix | Critical production patches: Emergency fixes for live services. |
+| `refactor` | Refactoring | Code cleanup, modularization, structure improvements. |
+| `test` | Testing | Test automation: Pest/PHPUnit, Vitest. |
+| `release/*`, `chore` | Release/Maintenance | SemVer bumping, changelog, dependencies, CI workflows. |
 
 ### Standard Git Commands for Agent
 ```powershell
-# 1. Ensure latest main and create task branch
+# 1. Ensure latest main and switch to task branch (e.g. 'fix')
 git checkout main
 git pull origin main
-git checkout -b feature/TIK-101-profile-sync
+git checkout -B fix origin/main
 
 # 2. Develop and run validation checks
 npm.cmd run check-types
@@ -31,10 +36,10 @@ php artisan test
 
 # 3. Commit with Conventional Commits
 git add .
-git commit -m "feat(crawler): add error retry exponential backoff"
+git commit -m "fix(crawler): add error retry exponential backoff"
 
 # 4. Push branch to remote
-git push -u origin feature/TIK-101-profile-sync
+git push -u origin fix
 ```
 
 ---
