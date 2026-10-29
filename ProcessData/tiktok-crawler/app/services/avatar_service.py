@@ -1,41 +1,73 @@
+import logging
 import os
 from pathlib import Path
 from urllib.parse import urlparse
+
+logger = logging.getLogger(__name__)
 
 
 class AvatarService:
 
     def __init__(self):
-        self.project_root = Path(__file__).resolve().parents[4]
-        self.public_storage_dir = (
-            self.project_root
-            / "cms-tiktok-crawler"
-            / "storage"
-            / "app"
-            / "public"
-        )
-        default_avatar_dir = (
-            self.public_storage_dir
-            / "tiktok-accounts"
-            / "avatars"
-        )
-        configured_avatar_dir = os.getenv("AVATAR_DIR")
-        self.avatar_dir = Path(
-            configured_avatar_dir
-            or default_avatar_dir
-        ).resolve()
+        self.project_root = self._find_project_root()
 
-        self.avatar_dir.mkdir(
-            parents=True,
-            exist_ok=True,
-        )
+        configured_public_storage = os.getenv("PUBLIC_STORAGE_DIR")
+        if configured_public_storage:
+            self.public_storage_dir = Path(configured_public_storage).resolve()
+        elif self.project_root:
+            self.public_storage_dir = (
+                self.project_root
+                / "cms-tiktok-crawler"
+                / "storage"
+                / "app"
+                / "public"
+            ).resolve()
+        else:
+            self.public_storage_dir = None
+
+        configured_avatar_dir = os.getenv("AVATAR_DIR")
+        if configured_avatar_dir:
+            self.avatar_dir = Path(configured_avatar_dir).resolve()
+        elif self.public_storage_dir:
+            self.avatar_dir = (
+                self.public_storage_dir
+                / "tiktok-accounts"
+                / "avatars"
+            ).resolve()
+        else:
+            self.avatar_dir = None
+
+        if self.avatar_dir:
+            try:
+                self.avatar_dir.mkdir(
+                    parents=True,
+                    exist_ok=True,
+                )
+            except OSError as error:
+                logger.warning(
+                    "Could not create avatar directory %s: %s",
+                    self.avatar_dir,
+                    error,
+                )
+                self.avatar_dir = None
+
+    @staticmethod
+    def _find_project_root(start_path: Path | None = None) -> Path | None:
+        """Search upwards for the project root containing 'cms-tiktok-crawler'."""
+        current = (start_path or Path(__file__)).resolve()
+        for parent in current.parents:
+            if (parent / "cms-tiktok-crawler").is_dir():
+                return parent
+        return None
 
     async def download(
         self,
         page,
         username: str,
         avatar_url: str,
-    ) -> str:
+    ) -> str | None:
+        if not self.avatar_dir:
+            return None
 
         response = await page.request.get(
             avatar_url
@@ -90,7 +122,10 @@ class AvatarService:
         )
 
         try:
-            relative_path = path.relative_to(self.public_storage_dir)
+            if self.public_storage_dir:
+                relative_path = path.relative_to(self.public_storage_dir)
+            else:
+                relative_path = path
         except ValueError:
             relative_path = path
 

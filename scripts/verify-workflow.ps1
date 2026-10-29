@@ -56,7 +56,16 @@ if (-not $GitRoot -or -not (Test-Path $GitRoot)) {
 # 1. Branch Naming Regex Validation
 # -----------------------------------------------------------------------------
 Write-Host "--- Test Suite 1: Branch Naming Convention ---" -ForegroundColor Yellow
-$branchPattern = "^(feature|fix|hotfix|release|refactor|test|docs|chore|ci)/[a-zA-Z0-9._-]+$"
+$branchPattern = "^(feature|fix|hotfix|release|refactor|test|docs|chore|ci)(/[a-zA-Z0-9._-]+)?$"
+
+Assert-Test "Valid short fix branch 'fix'" `
+    ("fix" -match $branchPattern)
+
+Assert-Test "Valid short feature branch 'feature'" `
+    ("feature" -match $branchPattern)
+
+Assert-Test "Valid short refactor branch 'refactor'" `
+    ("refactor" -match $branchPattern)
 
 Assert-Test "Valid feature branch 'feature/TIK-101-proxy-rotation'" `
     ("feature/TIK-101-proxy-rotation" -match $branchPattern)
