@@ -1,73 +1,125 @@
-# CMS TikTok Crawler Platform
+# CMS TikTok Crawler
 
-Enterprise Monorepo Platform for distributed TikTok account data aggregation, analytics, and administrative management.
+> Enterprise platform for distributed TikTok account intelligence, batch profile aggregation, analytics, and administrative management.
 
-Built with **Laravel 11/13 + React 19 SPA (Ant Design 5 & Tailwind CSS)** and an asynchronous **Python FastAPI + Playwright** crawling engine, orchestrated for automated deployment on **Render.com**.
-
----
-
-## 🏗️ Repository Architecture
-
-The monorepo encompasses three primary components:
-1. **`cms-tiktok-crawler/`**: Backend REST API (Modular PHP 8.3 Ureka Architecture) and compiled React 19 Admin SPA.
-2. **`ProcessData/tiktok-crawler/`**: High-performance Python FastAPI crawler service utilizing Playwright.
-3. **`docker/` & `render.yaml`**: Multi-container Docker deployment architecture supporting web, queue worker, crawler worker, and cron scheduler on Render.com.
+Built with **Laravel 11/13 + React 19 SPA (Ant Design 5 & Tailwind CSS)** following the modular **Ureka Enterprise Architecture**, powered by an asynchronous **Python FastAPI + Playwright** crawler service.
 
 ---
 
-## 🚀 Development Workflow & CI/CD Standards
+## 🌟 Key Product Capabilities
 
-Development follows strict quality, concurrency, and release security controls:
+- **Multi-Source Data Ingestion**:
+  - Ingest profiles by list of TikTok usernames or direct profile URLs.
+  - Periodic automated re-crawling of existing accounts in database.
+  - Automated avatar downloading and local/cloud storage synchronization.
+- **Asynchronous Crawl Execution**:
+  - Non-blocking execution orchestrated via background job queues.
+  - Real-time webhook callbacks reporting progress, success, and error diagnostics.
+- **Enterprise Management Portal**:
+  - Unified Single Page Application (SPA) with modern, responsive Ant Design 5 UI.
+  - Role-Based Access Control (RBAC) with granular permission matrices (`viewer`, `editor`, `manager`, `admin`).
+  - Interactive KPI dashboard showcasing growth metrics, interaction ratios, and job histories.
+- **Modular Monorepo Architecture**:
+  - Independent business modules (`Core`, `Crawler`, `TiktokAccount`, `User`, `Role`, `Permission`, `Auth`, `System`, `API`).
+  - Scoped DOM dynamic asset resolution and API client decoupling.
 
-### 1. Isolated Git Worktree Protocol
-The root repository is strictly an **idle anchor** tracking `main`. All tasks, feature branches, and test executions run inside persistent worktree slots:
-```powershell
-# List available slots and port mappings
-.\scripts\agent-worktree.ps1 -Action List
+---
 
-# Allocate a slot and branch off origin/main
-.\scripts\agent-worktree.ps1 -WorktreeIndex 1 -Branch "feature/PROJ-101-proxy-rotation" -CreateBranch
+## 🏗️ Architecture & Technology Stack
+
+| Layer | Technologies & Frameworks | Description |
+| :--- | :--- | :--- |
+| **Backend REST API** | Laravel 11/13, PHP 8.3, Composer | Modular Ureka design with thin controllers, repository patterns, and dynamic route registry. |
+| **Frontend Portal** | React 19, TypeScript, Ant Design 5, Redux Toolkit, Tailwind CSS | Modular Scoped DOM Single Page Application with strict type safety. |
+| **Crawler Engine** | Python 3.10+, FastAPI, Playwright, Uvicorn | Headless browser automation handling dynamic content, anti-bot bypass, and avatar extraction. |
+| **Database & Cache** | MySQL 8.0 / SQLite, Redis, PDO | Relational data persistence, session management, and job queues. |
+| **Deployment** | Docker, Nginx, PHP-FPM, Render.com | Multi-container architecture with production health probes (`/api/health`). |
+
+---
+
+## 📦 Modular Business Domains
+
+The platform backend and frontend are organized into discrete Ureka modules:
+
+- **`Core`**: Foundation infrastructure, dynamic route resolvers, Scoped DOM asset injectors, and shared UI components (`ListLayout`, `Table`, `CardKPI`, `ResourceForm`).
+- **`Crawler`**: Job session management, execution triggers, batch status tracking, and crawl results inspection.
+- **`TiktokAccount`**: TikTok account registry, profile stats (followers, following, likes), bio, verified status, and avatar storage.
+- **`Auth`**: Authentication, token lifecycle, profile management, and password reset workflows.
+- **`User`**: System account management, status toggle, and role/permission assignments.
+- **`Role` & `Permission`**: Role hierarchies, granular ability gates, and permission matrix editor.
+- **`System`**: Audit logging, system diagnostics, and configuration management.
+- **`API`**: Public webhook endpoints for ingestion callbacks from external crawler workers.
+
+---
+
+## 🚀 Quick Start Guide
+
+### Prerequisites
+- **PHP** >= 8.3 with extensions (`pdo_mysql`, `mbstring`, `bcmath`, `zip`, `intl`, `pcntl`, `opcache`, `gd`, `redis`)
+- **Composer** >= 2.6
+- **Node.js** >= 20.x & **NPM**
+- **Python** >= 3.10 (for crawler service)
+- **Database**: MySQL 8.0+ or SQLite
+
+### 1. Backend & Admin Setup
+```bash
+# Navigate to the CMS module
+cd cms-tiktok-crawler
+
+# Copy environment configuration
+cp .env.example .env
+
+# Install backend dependencies
+composer install
+
+# Generate application encryption key
+php artisan key:generate
+
+# Run database migrations and seed initial accounts
+php artisan migrate --seed
+
+# Install frontend dependencies
+npm ci
+
+# Start development servers
+php artisan serve    # Backend listening on http://localhost:8000
+npm run dev          # Frontend Vite HMR on http://localhost:5173
 ```
-👉 Read the [Git Worktree Architecture Manual](cms-tiktok-crawler/docs/development/git-worktree-workflow.md).
 
-### 2. Standard Branch Naming & Conventional Commits
-- Branches: `<type>/<task-id>-<description>` (`feature/`, `fix/`, `hotfix/`, `release/v<version>`, `refactor/`, `test/`, `docs/`, `chore/`, `ci/`).
-- Commits: Conventional Commits in clear English (`feat:`, `fix:`, `chore:`, etc.).
-- Direct pushes to `main` are strictly forbidden; all integration requires Pull Requests via `.\scripts\agent-pr.ps1 -Branch "<branch>"`.
-- Merging into `main` requires human review and passing CI status checks.
+### 2. Python Crawler Setup
+```bash
+# Navigate to the crawler service
+cd ProcessData/tiktok-crawler
 
-### 3. CI/CD Quality Gates (`.github/workflows/ci.yml`)
-Every push and PR undergoes automated validation:
-- **Strict TypeScript Verification**: `npm.cmd run check-types` (0 errors required).
-- **Backend Test Suite**: `php artisan test` (100% passing required).
-- **PHP Code Style**: `vendor/bin/pint --test`.
-- **Database Migration Validation**: SQLite in-memory test migrations.
-- **Security Audits**: Automated Composer and NPM vulnerability scanning.
-👉 Read the [CI/CD Pipeline Architecture](cms-tiktok-crawler/docs/deployment/ci-cd-architecture.md).
+# Install Python requirements
+pip install -r requirements.txt
 
-### 4. Semantic Versioning & Draft Release Automation (`auto-draft-release.yml`)
-- Bumping the version in `cms-tiktok-crawler/package.json` and merging into `main` automatically prepares a **GitHub Draft Release** with packaged archive assets and conventional commits changelog.
-- **A Draft Release NEVER deploys to production.**
-👉 Read the [Release Management Manual](cms-tiktok-crawler/docs/deployment/release-management.md).
+# Install Playwright browser binaries
+playwright install chromium
 
-### 5. Controlled Render Production Deployment (`deploy.yml`)
-- Production deployment activates **exclusively** upon publishing an approved GitHub Release (`vX.Y.Z`) or through an authorized `workflow_dispatch`.
-- Triggers deploy hooks across `cms-tiktok-web`, `cms-tiktok-crawler`, and `cms-tiktok-queue`.
-- Post-deployment automated health check loop probes `https://cms-tiktok-web.onrender.com/api/health` verifying HTTP 200 and healthy status.
-- Automated rollback procedures are provided if health checks fail.
-👉 Read the [Render Production Deployment Playbook](cms-tiktok-crawler/docs/deployment/render-deployment.md).
+# Launch the crawler service
+python app/main.py   # Crawler listening on http://0.0.0.0:8001
+```
+
+### 3. Accessing the Platform
+- **Admin Portal**: Open `http://localhost:8000/admin`
+- **Default Administrator Credentials**:
+  - **Email**: `admin@cms.com`
+  - **Password**: `password`
+- **Health Check Endpoint**: `http://localhost:8000/api/health`
 
 ---
 
-## 📚 Complete Documentation Index
+## 🐳 Docker & Production Deployment
 
-| Documentation Guide | Scope |
-| :--- | :--- |
-| [AI Agent Manual (`AGENTS.md`)](AGENTS.md) | Mandatory agent operating instructions and core reusability rules |
-| [Worktree Workflow Manual](cms-tiktok-crawler/docs/development/git-worktree-workflow.md) | Multi-agent concurrency, persistent worktrees, and branch lifecycle |
-| [CI/CD Architecture](cms-tiktok-crawler/docs/deployment/ci-cd-architecture.md) | GitHub Actions workflows, quality checks, and branch protection |
-| [Release Management](cms-tiktok-crawler/docs/deployment/release-management.md) | Semantic Versioning, Draft Releases, changelog generation |
-| [Render Deployment Playbook](cms-tiktok-crawler/docs/deployment/render-deployment.md) | Infrastructure as Code, health checks, rollback procedures |
-| [Core Module Guide](cms-tiktok-crawler/docs/CORE_MODULE_GUIDE.md) | Inventory of Core reusable components, hooks, and traits |
-| [Coding Standards](cms-tiktok-crawler/docs/CODING_STANDARDS.md) | TypeScript, PSR-12, architectural standards |
-| [Testing Guide](cms-tiktok-crawler/docs/TESTING_GUIDE.md) | PHPUnit, Pest, and frontend testing practices |
+The platform is fully containerized and deployable via Docker:
+
+- **Web Container (`docker/Dockerfile.web`)**: Packages Nginx, PHP-FPM 8.3, and pre-compiled React SPA assets.
+- **Crawler Container (`docker/Dockerfile.crawler`)**: Packages Python FastAPI with Playwright headless Chromium.
+- **Worker Container (`docker/Dockerfile.worker`)**: Runs background queues (`php artisan queue:work`) and scheduler.
+- **Blueprint Specification (`render.yaml`)**: Cloud configuration ready for deployment on Render.com with automated `/api/health` checks.
+
+---
+
+## 📄 License & Maintenance
+Proprietary software maintained for enterprise TikTok account monitoring operations.
