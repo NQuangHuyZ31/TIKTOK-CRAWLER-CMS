@@ -217,7 +217,25 @@ class TikTokCrawler:
 
                         if crawl_from_feed:
                             # Return to the feed before discovering the next video
-                            await go_back(page)
+                            back_ok = await go_back(page)
+                            if not back_ok:
+                                logger.info(
+                                    "[Job #%d] Back navigation failed or has no history; reloading feed",
+                                    job_id,
+                                )
+                                try:
+                                    await open_url(
+                                        page,
+                                        self.HOME_URL,
+                                        wait_until="domcontentloaded",
+                                        timeout=20000,
+                                    )
+                                except Exception as err:
+                                    logger.warning(
+                                        "[Job #%d] Could not reload feed: %s",
+                                        job_id,
+                                        err,
+                                    )
                             await scroll_page(page)
                 finally:
                     await context.close()

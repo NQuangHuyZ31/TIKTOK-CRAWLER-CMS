@@ -6,7 +6,7 @@ from playwright.async_api import Page
 from extractor import check_page_type, extract_profile
 from models import TikTokAccount
 from services.avatar_service import AvatarService
-from utils.browser_utils import open_url
+from utils.browser_utils import NavigationError, open_url
 from utils.tiktok_utils import normalize_username
 
 logger = logging.getLogger(__name__)
@@ -44,7 +44,11 @@ class ProfileCrawler:
         # ----------------------------------------------------------------------
         # Step 3: Navigation & HTTP Response Verification
         # ----------------------------------------------------------------------
-        response = await open_url(page, profile_url, wait_until="domcontentloaded", timeout=25000)
+        try:
+            response = await open_url(page, profile_url, wait_until="domcontentloaded", timeout=25000)
+        except NavigationError as nav_error:
+            logger.warning("[@%s] Navigation error: %s", clean_username, nav_error)
+            return None, "failed", f"Navigation failed for @{clean_username}: {nav_error.message}"
 
         if response is not None:
             status_code = response.status
@@ -52,6 +56,8 @@ class ProfileCrawler:
                 return None, "failed", f"HTTP 404: TikTok account @{clean_username} not found or deleted"
             if status_code in (403, 429):
                 return None, "failed", f"HTTP {status_code}: Access forbidden or rate-limited by TikTok"
+            if status_code >= 500:
+                return None, "failed", f"HTTP {status_code}: TikTok server error"
 
         current_url = page.url.lower()
         if "/login" in current_url or "/verify" in current_url or "challenge" in current_url:
