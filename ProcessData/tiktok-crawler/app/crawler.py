@@ -237,6 +237,10 @@ class TikTokCrawler:
                                         err,
                                     )
                             await scroll_page(page)
+
+                        # Clean up memory between crawl targets
+                        import gc
+                        gc.collect()
                 finally:
                     await context.close()
 

@@ -28,6 +28,9 @@ class TestExtractor(unittest.TestCase):
         self.assertEqual(parse_stat_value("15.5K"), 15500)
         self.assertEqual(parse_stat_value(0), 0)
         self.assertEqual(parse_stat_value("0"), 0)
+        # 32-bit signed integer overflow recovery: -1603209788 rolls over to 2691757508 (2.69B)
+        self.assertEqual(parse_stat_value(-1603209788), 2691757508)
+        self.assertEqual(parse_stat_value("-1603209788"), 2691757508)
         self.assertIsNone(parse_stat_value(None))
         self.assertIsNone(parse_stat_value(""))
         self.assertIsNone(parse_stat_value("invalid_stat"))
@@ -47,8 +50,8 @@ class TestExtractor(unittest.TestCase):
                         "stats": {
                             "followerCount": 163000000,
                             "followingCount": 82,
-                            "heart": 2700000000,
-                            "heartCount": 2691752966,
+                            "heart": -1603209788,  # Legacy signed 32-bit overflow
+                            "heartCount": 2691757508,
                         },
                     }
                 }
@@ -70,7 +73,7 @@ class TestExtractor(unittest.TestCase):
         self.assertEqual(account.username, "khaby.lame")
         self.assertEqual(account.followers, 163000000)
         self.assertEqual(account.following, 82)
-        self.assertEqual(account.likes, 2691752966)
+        self.assertEqual(account.likes, 2691757508)
         self.assertEqual(account.avatar_url, "https://p16-sign.tiktokcdn.com/avatar.jpg")
         self.assertEqual(missing, [])
 

@@ -10,26 +10,6 @@ from models import TikTokAccount
 
 logger = logging.getLogger(__name__)
 
-# Known signatures indicating anti-bot challenge or verification
-CHALLENGE_PATTERNS = (
-    "slardar_us_waf",
-    "verify-center",
-    "captcha_verify_container",
-    "secsdk-captcha",
-    "verify-bar-close",
-    "captcha-verify-image",
-    "tiktok-verify-page",
-)
-
-# Signatures indicating deleted or non-existent TikTok account
-NOT_FOUND_PATTERNS = (
-    "user-not-found",
-    "couldn't find this account",
-    "account not found",
-    "user not found",
-    "cannot find this account",
-)
-
 
 class ExtractorPageError(Exception):
     """Raised when the page content is invalid for extraction (e.g. challenge or 404)."""
@@ -39,49 +19,64 @@ class ExtractorPageError(Exception):
         self.page_type = page_type
 
 
-def check_page_type(soup: BeautifulSoup, html: str) -> str:
+def check_page_type(soup: BeautifulSoup, html: str | None = None) -> str:
     """
-    Classify the TikTok page content.
+    Classify the TikTok page content safely using parsed DOM and SSR scripts.
+    Avoids string duplication (html.lower()) to prevent MemoryError and avoids
+    matching i18n translation maps in JavaScript bundles.
 
     Returns one of:
-      - 'challenge': Anti-bot WAF or CAPTCHA challenge.
-      - 'not_found': Account does not exist or was deleted.
+      - 'profile': Valid profile page with verified profile indicators (checked first!).
       - 'private': Account is marked private.
-      - 'profile': Valid profile page with verified profile indicators.
+      - 'challenge': Anti-bot CAPTCHA or WAF challenge DOM elements.
+      - 'not_found': Account does not exist or was deleted (DOM elements).
       - 'unknown': Unrecognized structure.
     """
-    html_lower = html.lower()
-
-    if any(pattern in html_lower for pattern in CHALLENGE_PATTERNS):
-        return "challenge"
-
-    if any(pattern in html_lower for pattern in NOT_FOUND_PATTERNS):
-        return "not_found"
-
-    if "this account is private" in html_lower:
-        return "private"
-
-    # Strict profile markers (presence of profile components, not generic scripts)
+    # 1. First priority: Check if valid profile markers exist in DOM
     if (
         soup.find("strong", {"data-e2e": "followers-count"})
         or soup.find("h1", {"data-e2e": "user-title"})
         or soup.find("h2", {"data-e2e": "user-subtitle"})
     ):
+        if soup.find(string=lambda s: s and "this account is private" in s.lower()):
+            return "private"
         return "profile"
 
-    # SSR Rehydration data containing user detail / userInfo
+    # 2. Check if valid SSR rehydration JSON has user profile data
     rehydration_script = soup.find("script", id="__UNIVERSAL_DATA_FOR_REHYDRATION__")
     if rehydration_script:
         text = rehydration_script.string or rehydration_script.get_text() or ""
         if '"userInfo"' in text or '"webapp.user-detail"' in text:
+            # Check if TikTok explicit error code indicates user not found (code 10221)
+            if '"statusCode":10221' in text or '"statusCode": 10221' in text:
+                return "not_found"
             return "profile"
 
-    # SIGI_STATE specifically containing UserModule
+    # 3. Check SIGI_STATE for UserModule
     sigi_script = soup.find("script", id="SIGI_STATE")
     if sigi_script:
         text = sigi_script.string or sigi_script.get_text() or ""
         if '"UserModule"' in text:
             return "profile"
+
+    # 4. Check for explicit not-found DOM elements (NEVER match in <script> i18n maps)
+    if (
+        soup.find(attrs={"data-e2e": "user-not-found"})
+        or soup.find(class_=lambda c: c and "user-not-found" in c)
+        or soup.find("p", string=lambda s: s and "couldn't find this account" in s.lower())
+    ):
+        return "not_found"
+
+    # 5. Check for explicit challenge/CAPTCHA DOM elements
+    if (
+        soup.find(
+            class_=lambda c: c
+            and any(p in c for p in ("captcha_verify_container", "verify-center", "secsdk-captcha"))
+        )
+        or soup.find(id=lambda i: i and ("captcha-verify" in i or "verify-ele" in i))
+        or soup.find(attrs={"data-e2e": "sec-sdk-iframe"})
+    ):
+        return "challenge"
 
     return "unknown"
 
@@ -115,22 +110,41 @@ def parse_stat_value(val) -> int | None:
     Parse stat value from int, float, or string representations.
     Returns None if the value is missing or unparseable.
     Preserves 0 when value is legitimately zero.
+    Handles signed 32-bit integer overflow (e.g. TikTok heart exceeding 2.14B).
     """
     if val is None:
         return None
+
+    parsed: int | None = None
     if isinstance(val, (int, float)):
-        return int(val)
-    if isinstance(val, str):
+        parsed = int(val)
+    elif isinstance(val, str):
         val_clean = val.strip().replace(",", "")
         if not val_clean:
             return None
-        if val_clean.isdigit():
-            return int(val_clean)
-        res = parse_count_text(val_clean)
-        # Verify if 0 was parsed from a legitimate '0' or unparseable string
-        if res == 0 and not val_clean.startswith("0"):
-            return None
-        return res
+        if val_clean.startswith("-") and val_clean[1:].isdigit():
+            parsed = int(val_clean)
+        elif val_clean.isdigit():
+            parsed = int(val_clean)
+        else:
+            res = parse_count_text(val_clean)
+            # Verify if 0 was parsed from a legitimate '0' or unparseable string
+            if res == 0 and not val_clean.startswith("0"):
+                return None
+            parsed = res
+
+    if parsed is not None:
+        # Check for signed 32-bit integer overflow:
+        # When likes exceed 2,147,483,647 (2^31 - 1), TikTok legacy 32-bit integer rolls over into negative.
+        # Adding 2^32 (4,294,967,296) reconstructs the true unsigned count.
+        if parsed < 0:
+            overflow_adjusted = parsed + (1 << 32)
+            if overflow_adjusted > 0:
+                parsed = overflow_adjusted
+            else:
+                parsed = 0
+        return parsed
+
     return None
 
 
@@ -168,6 +182,7 @@ def find_profile_data_in_json(value, target_username: str | None = None) -> dict
     """
     Recursively search for user stats and metadata in embedded TikTok JSON.
     If target_username is provided, verifies that candidate username matches.
+    Prioritizes statsV2 to avoid 32-bit integer overflow.
     """
     target_clean = target_username.strip().lstrip("@").lower() if target_username else None
 
@@ -179,11 +194,15 @@ def find_profile_data_in_json(value, target_username: str | None = None) -> dict
             cand_user = user.get("uniqueId") or user.get("unique_id")
 
             if _is_matching_user(cand_user, target_clean):
-                stats = user_info.get("stats") or user_info.get("statsV2") or {}
+                stats_v1 = user_info.get("stats") or {}
+                stats_v2 = user_info.get("statsV2") or {}
+                # Merge statsV2 over stats_v1 to prioritize 64-bit counts
+                stats = {**stats_v1, **stats_v2}
+
                 followers = parse_stat_value(_extract_first_present(stats, "followerCount", "follower_count"))
                 following = parse_stat_value(_extract_first_present(stats, "followingCount", "following_count"))
                 likes = parse_stat_value(
-                    _extract_first_present(stats, "heartCount", "heart", "likesCount", "likes_count")
+                    _extract_first_present(stats, "heartCount", "likesCount", "heart", "likes_count")
                 )
                 avatar_url = (
                     user.get("avatarLarger")
@@ -220,7 +239,7 @@ def find_profile_data_in_json(value, target_username: str | None = None) -> dict
                 followers = parse_stat_value(_extract_first_present(u_stats, "followerCount", "follower_count"))
                 following = parse_stat_value(_extract_first_present(u_stats, "followingCount", "following_count"))
                 likes = parse_stat_value(
-                    _extract_first_present(u_stats, "heartCount", "heart", "likesCount", "likes_count")
+                    _extract_first_present(u_stats, "heartCount", "likesCount", "heart", "likes_count")
                 )
                 avatar_url = (
                     u_info.get("avatarLarger")
@@ -242,7 +261,7 @@ def find_profile_data_in_json(value, target_username: str | None = None) -> dict
             followers = parse_stat_value(_extract_first_present(value, "followerCount", "follower_count"))
             following = parse_stat_value(_extract_first_present(value, "followingCount", "following_count"))
             likes = parse_stat_value(
-                _extract_first_present(value, "heartCount", "heart", "likesCount", "likes_count")
+                _extract_first_present(value, "heartCount", "likesCount", "heart", "likes_count")
             )
             return {
                 "followers": followers,
@@ -428,6 +447,7 @@ def extract_profile(
     1. Classifies page type before extraction, rejecting challenges and not-found pages.
     2. Verifies candidate username against target_username to prevent cross-account contamination.
     3. Accurately distinguishes between legitimate 0 counts and missing fields.
+    4. Automatically recovers from signed 32-bit integer overflows in likes count.
 
     Raises:
         ExtractorPageError: If page is a challenge or non-existent account.
