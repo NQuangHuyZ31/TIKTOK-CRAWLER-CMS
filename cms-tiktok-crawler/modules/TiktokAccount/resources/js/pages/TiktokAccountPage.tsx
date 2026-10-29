@@ -109,7 +109,7 @@ export default function TiktokAccountPage() {
 			onPageChange={(page, per_page) => dispatch(setParams({ page, per_page }))}
 			renderColumns={{
 				id: (id) => <span style={{ fontWeight: 500, color: '#1677ff' }}>#{id}</span>,
-				username: (_, record) => <AccountColumn username={record.username} nickname={record.nickname} imgPath={record.avatar_path || record.avatar_url} />,
+				username: (_, record) => <AccountColumn username={record.username} nickname={record.nickname} imgPath={record.avatar_path} />,
 				status: (status, record) => (
 					<StatusDropdown
 						status={status}

@@ -37,22 +37,25 @@ class CrawlResultResource extends JsonResource
 
     private function resolveAvatarUrl(): ?string
     {
-        if (!$this->avatar_path) {
-            return $this->avatar_url;
+        if (empty($this->avatar_path)) {
+            return null;
         }
 
+        // Never allow external URLs for display - strictly use local public images
         if (str_starts_with($this->avatar_path, 'http://') || str_starts_with($this->avatar_path, 'https://')) {
-            return $this->avatar_path;
+            return null;
         }
 
-        if (file_exists(public_path($this->avatar_path))) {
-            return asset($this->avatar_path);
+        $cleanPath = ltrim($this->avatar_path, '/\\');
+
+        if (file_exists(public_path($cleanPath))) {
+            return asset($cleanPath);
         }
 
-        if (Storage::disk('public')->exists($this->avatar_path)) {
-            return Storage::disk('public')->url($this->avatar_path);
+        if (Storage::disk('public')->exists($cleanPath)) {
+            return Storage::disk('public')->url($cleanPath);
         }
 
-        return asset($this->avatar_path);
+        return null;
     }
 }

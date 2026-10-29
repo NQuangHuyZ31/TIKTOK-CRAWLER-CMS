@@ -42,7 +42,8 @@ class CrawlJobSeeder extends Seeder
             [
                 'tiktok_account_id' => $tiktokAccount?->id,
                 'nickname' => 'TikTok Official',
-                'avatar_url' => 'https://p16-sign-va.tiktokcdn.com/tos-maliva-avt-0068/tiktok_official.jpeg',
+                'avatar_url' => null,
+                'avatar_path' => 'tiktok-accounts/avatars/tiktok.jpg',
                 'profile_url' => 'https://www.tiktok.com/@tiktok',
                 'followers_count' => 78500000,
                 'following_count' => 520,
@@ -57,7 +58,8 @@ class CrawlJobSeeder extends Seeder
             [
                 'tiktok_account_id' => $khabyAccount?->id,
                 'nickname' => 'Khabane lame',
-                'avatar_url' => 'https://p16-sign-va.tiktokcdn.com/tos-maliva-avt-0068/khaby_lame.jpeg',
+                'avatar_url' => null,
+                'avatar_path' => 'tiktok-accounts/avatars/khaby.lame.jpg',
                 'profile_url' => 'https://www.tiktok.com/@khaby.lame',
                 'followers_count' => 162000000,
                 'following_count' => 75,
