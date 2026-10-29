@@ -1,62 +1,58 @@
-Develop TikTok profile crawler.
+# TikTok Crawler Service
 
-Avatar được lấy từ trang profile và tải vào thư mục
-`cms-tiktok-crawler/storage/app/public/tiktok-account/avatars`. Đường dẫn
-public tương đối và URL gốc được gửi trong callback để backend lưu vào
-database. Có thể ghi đè thư mục lưu avatar bằng biến môi trường `AVATAR_DIR`.
+A high-performance, container-ready Python microservice for crawling TikTok profile metadata, metrics, and avatars without official API keys or paid captcha services.
 
-## Service API
+📖 **Detailed Documentation:** [docs/TIKTOK_CRAWLER_SERVICE.md](../../docs/TIKTOK_CRAWLER_SERVICE.md)
 
-Start the crawler service:
+---
 
+## ⚡ Quick Start
+
+### 1. Requirements & Setup
+```bash
+cd ProcessData/tiktok-crawler
+pip install -r requirements.txt
+playwright install chromium
 ```
 
-Sau khi cập nhật code, phải dừng process Python đang chạy và khởi động lại;
-Uvicorn không tự reload vì service đang chạy với `reload=False`.bash
+### 2. Start the Service
+```bash
 python app/main.py
 ```
+The FastAPI server will be listening at `http://0.0.0.0:8001`.
 
-The backend starts a crawl with `POST /api/crawl-jobs/start`:
+### 3. Run Unit Tests
+```bash
+python -m unittest discover -s tests
+```
 
+---
+
+## 🚀 Key Architectural Highlights
+
+* **8-Step Lifecycle Workflow:** Clean separation of concerns between navigation, rendering, validation, extraction, and callback.
+* **Anti-Bot Evasion Layer:** Automated Blink feature masking, `navigator.webdriver` removal, and standard desktop Chrome fingerprinting.
+* **Smart Blocking:** Aborts video/audio media streams and external trackers to keep container RAM usage below 512MB on Render.
+* **Dual-Tier Extraction:** Prioritizes exact integer Server-Side Rendered (SSR) JSON scripts (`__UNIVERSAL_DATA_FOR_REHYDRATION__` and `SIGI_STATE`) with fallback to DOM selectors.
+* **Strict Evidence Verification:** Distinguishes between legitimate `0` metrics and missing fields, verifies candidate username against target to prevent cross-account contamination, and classifies private profiles explicitly.
+* **Resilient Webhook Callbacks:** Automatic 3-attempt exponential backoff for Laravel CMS events (`account` and `completed`).
+
+---
+
+## 📡 API Overview
+
+### Inbound: Start Crawl Job
+* `POST /api/crawl-jobs/start` (Response: `202 Accepted`)
 ```json
 {
-  "job_id": 12,
-  "usernames": ["huyak"]
+  "job_id": 1,
+  "source_type": "usernames",
+  "usernames": ["khaby.lame"],
+  "callback_url": "https://cms-tiktok-web.onrender.com/admin/api/public/crawler"
 }
 ```
 
-Mặc định crawler gửi callback về backend tại:
-
-```text
-http://localhost:8000/api/crawlers
-```
-
-Cấu hình nằm trong [app/config.py](app/config.py). Có thể ghi đè bằng biến
-môi trường:
-
-```powershell
-$env:BACKEND_CALLBACK_URL = "http://localhost:8000/api/crawlers"
-$env:CALLBACK_TOKEN = "your-token"
-$env:CRAWLER_HOST = "0.0.0.0"
-$env:CRAWLER_PORT = "8001"
-```
-
-Request vẫn có thể gửi `callback_url` và `callback_token` riêng cho từng job;
-giá trị trong request sẽ được ưu tiên hơn cấu hình mặc định. Nếu gửi
-`http://localhost/api/crawlers` không có port, service tự chuẩn hóa thành
-`http://localhost:8000/api/crawlers`.
-
-There are three separate crawl modes. Each request must use exactly one:
-
-- `source_type: "usernames"` with `usernames`: crawl each username.
-- `source_type: "urls"` with `urls`: crawl each profile URL.
-- `source_type: "count"` with `total_accounts`: crawl that number of
-  accounts from the TikTok feed.
-
-`source_type` is optional for backward compatibility and is inferred from the
-provided data, but sending it is recommended.
-The service responds with `202` and runs the job in the background. For each
-account it sends an `account` event to
-`POST {callback_url}/crawl-jobs/{job_id}/events`. At the end it sends a
-`completed` event containing the counters and final status.
-	
+### Outbound: Webhook Events
+* `POST {callback_url}/crawl-jobs/{job_id}/events`
+  * Event `account`: Delivered per crawled profile (status: `success`, `private`, or `failed`).
+  * Event `completed`: Delivered once all targets are processed with summary counts.
