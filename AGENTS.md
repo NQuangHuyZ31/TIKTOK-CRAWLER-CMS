@@ -1,129 +1,45 @@
-# AGENTS.md - AI Agent Operating Manual & Repository Infrastructure Guidelines
+# AGENTS.md - AI Operating Manual & Invariants
 
 > [!IMPORTANT]
-> **MANDATORY READING FOR ALL AI AGENTS BEFORE EXECUTING ANY TASK!**
-> Adhere strictly to the Worktree protocol, English-only standard, Core reusability matrix (DO NOT REINVENT), Pull Request protocol (NO DIRECT PUSH TO MAIN), Draft Release lifecycle, and the **Mandatory Human Approval Gate for Production Deployment**.
+> **MANDATORY RULES FOR ALL AI AGENTS**: Adhere to worktree isolation, strict PR review gates, Draft Release lifecycle, and the **Mandatory Human Approval Gate for Production Deployment**.
 
----
+## 1. Core Invariants & Workflow
+1. **Worktree Protocol**: Root (`E:\Urekamedia\project1`) is an idle anchor tracking `main`. All dev, commits, tests, and branch switches MUST occur inside persistent worktree slots (`project1-worktree-1` to `5`) via `.\scripts\agent-worktree.ps1`.
+2. **Branch Naming**: Allowed prefixes: `feature/`, `fix/`, `hotfix/`, `release/v<version>`, `refactor/`, `test/`, `docs/`, `chore/`, `ci/`.
+3. **Strict PR Gate (ZERO Push to `main`)**:
+   - Agent **MUST NEVER push directly to `main`**.
+   - Push task/release branch: `git push -u origin <branch>` (e.g. `release/v1.0.0`).
+   - Open PR targeting `main` via `.\scripts\agent-pr.ps1 -Branch "<branch>"`.
+   - **🛑 AGENT STOPS**: Hand over PR link. **Only the human User reviews and merges PR into `main`**.
+4. **Draft Release Generation**: Merging PR into `main` automatically triggers `.github/workflows/auto-draft-release.yml` to package artifacts and create a **GitHub Draft Release**.
+5. **🛑 MANDATORY HUMAN RELEASE GATE**:
+   - **Agent is STRICTLY FORBIDDEN from publishing a Release or triggering production deployment**.
+   - Agent halts. **Only the human User reviews draft notes on GitHub Releases and clicks "Publish release"** to trigger Render deployment.
+6. **Code Standards**:
+   - English-only text, comments, docstrings, and Conventional Commits.
+   - 100% Strict TypeScript: `npm.cmd run check-types` (0 errors). React 19. No untyped `any`.
+   - Windows PowerShell: Execute via `npm.cmd` / `npx.cmd`.
+   - Direct imports only: `import ListLayout from '@core/components/ListLayout'`. No barrel `index.ts`.
+7. **Mandatory Documentation Update**: Upon completing any task, feature, bugfix, or workflow change:
+   - **Update `README.md`**: Document newly added capabilities, commands, environment variables, or architecture changes.
+   - **Update `PROJECT_SUMMARY.md`**: Append a milestone entry detailing the solution, touched files, and test results before reporting completion.
 
-## 1. Non-Negotiable Core Invariants
-
-1. **Step 0 - Worktree-Exclusive Protocol**: Run `.\scripts\agent-worktree.ps1 -Action List` or `git worktree list` first. The root repository (`E:\Urekamedia\project1`) is strictly an idle anchor tracking `main`. All development, commits, tests, and branch switches MUST occur inside persistent worktree slots (`project1-worktree-1` to `project1-worktree-5`).
-2. **Standardized Branch Naming**: Branches MUST follow the standard convention:
-   - `feature/<task-id>-<description>`
-   - `fix/<task-id>-<description>`
-   - `hotfix/<task-id>-<description>`
-   - `release/<task-id>-<description>` (e.g. `release/v1.0.0`)
-   - `refactor/<task-id>-<description>`
-   - `test/<task-id>-<description>`
-   - `docs/<task-id>-<description>`
-   - `chore/<task-id>-<description>`
-   - `ci/<task-id>-<description>`
-3. **Strict Branching & Pull Request Gate (ZERO Direct Push to `main`)**:
-   - The Agent or developer **MUST NEVER push directly to `main`**.
-   - All release candidates MUST be pushed to a `release/v<version>` branch (e.g. `release/v1.0.0`).
-   - The Agent opens a Pull Request targeting `main` via `.\scripts\agent-pr.ps1 -Branch "release/v<version>"`.
-   - **The Agent MUST STOP and hand over the PR link to the human User.**
-   - **Only the human User may review the PR, verify CI checks pass, and merge the PR into `main` on GitHub.**
-4. **Automated Draft Release Generation on Merge**:
-   - Merging the Pull Request into `main` automatically triggers GitHub Action `auto-draft-release.yml` to build frontend assets, package `dist/*.tar.gz`, compile the changelog, and create/update a **GitHub Draft Release**.
-5. **CRITICAL: Mandatory Human Review & Manual Release Publication Gate**:
-   - **The Agent is STRICTLY FORBIDDEN from publishing a Release or triggering production deployment.**
-   - The Agent must **STOP** once the Draft Release is generated and provide the Draft Release link to the repository owner.
-   - **Only the human User may review the draft notes and manually click "Publish release"** on GitHub.
-6. **Strict English Requirement**: All UI text (button labels, headers, placeholders, toasts, errors), code comments, docstrings, variable names, PR descriptions, and commit messages MUST be in English.
-7. **100% Strict TypeScript**: React 19 + TypeScript. No untyped `any`. Run `npm.cmd run check-types` with 0 compilation errors.
-8. **Windows PowerShell Execution**: Always invoke `npm.cmd` or `npx.cmd` in PowerShell to prevent permission blocks.
-9. **Direct Imports Only (No Barrel Files)**: Never create barrel re-export `index.ts` files (`components/index.ts`, `hooks/index.ts`). Always use direct imports: `import ListLayout from '@core/components/ListLayout'`.
-10. **Controlled Render Production Deployment**:
-   - Production deployment is triggered ONLY when a release is explicitly published (`release: types: [published]`) by the human User or via authorized manual workflow dispatch.
-   - Deployments execute automated post-deployment health checks against `https://cms-tiktok-web.onrender.com/api/health` and verify the commit SHA.
-   - If health checks fail, the deployment is marked FAILED and rollback guidance is emitted.
-11. **Security & Secrets**: Never commit `.env`, credentials, API tokens, or secrets. Never disable security checks.
-12. **Mandatory `PROJECT_SUMMARY.md` Update**: Append a new milestone entry in [`PROJECT_SUMMARY.md`](PROJECT_SUMMARY.md) summarizing the technical solution, touched files, and test results before reporting completion.
-
----
-
-## 2. Core Reusability Matrix (DO NOT REINVENT — REUSE EXISTING ASSETS!)
-
-> [!CAUTION]
-> **STOP AND INSPECT BEFORE CODING!**
-> Never write custom listing wrappers, table action columns, manual API loading try-catches, or redundant repository methods. **Always reuse these Core assets:**
-
-| Domain / Layer | Asset & Import Path | Mandatory Usage Standard |
+## 2. Core Reusability Matrix (DO NOT REINVENT)
+| Layer | Core Asset | Usage Standard |
 | :--- | :--- | :--- |
-| **Listing Pages** | [`ListLayout`](modules/Core/resources/js/components/ListLayout.tsx)<br>`@core/components/ListLayout` | **MANDATORY** for all entity list pages. Encapsulates header, search, filter slots, create button, and table embedding. Do NOT create custom wrapper divs. |
-| **Tables & Actions** | [`TableComponent`](modules/Core/resources/js/components/Table.tsx)<br>`@core/components/Table` | **MANDATORY**. Always use native action props: `onEdit`, `onDelete`, `canDelete`, `extraActions`. Do NOT write manual `actionColumns` with Popconfirm/Tooltip boilerplate. |
-| **Async API Actions** | [`useAction`](modules/Core/resources/js/hooks/useAction.ts)<br>`@core/hooks/useAction` | **MANDATORY** for single/row actions (delete, toggle status, trigger). Automatically handles loading state, toasts (`message.success`/`error`), and reload callbacks. Do NOT write manual `try/catch` with `useState(loading)`. |
-| **Create/Edit Forms** | [`ResourceForm`](modules/Core/resources/js/components/ResourceForm.tsx)<br>[`CustomModal`](modules/Core/resources/js/components/CustomModal.tsx) | Standardized form controls and modal dialogs. |
-| **KPI & UI Metrics** | [`CardKPI`](modules/Core/resources/js/components/CardKPI.tsx)<br>[`StatusTag`](modules/Core/resources/js/components/StatusTag.tsx)<br>[`NumericRangeFilter`](modules/Core/resources/js/components/NumericRangeFilter.tsx) | Metric cards, status pills, and min/max numeric range filters. |
-| **RBAC / Authorization** | [`PermissionGate`](modules/Core/resources/js/components/PermissionGate.tsx)<br>[`usePermission`](modules/Core/resources/js/hooks/usePermission.ts) | UI permission checks: `<PermissionGate module="user" action="delete">` or `const { can } = usePermission()`. |
-| **State Management** | Redux Slice & Thunks | Entity lists, filters, pagination, and modal state MUST use Redux (`store/<domain>/`). NEVER clutter pages with 5+ local `useState` hooks. |
-| **Backend Controllers** | [`BaseController`](modules/Core/src/Http/Controllers/BaseController.php)<br>`src/Http/Controllers/` | **MUST extend** `BaseController`. Declare `$modelClass`, `$resourceClass`, `$searchableColumns`, `$filterableColumns`. Thin controllers only. |
-| **Form Requests** | `src/Http/Requests/` | Isolate input validation rules into dedicated Form Request classes. |
-| **Custom Middleware** | `src/Http/Middleware/` | Custom HTTP middleware (e.g. [`CheckModulePermission`](modules/Core/src/Http/Middleware/CheckModulePermission.php)). |
-| **Backend Repositories** | [`BaseRepository`](modules/Core/src/Repositories/BaseRepository.php)<br>`src/Repositories/` | **MUST extend** `BaseRepository`. Query strictly via `$this->model` (`$this->model->where(...)`). **ZERO redundant overrides** of base methods (`findById`, `all`, `create`, `update`, `delete`). |
+| **Listings** | `@core/components/ListLayout` | **Mandatory** for entity listing pages. No custom wrapper divs. |
+| **Tables** | `@core/components/Table` | **Mandatory**. Use native `onEdit`, `onDelete`, `extraActions`. |
+| **Actions** | `@core/hooks/useAction` | **Mandatory** for row actions (delete, toggle). Handles toast/loading. |
+| **Forms/Modals** | `@core/components/ResourceForm`, `CustomModal` | Standard form controls and modal dialogs. |
+| **KPI/Tags** | `@core/components/CardKPI`, `StatusTag`, `NumericRangeFilter` | Standard dashboard and metric cards. |
+| **RBAC** | `@core/components/PermissionGate`, `usePermission` | Permission gates: `<PermissionGate module="x" action="y">`. |
+| **State** | Redux (`store/<domain>/`) | All entity lists, filters, pagination MUST use Redux. No state clutter. |
+| **Backend** | `BaseController`, `BaseRepository` | Thin controllers and repos strictly extending Base. Zero redundant overrides. |
 
----
-
-## 3. Step-by-Step AI Agent Execution Protocol
-
-```mermaid
-flowchart TD
-    A[Step 0: Worktree Inspection] --> B[Step 1: Create Task/Release Branch in Slot]
-    B --> C[Step 2: Implement Changes & Reuse Core]
-    C --> D[Step 3: Strict Local Validation]
-    D --> E[Step 4: Commit with Conventional Commits]
-    E --> F[Step 5: Agent Pushes Branch to origin - NEVER main]
-    F --> G[Step 6: Agent Opens Pull Request to main]
-    G --> H["🛑 STOP & HANDOFF 1: Agent halts with PR link"]
-    H --> I["👤 USER ACTION 1: Review PR diff & merge into main"]
-    I --> J[Step 7: GitHub Action Auto Generates Draft Release]
-    J --> K["🛑 STOP & HANDOFF 2: Draft Release link provided"]
-    K --> L["👤 USER ACTION 2: Review notes & click 'Publish release'"]
-    L --> M[Step 8: Render Production Deploy & Health Check]
-```
-
-1. **Step 0 - Select Worktree Slot**:
-   ```powershell
-   .\scripts\agent-worktree.ps1 -Action List
-   .\scripts\agent-worktree.ps1 -WorktreeIndex 1 -Branch "release/v1.0.0" -CreateBranch
-   ```
-2. **Step 1 - Navigate to Worktree Module Workspace**:
-   ```powershell
-   cd E:\Urekamedia\project1-worktree-1\cms-tiktok-crawler
-   ```
-3. **Step 2 - Development**:
-   Follow Core Reusability Matrix and architectural guidelines. Keep English UI and comments only.
-4. **Step 3 - Local Validation**:
-   ```powershell
-   npm.cmd run check-types               # 0 TypeScript compilation errors
-   php artisan test                      # 100% backend tests passing
-   ```
-5. **Step 4 - Conventional Commit**:
-   ```powershell
-   git commit -m "chore(release): prepare v1.0.0 release candidate"
-   ```
-6. **Step 5 & 6 - Push Release Branch & Open PR (Never push directly to main)**:
-   Execute the automated agent PR workflow from root:
-   ```powershell
-   cd E:\Urekamedia\project1
-   .\scripts\agent-pr.ps1 -Branch "release/v1.0.0"
-   ```
-7. **Step 7 - Agent Halts & User Merges PR**:
-   The Agent halts and gives the PR link to the User. The User inspects the PR diff, verifies CI status, and clicks **Merge pull request** into `main`.
-8. **Step 8 - Automatic Draft Release Generation**:
-   The merge into `main` automatically triggers `.github/workflows/auto-draft-release.yml`. A **GitHub Draft Release** is generated/updated with distribution assets and changelog.
-9. **Step 9 - Human Manual Release Publication & Deploy**:
-   The User reviews the Draft Release at `https://github.com/NQuangHuyZ31/TIKTOK-CRAWLER-CMS/releases` and manually clicks **Publish release** to trigger Render deployment and post-deployment health check.
-
----
-
-## 4. Documentation References
-
-- **Git Worktree Workflow**: [`docs/development/git-worktree-workflow.md`](docs/development/git-worktree-workflow.md)
-- **CI/CD Pipeline Architecture**: [`docs/deployment/ci-cd-architecture.md`](docs/deployment/ci-cd-architecture.md)
-- **Release Management & SemVer**: [`docs/deployment/release-management.md`](docs/deployment/release-management.md)
-- **Render Production Deployment**: [`docs/deployment/render-deployment.md`](docs/deployment/render-deployment.md)
-- **Core Module Guide**: [`docs/CORE_MODULE_GUIDE.md`](docs/CORE_MODULE_GUIDE.md)
-- **Testing Guide**: [`docs/TESTING_GUIDE.md`](docs/TESTING_GUIDE.md)
+## 3. Deep Documentation References
+- Worktree Guide: `docs/development/git-worktree-workflow.md`
+- CI/CD Architecture: `docs/deployment/ci-cd-architecture.md`
+- Release Management: `docs/deployment/release-management.md`
+- Render Production Playbook: `docs/deployment/render-deployment.md`
+- Core Module Guide: `docs/CORE_MODULE_GUIDE.md` | Testing: `docs/TESTING_GUIDE.md`
+- Agent Skills: `.agents/skills/` (`core-reusability-promoter`, `git-workflow`, etc.)
