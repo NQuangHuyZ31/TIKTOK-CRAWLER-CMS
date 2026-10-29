@@ -2,8 +2,8 @@
 
 ## 1. Branch & Git Invariants (Direct Branch Protocol)
 - **Task Branches**: Always work on dedicated task branches.
-- **Single Branch Policy**: Use base branch names directly (`fix`, `feature`, `refactor`). NEVER create sub-branches with descriptions (e.g. do NOT use `fix/<description>` or `fix/TIK-...`).
-- **No Direct Push to Main**: Always push to task branch (`git push -u origin fix`) and create PR targeting `main`.
+- **Single Branch Policy**: Use base branch names directly (`fix`, `feature`, `refactor`, `hotfix`, `test`, `chore`). NEVER create sub-branches with descriptions (e.g. do NOT use `fix/<description>` or `fix/TIK-...`).
+- **No Direct Push to Main**: Always push to task branch (`git push -u origin <branch>`) and create PR targeting `main`.
 - **Commits**: Strict Conventional Commits in English (`feat(scope): ...`, `fix(scope): ...`, `chore: ...`).
 
 ## 2. Quality & Deployment Gates

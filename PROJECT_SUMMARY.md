@@ -1,5 +1,8 @@
 # CMS TikTok Crawler - Project Summary & Architecture
 
+> [!NOTE]
+> Detailed historical architecture and earlier milestones (3,300+ lines) are archived in [`docs/archive/historical-milestones.md`](docs/archive/historical-milestones.md) and [`docs/archive/PROJECT_SUMMARY_ARCHIVE.md`](docs/archive/PROJECT_SUMMARY_ARCHIVE.md).
+
 ## 1. System Overview
 Enterprise modular TikTok crawler and management platform adhering to the **Ureka Architecture**:
 - **Backend**: Laravel 12 (PHP 8.3+) with modular DDD (`modules/Core`, `modules/Auth`, `modules/Crawler`, `modules/TiktokAccount`). Dynamic route resolution via `DynamicRouteResovle`.
@@ -19,7 +22,6 @@ All in-depth technical runbooks and architecture specifications reside in `docs/
 - **Coding Conventions**: [`docs/CODING_STANDARDS.md`](file:///E:/Urekamedia/TIKTOK-CRAWLER/docs/CODING_STANDARDS.md)
 - **Git & Release Protocol**: [`AGENTS.md`](file:///E:/Urekamedia/TIKTOK-CRAWLER/AGENTS.md)
 - **Historical Milestones (1–50)**: [`docs/archive/historical-milestones.md`](file:///E:/Urekamedia/TIKTOK-CRAWLER/docs/archive/historical-milestones.md)
-- **Legacy Architecture Details**: [`docs/archive/legacy-architecture-details.md`](file:///E:/Urekamedia/TIKTOK-CRAWLER/docs/archive/legacy-architecture-details.md)
 
 ---
 
@@ -32,19 +34,20 @@ powershell scripts/verify-workflow.ps1 # Workflow and release gate verification
 
 ---
 
-## 4. Recent Milestones
-
-### Milestone: Single Branch Standardization for Task Workflows
-- **Date**: 2026-10-29 | **Branch**: `fix`
-- Enforced single-branch policy (`fix`, `feature`, `refactor`) with zero description sub-branches to prevent branch sprawl.
-- Updated `AGENTS.md`, `scripts/verify-workflow.ps1` (35/35 tests pass), and `scripts/agent-worktree.ps1`.
+## 4. Active Milestone Registry
 
 ### Milestone: Fix AvatarService IndexError in Container Deployment
 - **Date**: 2026-10-29 | **Branch**: `fix`
-- Replaced hardcoded `parents[4]` with dynamic `_find_project_root()` in `ProcessData/tiktok-crawler/app/services/avatar_service.py`.
-- Graceful avatar handling when deployed without shared volume; added automated unit tests.
+- **Scope**: Replaced hardcoded `parents[4]` with dynamic `_find_project_root()` in `ProcessData/tiktok-crawler/app/services/avatar_service.py`. Supported graceful fallback when container lacks shared volume. Added Python automated unit test suite.
 
-### Milestone: Project-Wide Centralization of .agents, docs, and PROJECT_SUMMARY.md
-- **Date**: 2026-10-29 | **Branch**: `main`
-- Centralized `.agents/skills/`, `docs/`, and `PROJECT_SUMMARY.md` at repository root.
-- Removed subfolder duplicates and enabled git tracking for agent skills.
+### Milestone: Single Branch Standardization for Task Workflows
+- **Date**: 2026-10-29 | **Branch**: `fix`
+- **Scope**: Enforced single-branch policy (`fix`, `feature`, `refactor`) with zero description sub-branches to prevent branch sprawl. Updated `AGENTS.md` and `scripts/verify-workflow.ps1`.
+
+### Milestone: Token Efficiency & Compact Agent Optimization
+- **Date**: 2026-10-29 | **Branch**: `refactor`
+- **Scope**: Compacted `AGENTS.md` from 10KB down to ~1.8KB, archived legacy 3,300-line documentation to `docs/archive/`, streamlined agent skills.
+
+### Milestone: Playwright Headless Dynamic Resolution & Render Crawler Config
+- **Date**: 2026-10-29 | **Branch**: `feature`
+- **Scope**: Dynamic headless resolution (`_resolve_headless_mode()`), container stability flags (`--no-sandbox`, `--disable-dev-shm-usage`, `--disable-gpu`), and Render deployment alignment.

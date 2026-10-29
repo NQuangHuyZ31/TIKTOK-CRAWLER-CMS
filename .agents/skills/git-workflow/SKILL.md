@@ -3,7 +3,7 @@ name: git-workflow
 description: Direct branch protocol, Conventional Commits, and pre-commit checks.
 ---
 
-# Git & GitHub Workflow Standards
+# Git Workflow Standards
 
 ## 1. Direct Branch Protocol
 
@@ -11,8 +11,8 @@ Work directly in the root workspace on dedicated task branches. Worktree isolati
 
 > [!IMPORTANT]
 > **Single Branch Policy (No Description Sub-branches)**:
-> When working on bug fixes, do NOT create branches with descriptions such as `fix/<description>` or `fix/TIK-...`.
-> Always use the direct branch name `fix` (or `feature`, `refactor`, `hotfix`) directly to avoid branch proliferation.
+> When working on bug fixes or features, do NOT create branches with descriptions such as `fix/<description>` or `fix/TIK-...`.
+> Always use the direct branch name (`fix`, `feature`, `refactor`, `hotfix`, `test`, `chore`) directly to avoid branch proliferation.
 
 ```powershell
 # 1. Fetch latest and switch/create task branch (e.g. 'fix')
