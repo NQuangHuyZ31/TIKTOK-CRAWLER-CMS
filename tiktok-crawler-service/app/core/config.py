@@ -1,14 +1,26 @@
 import os
 from pathlib import Path
 from urllib.parse import urlparse, urlunparse
-from dotenv import load_dotenv
 
 SERVICE_ROOT = Path(__file__).resolve().parent.parent.parent
-load_dotenv(SERVICE_ROOT / ".env", override=True)
 
-# Server binding
+try:
+    from dotenv import load_dotenv
+
+    load_dotenv(SERVICE_ROOT / ".env", override=True)
+except ImportError:
+    env_file = SERVICE_ROOT / ".env"
+    if env_file.is_file():
+        for raw_line in env_file.read_text(encoding="utf-8", errors="ignore").splitlines():
+            line = raw_line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, val = line.split("=", 1)
+            os.environ.setdefault(key.strip(), val.strip().strip("'\""))
+
+# Server binding (supports CRAWLER_PORT or Render's PORT)
 SERVICE_HOST = os.getenv("CRAWLER_HOST", "0.0.0.0")
-SERVICE_PORT = int(os.getenv("CRAWLER_PORT", "8001"))
+SERVICE_PORT = int(os.getenv("CRAWLER_PORT") or os.getenv("PORT") or "8001")
 
 # Fixed Worker Pool configuration
 WORKER_COUNT = int(
