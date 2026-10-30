@@ -25,12 +25,47 @@ trait HasRolesAndPermissions
     }
 
     /**
+     * Get permission mode: 'role' (Role-based) or 'user' (Direct user permissions).
+     * These two mechanisms are mutually exclusive and never merged together.
+     */
+    public function getPermissionType(): string
+    {
+        if (!empty($this->permission_type)) {
+            return $this->permission_type;
+        }
+
+        if ($this->permissions->isNotEmpty() && $this->roles->isEmpty()) {
+            return 'user';
+        }
+
+        return 'role';
+    }
+
+    public function isRoleBased(): bool
+    {
+        return $this->getPermissionType() === 'role';
+    }
+
+    public function isUserBased(): bool
+    {
+        return $this->getPermissionType() === 'user';
+    }
+
+    /**
      * Check if user is a Super Administrator (either via is_admin flag or 'admin' role).
      * If is_admin is 1/true, user possesses unrestricted access across all modules.
      */
     public function isAdmin(): bool
     {
-        return (bool) ($this->is_admin ?? false) || $this->hasRole('admin');
+        if ((bool) ($this->is_admin ?? false)) {
+            return true;
+        }
+
+        if ($this->isUserBased()) {
+            return false;
+        }
+
+        return $this->hasRole('admin');
     }
 
     /**
@@ -38,6 +73,10 @@ trait HasRolesAndPermissions
      */
     public function hasRole(string|array $roles): bool
     {
+        if ($this->isUserBased()) {
+            return false;
+        }
+
         $roleList = is_array($roles) ? $roles : [$roles];
         return $this->roles->contains(fn(Role $role) => in_array($role->slug, $roleList, true));
     }
@@ -45,6 +84,7 @@ trait HasRolesAndPermissions
     /**
      * Check if user has a permission slug.
      * Super Administrator ('is_admin' = 1 or 'admin' role) has all permissions by default.
+     * Role-based and User-based permission evaluations are mutually exclusive.
      */
     public function hasPermission(string $permissionSlug): bool
     {
@@ -52,12 +92,12 @@ trait HasRolesAndPermissions
             return true;
         }
 
-        // Direct permission
-        if ($this->permissions->contains('slug', $permissionSlug)) {
-            return true;
+        // Direct user permission mode: strictly check direct permissions
+        if ($this->isUserBased()) {
+            return $this->permissions->contains('slug', $permissionSlug);
         }
 
-        // Permission via assigned roles
+        // Role-based permission mode: strictly check assigned roles
         foreach ($this->roles as $role) {
             if ($role->permissions->contains('slug', $permissionSlug)) {
                 return true;
@@ -84,14 +124,14 @@ trait HasRolesAndPermissions
 
         $slug = strtolower($module) . '.' . strtolower($action);
 
-        // Check direct permission
-        if ($this->permissions->contains(fn(Permission $p) =>
-            $p->slug === $slug || ($p->module === $module && $p->action === $action)
-        )) {
-            return true;
+        // Direct user permission mode: strictly check direct permissions
+        if ($this->isUserBased()) {
+            return $this->permissions->contains(fn(Permission $p) =>
+                $p->slug === $slug || ($p->module === $module && $p->action === $action)
+            );
         }
 
-        // Check role permissions
+        // Role-based permission mode: strictly check assigned roles
         foreach ($this->roles as $role) {
             if ($role->permissions->contains(fn(Permission $p) =>
                 $p->slug === $slug || ($p->module === $module && $p->action === $action)
@@ -139,8 +179,11 @@ trait HasRolesAndPermissions
             return Permission::pluck('slug')->all();
         }
 
-        $slugs = $this->permissions->pluck('slug')->all();
+        if ($this->isUserBased()) {
+            return array_values(array_unique($this->permissions->pluck('slug')->all()));
+        }
 
+        $slugs = [];
         foreach ($this->roles as $role) {
             $slugs = array_merge($slugs, $role->permissions->pluck('slug')->all());
         }
@@ -153,6 +196,10 @@ trait HasRolesAndPermissions
      */
     public function getRolesSlugs(): array
     {
+        if ($this->isUserBased()) {
+            return [];
+        }
+
         return $this->roles->pluck('slug')->all();
     }
 }

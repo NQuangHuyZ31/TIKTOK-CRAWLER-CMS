@@ -22,6 +22,7 @@ return new class extends Migration
                 $table->string('avatar')->nullable();
                 $table->enum('status', ['active', 'inactive', 'blocked'])->default('active');
                 $table->boolean('is_admin')->default(false);
+                $table->string('permission_type', 20)->default('role');
                 $table->rememberToken();
                 $table->softDeletes();
                 $table->timestamps();
@@ -39,6 +40,9 @@ return new class extends Migration
                 }
                 if (!Schema::hasColumn('users', 'is_admin')) {
                     $table->boolean('is_admin')->default(false);
+                }
+                if (!Schema::hasColumn('users', 'permission_type')) {
+                    $table->string('permission_type', 20)->default('role');
                 }
                 if (!Schema::hasColumn('users', 'deleted_at')) {
                     $table->softDeletes();

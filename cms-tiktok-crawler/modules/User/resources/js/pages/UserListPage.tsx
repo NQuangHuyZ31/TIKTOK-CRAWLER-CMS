@@ -96,7 +96,7 @@ export default function UserListPage() {
 				renderColumns={{
 					id: (id) => <span style={{ fontWeight: 600, color: '#1677ff' }}>#{id}</span>,
 					name: (_, record: UserItem) => <UserColumn id={record.id} name={record.name} email={record.email} avatarUrl={record.avatar_url} />,
-					roles: (_, record: UserItem) => <UserRoleTags roles={record.roles} />,
+					roles: (_, record: UserItem) => <UserRoleTags roles={record.roles} permissionType={record.permission_type} />,
 					status: (status: string, record: UserItem) => (
 						<StatusDropdown
 							status={status}

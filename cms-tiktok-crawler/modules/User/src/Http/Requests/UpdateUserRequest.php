@@ -41,6 +41,7 @@ class UpdateUserRequest extends FormRequest
             'avatar' => 'nullable|string|max:255',
             'status' => 'nullable|string|in:active,inactive,blocked',
             'is_admin' => 'nullable|boolean',
+            'permission_type' => 'nullable|string|in:role,user',
             'roles' => 'nullable|array',
             'roles.*' => 'nullable',
             'permissions' => 'nullable|array',

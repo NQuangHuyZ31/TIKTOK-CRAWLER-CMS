@@ -211,4 +211,121 @@ class UserRolePermissionDecouplingTest extends TestCase
         $this->assertTrue($newUser->roles->contains('slug', 'editor'));
         $this->assertTrue($newUser->permissions->contains('slug', 'user.view'));
     }
+
+    /**
+     * Test mutually exclusive permission modes: Role-based vs Direct User permissions.
+     * The two mechanisms are completely separated and never merged.
+     */
+    public function test_permission_modes_are_mutually_exclusive_and_never_merged(): void
+    {
+        $userService = app(UserService::class);
+
+        // 1. Create a user with permission_type = 'role'
+        $roleUser = $userService->createUser([
+            'name' => 'Role Based User',
+            'email' => 'role_based@cms.com',
+            'password' => 'Password123!',
+            'permission_type' => 'role',
+            'roles' => ['editor'],
+            'permissions' => ['user.delete'], // should be cleared because permission_type is 'role'
+        ]);
+
+        $this->assertEquals('role', $roleUser->getPermissionType());
+        $this->assertTrue($roleUser->isRoleBased());
+        $this->assertFalse($roleUser->isUserBased());
+        $this->assertTrue($roleUser->hasRole('editor'));
+        $this->assertCount(0, $roleUser->permissions);
+        // Editor has crawler.view and crawler.edit, but NOT user.delete
+        $this->assertTrue($roleUser->hasPermission('crawler.view'));
+        $this->assertFalse($roleUser->hasPermission('user.delete'));
+        $this->assertTrue($roleUser->canAccessModule('crawler', 'view'));
+        $this->assertFalse($roleUser->canAccessModule('user', 'edit'));
+
+        // 2. Create a user with permission_type = 'user'
+        $directUser = $userService->createUser([
+            'name' => 'Direct User Only',
+            'email' => 'direct_user@cms.com',
+            'password' => 'Password123!',
+            'permission_type' => 'user',
+            'roles' => ['admin'], // should be cleared because permission_type is 'user'
+            'permissions' => ['user.view', 'tiktok_account.view'],
+        ]);
+
+        $this->assertEquals('user', $directUser->getPermissionType());
+        $this->assertTrue($directUser->isUserBased());
+        $this->assertFalse($directUser->isRoleBased());
+        $this->assertCount(0, $directUser->roles);
+        $this->assertFalse($directUser->isAdmin()); // Not admin because roles are cleared and permission_type is 'user'
+        $this->assertTrue($directUser->hasPermission('user.view'));
+        $this->assertTrue($directUser->hasPermission('tiktok_account.view'));
+        $this->assertFalse($directUser->hasPermission('crawler.view')); // No crawler permission
+        $this->assertTrue($directUser->canAccessModule('user', 'view'));
+        $this->assertFalse($directUser->canAccessModule('user', 'edit'));
+        $this->assertFalse($directUser->canAccessModule('crawler', 'view'));
+
+        // Slugs only contain direct permissions, NOT merged with any roles
+        $slugs = $directUser->getAllPermissionsSlugs();
+        $this->assertEqualsCanonicalizing(['user.view', 'tiktok_account.view'], $slugs);
+
+        // 3. Update directUser to role-based (switches mode and clears direct permissions)
+        $updatedToRole = $userService->updateUser($directUser->id, [
+            'permission_type' => 'role',
+            'roles' => ['viewer'],
+            'permissions' => [],
+        ]);
+
+        $this->assertEquals('role', $updatedToRole->getPermissionType());
+        $this->assertTrue($updatedToRole->isRoleBased());
+        $this->assertTrue($updatedToRole->hasRole('viewer'));
+        $this->assertCount(0, $updatedToRole->permissions);
+        // Viewer has crawler.view, but not user.view
+        $this->assertTrue($updatedToRole->canAccessModule('crawler', 'view'));
+        $this->assertFalse($updatedToRole->canAccessModule('user', 'view'));
+
+        // 4. Update roleUser to direct user-based (switches mode and clears roles)
+        $updatedToUser = $userService->updateUser($roleUser->id, [
+            'permission_type' => 'user',
+            'roles' => [],
+            'permissions' => ['crawler.view'],
+        ]);
+
+        $this->assertEquals('user', $updatedToUser->getPermissionType());
+        $this->assertTrue($updatedToUser->isUserBased());
+        $this->assertCount(0, $updatedToUser->roles);
+        $this->assertTrue($updatedToUser->canAccessModule('crawler', 'view'));
+        $this->assertFalse($updatedToUser->canAccessModule('crawler', 'edit')); // Editor had edit, but direct permissions only have view
+    }
+
+    /**
+     * Test API endpoints respect permission_type when creating and updating users.
+     */
+    public function test_api_endpoints_respect_permission_type(): void
+    {
+        // 1. POST /admin/api/user with permission_type = 'user'
+        $response = $this->actingAs($this->adminUser)->postJson($this->adminApiUri('user'), [
+            'name' => 'API Direct Perm User',
+            'email' => 'api_direct@cms.com',
+            'password' => 'Password123!',
+            'status' => 'active',
+            'permission_type' => 'user',
+            'roles' => [],
+            'permissions' => ['tiktok_account.view'],
+        ]);
+
+        $response->assertStatus(201);
+        $response->assertJsonPath('data.permission_type', 'user');
+        $response->assertJsonPath('data.all_permissions', ['tiktok_account.view']);
+        $newId = $response->json('data.id');
+
+        // 2. PUT /admin/api/user/{id} switch to 'role'
+        $updateRes = $this->actingAs($this->adminUser)->putJson($this->adminApiUri("user/{$newId}"), [
+            'permission_type' => 'role',
+            'roles' => ['viewer'],
+            'permissions' => [],
+        ]);
+
+        $updateRes->assertStatus(200);
+        $updateRes->assertJsonPath('data.permission_type', 'role');
+        $this->assertContains('viewer', $updateRes->json('data.role_slugs'));
+    }
 }
