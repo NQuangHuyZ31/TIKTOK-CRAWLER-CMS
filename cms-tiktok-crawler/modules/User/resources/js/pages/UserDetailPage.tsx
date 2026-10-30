@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Card, Row, Col, Avatar, Typography, Space, Tag, Button, Descriptions, Spin, Alert, Result, App as AntdApp, Divider, Table } from 'antd';
-import { ArrowLeftOutlined, EditOutlined, CrownOutlined, SafetyCertificateOutlined, UserOutlined, MailOutlined, PhoneOutlined, CalendarOutlined, CheckCircleFilled, CloseCircleFilled } from '@ant-design/icons';
+import { ArrowLeftOutlined, EditOutlined, CrownOutlined, SafetyCertificateOutlined, UserOutlined, MailOutlined, PhoneOutlined, CalendarOutlined, CheckCircleFilled, CloseCircleFilled, KeyOutlined } from '@ant-design/icons';
 import { useDispatch, useSelector } from '@core/store';
 import PageHeader from '@core/components/PageHeader';
 import StatusTag from '@core/components/StatusTag';
@@ -143,18 +143,31 @@ export default function UserDetailPage() {
 								{user.name}
 							</Title>
 							<StatusTag status={user.status} />
-							<Tag
-								icon={user.is_admin ? <CrownOutlined /> : <SafetyCertificateOutlined />}
-								style={{
-									color: roleCfg.color,
-									background: roleCfg.bg,
-									borderColor: roleCfg.border,
-									fontWeight: 600,
-									padding: '2px 8px',
-								}}
-							>
-								{roleCfg.name}
-							</Tag>
+							{user.permission_type === 'user' ? (
+								<Tag
+									icon={<KeyOutlined />}
+									color="purple"
+									style={{
+										fontWeight: 600,
+										padding: '2px 8px',
+									}}
+								>
+									Direct Permissions
+								</Tag>
+							) : (
+								<Tag
+									icon={user.is_admin ? <CrownOutlined /> : <SafetyCertificateOutlined />}
+									style={{
+										color: roleCfg.color,
+										background: roleCfg.bg,
+										borderColor: roleCfg.border,
+										fontWeight: 600,
+										padding: '2px 8px',
+									}}
+								>
+									{roleCfg.name}
+								</Tag>
+							)}
 						</Space>
 						<div style={{ marginTop: 6 }}>
 							<Space size={16} wrap>

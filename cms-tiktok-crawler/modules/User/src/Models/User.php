@@ -14,7 +14,7 @@ use Laravel\Sanctum\HasApiTokens;
 use Modules\Core\Traits\HasRolesAndPermissions;
 use Modules\System\Traits\LogsActivity;
 
-#[Fillable(['name', 'email', 'password', 'phone', 'avatar', 'status', 'is_admin'])]
+#[Fillable(['name', 'email', 'password', 'phone', 'avatar', 'status', 'is_admin', 'permission_type'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -42,6 +42,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'is_admin' => 'boolean',
+            'permission_type' => 'string',
         ];
     }
 

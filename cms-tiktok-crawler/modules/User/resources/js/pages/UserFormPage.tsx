@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Card, Form, Input, Select, Button, Space, Typography, Row, Col, Divider, Alert, Spin, Result, Flex } from 'antd';
-import { ArrowLeftOutlined, SaveOutlined, UserOutlined, MailOutlined, PhoneOutlined, LockOutlined, LinkOutlined } from '@ant-design/icons';
+import { Card, Form, Input, Select, Button, Space, Typography, Row, Col, Divider, Alert, Spin, Result, Flex, Radio } from 'antd';
+import { ArrowLeftOutlined, SaveOutlined, UserOutlined, MailOutlined, PhoneOutlined, LockOutlined, LinkOutlined, SafetyCertificateOutlined, KeyOutlined } from '@ant-design/icons';
 import { useDispatch, useSelector } from '@core/store';
 import useAction from '@core/hooks/useAction';
 import PageHeader from '@core/components/PageHeader';
@@ -27,9 +27,10 @@ export default function UserFormPage() {
 
 	const { currentUser: user, detailLoading, rolesCatalog, permissionsCatalog, groupedPermissionsCatalog, error } = useSelector((state) => state.user);
 
-	// Watch selected role to adjust permission matrix
+	// Watch permission type & selected role
+	const permissionType = Form.useWatch('permission_type', form) || 'role';
 	const selectedRoles = Form.useWatch('roles', form) || [];
-	const isAdmin = selectedRoles.includes('admin');
+	const isAdmin = permissionType === 'role' && selectedRoles.includes('admin');
 
 	useEffect(() => {
 		dispatch(fetchRolesAndPermissions());
@@ -39,6 +40,7 @@ export default function UserFormPage() {
 			form.resetFields();
 			form.setFieldsValue({
 				status: 'active',
+				permission_type: 'role',
 				roles: ['editor'],
 				permissions: [],
 			});
@@ -47,14 +49,16 @@ export default function UserFormPage() {
 
 	useEffect(() => {
 		if (isEdit && user) {
+			const isDirectUser = user.permission_type === 'user' || (user.permissions && user.permissions.length > 0 && (!user.roles || user.roles.length === 0));
 			form.setFieldsValue({
 				name: user.name,
 				email: user.email,
 				phone: user.phone,
 				avatar: user.avatar,
 				status: user.status,
-				roles: user.role_slugs || (user.roles?.map((r) => r.slug) ?? ['editor']),
-				permissions: user.all_permissions || [],
+				permission_type: isDirectUser ? 'user' : 'role',
+				roles: isDirectUser ? [] : (user.role_slugs || (user.roles?.map((r) => r.slug) ?? ['editor'])),
+				permissions: isDirectUser ? (user.permissions?.map((p: any) => typeof p === 'string' ? p : p.slug) || user.all_permissions || []) : [],
 			});
 		}
 	}, [isEdit, user, form]);
@@ -62,14 +66,16 @@ export default function UserFormPage() {
 	const handleSubmit = async (values: any) => {
 		setFormError(null);
 
+		const isRoleMode = values.permission_type === 'role';
 		const payload: Record<string, any> = {
 			name: values.name,
 			email: values.email,
 			phone: values.phone || null,
 			avatar: values.avatar || null,
 			status: values.status,
-			roles: Array.isArray(values.roles) ? values.roles : [values.roles],
-			permissions: values.permissions || [],
+			permission_type: values.permission_type || 'role',
+			roles: isRoleMode ? (Array.isArray(values.roles) ? values.roles : [values.roles]) : [],
+			permissions: !isRoleMode ? (values.permissions || []) : [],
 		};
 
 		if (values.password) {
@@ -127,6 +133,7 @@ export default function UserFormPage() {
 				onFinish={handleSubmit}
 				initialValues={{
 					status: 'active',
+					permission_type: 'role',
 					roles: ['editor'],
 				}}
 				requiredMark="optional"
@@ -231,9 +238,9 @@ export default function UserFormPage() {
 					</Row>
 				</Card>
 
-				{/* 3. Role & Module Permissions */}
+				{/* 3. Access Privileges & Permission Mechanism (Mutually Exclusive: Role or Direct User) */}
 				<Card
-					title="3. Role & Module Access Privileges"
+					title="3. Access Privileges & Permission Mechanism"
 					bordered={false}
 					style={{
 						borderRadius: 12,
@@ -242,19 +249,83 @@ export default function UserFormPage() {
 						boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
 					}}
 				>
-					<Form.Item name="roles" label="Assign Primary Role" rules={[{ required: true, message: 'Please select a system role.' }]}>
-						<RoleSelector availableRoles={rolesCatalog} />
-					</Form.Item>
-
-					<Divider style={{ margin: '20px 0' }} />
-
 					<Form.Item
-						name="permissions"
-						label="Module Permission Overrides (View / Create / Edit / Delete)"
-						extra="Permissions can be granted per module. Super Administrator role automatically grants unrestricted access."
+						name="permission_type"
+						label="Authorization Mode (Choose one mutually exclusive mode)"
+						rules={[{ required: true, message: 'Please select an authorization mode.' }]}
+						extra="Select an independent authorization model: Role-based permissions or Direct User permissions. These two mechanisms are strictly mutually exclusive and never merged."
 					>
-						<PermissionMatrixSelector isAdmin={isAdmin} />
+						<Radio.Group
+							buttonStyle="solid"
+							size="middle"
+							onChange={(e) => {
+								const nextType = e.target.value;
+								if (nextType === 'role') {
+									form.setFieldsValue({
+										permission_type: 'role',
+										permissions: [],
+										roles: form.getFieldValue('roles')?.length > 0 ? form.getFieldValue('roles') : ['editor'],
+									});
+								} else {
+									form.setFieldsValue({
+										permission_type: 'user',
+										roles: [],
+									});
+								}
+							}}
+						>
+							<Radio.Button value="role" style={{ padding: '0 18px', height: 40, lineHeight: '38px' }}>
+								<Space>
+									<SafetyCertificateOutlined />
+									<span>Role-based Permissions</span>
+								</Space>
+							</Radio.Button>
+							<Radio.Button value="user" style={{ padding: '0 18px', height: 40, lineHeight: '38px' }}>
+								<Space>
+									<KeyOutlined />
+									<span>Direct User Permissions</span>
+								</Space>
+							</Radio.Button>
+						</Radio.Group>
 					</Form.Item>
+
+					<Divider style={{ margin: '16px 0 24px' }} />
+
+					{permissionType === 'role' ? (
+						<div>
+							<Alert
+								type="info"
+								showIcon
+								message="Mode: Role-based Authorization"
+								description="This user inherits all access privileges granted by the assigned system role. Individual custom permissions do not apply."
+								style={{ marginBottom: 20, borderRadius: 8 }}
+							/>
+							<Form.Item
+								name="roles"
+								label="Assign System Role"
+								rules={[{ required: true, message: 'Please select a system role.' }]}
+							>
+								<RoleSelector availableRoles={rolesCatalog} />
+							</Form.Item>
+						</div>
+					) : (
+						<div>
+							<Alert
+								type="warning"
+								showIcon
+								message="Mode: Direct User Authorization"
+								description="This user does not belong to any fixed role. All privileges (View/Create/Edit/Delete) are configured directly per module below."
+								style={{ marginBottom: 20, borderRadius: 8 }}
+							/>
+							<Form.Item
+								name="permissions"
+								label="Direct Module Privileges Configuration"
+								extra="Select specific granular privileges this user is allowed to perform for each module."
+							>
+								<PermissionMatrixSelector isAdmin={false} />
+							</Form.Item>
+						</div>
+					)}
 				</Card>
 			</Form>
 		</div>

@@ -31,6 +31,7 @@ class UserResource extends JsonResource
             'status' => $this->status ?? 'active',
             'email_verified_at' => $this->email_verified_at?->toIso8601String(),
             'is_admin' => (bool) ($this->is_admin ?? false) || $this->hasRole('admin'),
+            'permission_type' => $this->getPermissionType(),
             'roles' => $this->whenLoaded('roles', function () {
                 return $this->roles->map(fn($r) => [
                     'id' => $r->id,

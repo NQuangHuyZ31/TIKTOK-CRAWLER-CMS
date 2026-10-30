@@ -29,6 +29,7 @@ export interface UserItem {
     status: 'active' | 'inactive' | 'blocked';
     email_verified_at?: string;
     is_admin: boolean;
+    permission_type?: 'role' | 'user';
     roles: UserRole[];
     role_slugs: string[];
     permissions: UserPermission[];

@@ -29,6 +29,15 @@ class UserService
     public function createUser(array $data): User
     {
         return DB::transaction(function () use ($data) {
+            $permissionType = $data['permission_type'] ?? null;
+            if (!$permissionType) {
+                if (!empty($data['permissions']) && empty($data['roles']) && !isset($data['role'])) {
+                    $permissionType = 'user';
+                } else {
+                    $permissionType = 'role';
+                }
+            }
+
             $userData = [
                 'name' => $data['name'],
                 'email' => $data['email'],
@@ -37,21 +46,30 @@ class UserService
                 'avatar' => $data['avatar'] ?? null,
                 'status' => $data['status'] ?? 'active',
                 'is_admin' => !empty($data['is_admin']),
+                'permission_type' => $permissionType,
             ];
             
             $user = $this->userRepository->create($userData);
 
-            // Handle role assignments via injected RoleRepository
-            $roles = $data['roles'] ?? (isset($data['role']) ? [$data['role']] : []);
-            if (!empty($roles) && is_array($roles)) {
-                $roleIds = $this->resolveRoleIds($roles);
-                $this->userRepository->syncRoles($user, $roleIds);
-            }
-
-            // Handle direct permission assignments via injected PermissionRepository
-            if (isset($data['permissions']) && is_array($data['permissions'])) {
-                $permissionIds = $this->resolvePermissionIds($data['permissions']);
+            if ($permissionType === 'user') {
+                // Direct user permission: strictly sync permissions, clear roles
+                $permissions = $data['permissions'] ?? [];
+                $permissionIds = is_array($permissions) ? $this->resolvePermissionIds($permissions) : [];
                 $this->userRepository->syncPermissions($user, $permissionIds);
+                $this->userRepository->syncRoles($user, []);
+            } else {
+                // Role-based permission: strictly sync roles
+                $roles = $data['roles'] ?? (isset($data['role']) ? [$data['role']] : []);
+                $roleIds = !empty($roles) && is_array($roles) ? $this->resolveRoleIds($roles) : [];
+                $this->userRepository->syncRoles($user, $roleIds);
+
+                // If caller explicitly passed permissions while omitting permission_type, preserve it
+                if (!isset($data['permission_type']) && !empty($data['permissions']) && is_array($data['permissions'])) {
+                    $permissionIds = $this->resolvePermissionIds($data['permissions']);
+                    $this->userRepository->syncPermissions($user, $permissionIds);
+                } else {
+                    $this->userRepository->syncPermissions($user, []);
+                }
             }
 
             $created = $user->load(['roles.permissions', 'permissions']);
@@ -74,7 +92,7 @@ class UserService
         $this->assertNotDemotingLastAdmin($targetUser, $data);
 
         return DB::transaction(function () use ($targetUser, $data) {
-            $allowed = ['name', 'email', 'phone', 'avatar', 'status', 'is_admin'];
+            $allowed = ['name', 'email', 'phone', 'avatar', 'status', 'is_admin', 'permission_type'];
             $updateData = array_intersect_key($data, array_flip($allowed));
 
             if (!empty($data['password'])) {
@@ -84,21 +102,45 @@ class UserService
                 $updateData['is_admin'] = (bool) $updateData['is_admin'];
             }
 
+            $permissionType = $data['permission_type'] ?? null;
+            if (!$permissionType) {
+                if (isset($data['permissions']) && !isset($data['roles']) && !isset($data['role'])) {
+                    $permissionType = 'user';
+                    $updateData['permission_type'] = 'user';
+                } elseif ((isset($data['roles']) || isset($data['role'])) && !isset($data['permissions'])) {
+                    $permissionType = 'role';
+                    $updateData['permission_type'] = 'role';
+                }
+            }
+
             if (!empty($updateData)) {
                 $this->userRepository->update($targetUser->id, $updateData);
             }
 
-            // Sync roles if provided (User::syncRoles automatically audits ROLE_CHANGE via System Event)
-            $roles = $data['roles'] ?? (isset($data['role']) ? [$data['role']] : null);
-            if ($roles !== null && is_array($roles)) {
-                $roleIds = $this->resolveRoleIds($roles);
-                $this->userRepository->syncRoles($targetUser, $roleIds);
-            }
-
-            // Sync permissions if provided (User::syncPermissions automatically audits PERMISSION_CHANGE via System Event)
-            if (isset($data['permissions']) && is_array($data['permissions'])) {
-                $permissionIds = $this->resolvePermissionIds($data['permissions']);
+            if ($permissionType === 'user') {
+                // Mutually exclusive: direct user permission syncs permissions and clears roles
+                $permissions = $data['permissions'] ?? [];
+                $permissionIds = is_array($permissions) ? $this->resolvePermissionIds($permissions) : [];
                 $this->userRepository->syncPermissions($targetUser, $permissionIds);
+                $this->userRepository->syncRoles($targetUser, []);
+            } elseif ($permissionType === 'role') {
+                // Mutually exclusive: role-based permission syncs roles and clears direct permissions
+                $roles = $data['roles'] ?? (isset($data['role']) ? [$data['role']] : []);
+                $roleIds = is_array($roles) ? $this->resolveRoleIds($roles) : [];
+                $this->userRepository->syncRoles($targetUser, $roleIds);
+                $this->userRepository->syncPermissions($targetUser, []);
+            } else {
+                // Legacy / unspecified mode: sync whichever is provided
+                $roles = $data['roles'] ?? (isset($data['role']) ? [$data['role']] : null);
+                if ($roles !== null && is_array($roles)) {
+                    $roleIds = $this->resolveRoleIds($roles);
+                    $this->userRepository->syncRoles($targetUser, $roleIds);
+                }
+
+                if (isset($data['permissions']) && is_array($data['permissions'])) {
+                    $permissionIds = $this->resolvePermissionIds($data['permissions']);
+                    $this->userRepository->syncPermissions($targetUser, $permissionIds);
+                }
             }
 
             return $targetUser->fresh(['roles.permissions', 'permissions']);
