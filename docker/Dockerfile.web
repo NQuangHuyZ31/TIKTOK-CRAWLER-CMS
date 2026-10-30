@@ -63,9 +63,10 @@ COPY docker/php.ini /usr/local/etc/php/conf.d/custom.ini
 COPY docker/start-web.sh /usr/local/bin/start-web.sh
 RUN chmod +x /usr/local/bin/start-web.sh
 
-# Storage & Cache permissions
-RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache \
-    && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
+# Storage, Cache & Public Avatars permissions
+RUN mkdir -p /var/www/html/public/tiktok-accounts/avatars \
+    && chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache /var/www/html/public/tiktok-accounts \
+    && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache /var/www/html/public/tiktok-accounts
 
 EXPOSE 80
 
