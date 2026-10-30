@@ -1,6 +1,0 @@
-beautifulsoup4
-fastapi
-httpx
-playwright
-pydantic
-uvicorn

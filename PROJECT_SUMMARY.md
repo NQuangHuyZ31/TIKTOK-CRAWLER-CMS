@@ -7,7 +7,7 @@
 Enterprise modular TikTok crawler and management platform adhering to the **Ureka Architecture**:
 - **Backend**: Laravel 12 (PHP 8.3+) with modular DDD (`modules/Core`, `modules/Auth`, `modules/Crawler`, `modules/TiktokAccount`). Dynamic route resolution via `DynamicRouteResovle`.
 - **Frontend**: Single Page Application (SPA) with React 19, Strict TypeScript (100%), Redux Toolkit, Ant Design v6, and Tailwind CSS v4.
-- **Crawler Service**: Python Playwright asynchronous scraping microservice (`ProcessData/tiktok-crawler`).
+- **Crawler Service**: Python HTTP JSON asynchronous microservice with SQLite WAL queue & fixed worker pool (`tiktok-crawler-service`).
 - **Asset Pipelines**: Laravel Mix (Webpack 5) production build + Vite HMR development mode.
 
 ---
@@ -83,3 +83,13 @@ powershell scripts/verify-workflow.ps1 # Workflow and release gate verification
 - **Python Avatar Tests**: `python ProcessData/tiktok-crawler/tests/test_avatar_service.py` (4 passed / 4 tests, 0.010s, 100%).
 - **TypeScript**: `npm.cmd run check-types` (0 errors).
 - **Backend Tests**: `php artisan test` (145 passed / 145 tests, 786 assertions, 100%).
+
+
+### Milestone: Rebuild HTTP JSON Crawler Service with Python SQLite Queue & Fixed Worker Pool
+- **Date**: 2026-10-30 | **Branch**: `fix`
+- **Scope**:
+  - Replaced legacy Playwright crawler (`ProcessData/tiktok-crawler`) with `tiktok-crawler-service` using `httpx` + `beautifulsoup4` to extract `__UNIVERSAL_DATA_FOR_REHYDRATION__` / `SIGI_STATE` JSON directly without Chromium.
+  - Implemented Python-managed persistent queue (`data/queue.db` SQLite WAL + `asyncio.Queue`) and fixed worker pool (`WORKER_COUNT=5`) with supervisor, rate limiter, circuit breaker, per-account timeout (`90s`), and crash recovery (`done_accounts` + Laravel `/jobs/unfinished` fallback).
+  - Supported multi-schema CSV/TXT random sampling for `count` mode (`dataset/`) with target freezing and binary base64 avatar transfer (`AvatarStorageService` MIME magic-byte check, `avatar_url = null`, saved to `public/tiktok-accounts/avatars/`).
+  - Updated Laravel (`queued` status, `VerifyCrawlerToken`, idempotent `UNIQUE(crawl_job_id, username)` upserts) and React UI (`Queued` badge, 5s auto-polling).
+- **Verification**: TypeScript (`npm.cmd run check-types`: 0 errors), Laravel (`php artisan test`: 147/147 passed, 798 assertions), Python (`unittest`: 15/15 passed).

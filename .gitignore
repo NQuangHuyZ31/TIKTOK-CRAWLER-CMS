@@ -1,3 +1,6 @@
 __pycache__/
 *.pyc
 .env
+tiktok-crawler-service/datasets/*
+!tiktok-crawler-service/datasets/example.csv
+tiktok-crawler-service/data/*
