@@ -5,12 +5,14 @@ namespace Modules\API\Http\Controllers;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Modules\API\Http\Requests\CrawlerResultStoreRequest;
+use Modules\Crawler\Services\CrawlJobService;
 use Modules\Crawler\Services\CrawlResultService;
 
 class CrawlerResultController extends Controller
 {
     public function __construct(
-        private readonly CrawlResultService $crawlResultService
+        private readonly CrawlResultService $crawlResultService,
+        private readonly CrawlJobService $crawlJobService
     ) {
     }
 
@@ -29,5 +31,13 @@ class CrawlerResultController extends Controller
         $result = $this->crawlResultService->handleWebhookEvent($jobId, $data);
 
         return response()->json($result['body'], $result['status_code']);
+    }
+
+    public function unfinishedJobs(): JsonResponse
+    {
+        return response()->json([
+            'status' => 'success',
+            'data' => $this->crawlJobService->getUnfinishedJobsForRecovery(),
+        ]);
     }
 }

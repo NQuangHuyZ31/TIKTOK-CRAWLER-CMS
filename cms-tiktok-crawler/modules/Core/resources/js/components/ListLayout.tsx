@@ -72,6 +72,7 @@ export interface ListLayoutProps<T = any> {
 
 	// 5. Card Props
 	cardTitle?: ReactNode;
+	topContent?: ReactNode;
 
 	// 6. Table Props
 	columns?: TableColumn<T>[];
@@ -126,6 +127,7 @@ export default function ListLayout<T = any>({
 
 	// Card props
 	cardTitle,
+	topContent,
 
 	// Table props
 	columns,
@@ -203,6 +205,9 @@ export default function ListLayout<T = any>({
 		<div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 			{/* 1. Page Header */}
 			<PageHeader title={title} subtitle={subtitle} breadcrumbs={breadcrumbs} onBack={onBack} extra={extra ?? primaryAddButton} />
+
+			{/* Optional Top Content (e.g. Detail Summary Card / KPIs) */}
+			{topContent}
 
 			{/* 2. Main List Card */}
 			<Card

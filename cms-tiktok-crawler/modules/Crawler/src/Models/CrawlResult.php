@@ -15,6 +15,7 @@ use Modules\TiktokAccount\Models\TiktokAccount;
     'video_count',
     'bio',
     'status',
+    'error_code',
     'raw_data',
     'error_message',
     'crawled_at',

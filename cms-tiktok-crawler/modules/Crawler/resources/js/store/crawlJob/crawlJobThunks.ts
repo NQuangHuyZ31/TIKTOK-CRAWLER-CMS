@@ -8,7 +8,8 @@ export const fetchCrawlJobs = createAsyncThunk<any, any>(
 	'crawlJob/fetchAll',
 	async (params: any, { rejectWithValue }: any) => {
 		try {
-			return await crawlJobAPI.getCrawlJobs(params);
+			const { silent: _silent, ...queryParams } = params ?? {};
+			return await crawlJobAPI.getCrawlJobs(queryParams);
 		} catch (error: any) {
 			return rejectWithValue(error.response?.data?.message ?? error.message);
 		}

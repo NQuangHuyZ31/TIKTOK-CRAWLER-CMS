@@ -82,8 +82,12 @@ class CrawlJobRetryTest extends TestCase
         ]);
     }
 
-    public function test_retry_fails_when_another_job_is_currently_running(): void
+    public function test_retry_succeeds_even_when_another_job_is_currently_running(): void
     {
+        Http::fake([
+            '*/api/crawl-jobs/start' => Http::response(['status' => 'queued', 'queue_position' => 1], 202),
+        ]);
+
         // Active running job
         CrawlJob::create([
             'source_type' => 'usernames',
@@ -92,7 +96,7 @@ class CrawlJobRetryTest extends TestCase
             'status' => 'running',
         ]);
 
-        // Failed job that user attempts to retry
+        // Failed job that user attempts to retry concurrently
         $failedJob = CrawlJob::create([
             'source_type' => 'usernames',
             'data_crawls' => json_encode(['failed_user']),
@@ -104,17 +108,14 @@ class CrawlJobRetryTest extends TestCase
         $response = $this->actingAs($this->adminUser)
             ->postJson($this->apiUri("crawler/crawl-job/{$failedJob->id}/retry"));
 
-        $response->assertStatus(422);
-        $response->assertJsonFragment([
-            'status' => 'error',
-            'message' => 'Another crawl job is currently running, please wait for it to complete.',
-        ]);
+        $response->assertStatus(200);
+        $response->assertJsonPath('data.status', 'queued');
     }
 
     public function test_retry_succeeds_for_failed_job_and_resets_fields(): void
     {
         Http::fake([
-            '*/api/crawl-jobs/start' => Http::response(['status' => 'accepted'], 200),
+            '*/api/crawl-jobs/start' => Http::response(['status' => 'queued'], 202),
         ]);
 
         $failedJob = CrawlJob::create([
@@ -141,7 +142,7 @@ class CrawlJobRetryTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertJsonPath('status', 'success');
-        $response->assertJsonPath('data.status', 'running');
+        $response->assertJsonPath('data.status', 'queued');
         $response->assertJsonPath('data.error_message', null);
         $response->assertJsonPath('data.finished_at', null);
         $response->assertJsonPath('data.success_count', 0);
@@ -149,10 +150,10 @@ class CrawlJobRetryTest extends TestCase
 
         // Verify database state
         $failedJob->refresh();
-        $this->assertSame('running', $failedJob->status);
+        $this->assertSame('queued', $failedJob->status);
         $this->assertNull($failedJob->error_message);
         $this->assertNull($failedJob->finished_at);
-        $this->assertNotNull($failedJob->started_at);
+        $this->assertNotNull($failedJob->queued_at);
         $this->assertSame(0, $failedJob->success_count);
         $this->assertSame(0, $failedJob->failed_count);
 
@@ -162,7 +163,7 @@ class CrawlJobRetryTest extends TestCase
         ]);
     }
 
-    public function test_retry_marks_job_as_failed_if_crawler_engine_fails(): void
+    public function test_retry_keeps_job_as_failed_and_returns_503_if_crawler_engine_fails(): void
     {
         Http::fake([
             '*/api/crawl-jobs/start' => Http::response(['error' => 'Service Unavailable'], 503),
@@ -179,12 +180,10 @@ class CrawlJobRetryTest extends TestCase
         $response = $this->actingAs($this->adminUser)
             ->postJson($this->apiUri("crawler/crawl-job/{$failedJob->id}/retry"));
 
-        $response->assertStatus(500);
+        $response->assertStatus(503);
 
         $failedJob->refresh();
         $this->assertSame('failed', $failedJob->status);
-        $this->assertNotNull($failedJob->error_message);
-        $this->assertNotNull($failedJob->finished_at);
     }
 
     public function test_retry_requires_crawler_edit_permission(): void

@@ -63,6 +63,13 @@ export const startCrawlJobByID = (id: string | number) =>
 export const retryCrawlJobByID = (id: string | number) =>
     api(`/crawler/crawl-job/${id}/retry`, { method: 'POST' });
 
+/**
+ * Stop execution of a running or queued crawl job.
+ * API: POST /crawler/crawl-job/{id}/stop
+ */
+export const stopCrawlJobByID = (id: string | number) =>
+    api(`/crawler/crawl-job/${id}/stop`, { method: 'POST' });
+
 export default {
     getCrawlJobs,
     getCrawlJobByID,
@@ -72,5 +79,6 @@ export default {
     deleteCrawlJobByID,
     startCrawlJobByID,
     retryCrawlJobByID,
+    stopCrawlJobByID,
     getResults,
 };

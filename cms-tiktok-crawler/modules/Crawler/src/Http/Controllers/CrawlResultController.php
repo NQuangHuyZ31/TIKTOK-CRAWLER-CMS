@@ -29,7 +29,8 @@ class CrawlResultController extends BaseController
     {
         $perPage = (int) $request->input('per_page', 10);
         $results = $this->crawlResultService->getByJobId($jobId, $perPage, $request->all());
+        $results->through(fn($item) => new CrawlResultResource($item));
 
-        return $this->respondSuccess(CrawlResultResource::collection($results), 'Crawl results retrieved successfully.');
+        return $this->respondPaginated($results, 'Crawl results retrieved successfully.');
     }
 }

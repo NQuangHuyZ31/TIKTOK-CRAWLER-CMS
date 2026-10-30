@@ -15,13 +15,35 @@ class CrawlJobController extends BaseController
 {
     protected string $modelClass = CrawlJob::class;
     protected ?string $resourceClass = CrawlJobResource::class;
+    protected array $withRelations = ['creator', 'starter'];
     protected array $searchableColumns = ['source_type', 'status', 'error_message'];
-    protected array $filterableColumns = ['status', 'source_type', 'started_at', 'finished_at'];
+    protected array $filterableColumns = ['status', 'source_type', 'started_at', 'finished_at', 'created_by', 'started_by'];
     protected array $defaultSort = ['id', 'desc'];
 
     public function __construct(
         protected CrawlJobService $crawlJobService
     ) {
+    }
+
+    /**
+     * Override index to automatically sync 'running'/'queued' jobs with Python Crawler Engine
+     * so jobs immediately transition out of 'running' when the crawler service goes offline.
+     */
+    public function index(Request $request): JsonResponse
+    {
+        $this->crawlJobService->syncActiveJobsWithEngine();
+
+        return parent::index($request);
+    }
+
+    /**
+     * Override show to automatically sync job status with Python Crawler Engine.
+     */
+    public function show(int|string $id): JsonResponse
+    {
+        $this->crawlJobService->syncActiveJobsWithEngine((int) $id);
+
+        return parent::show($id);
     }
 
     /**
@@ -87,6 +109,9 @@ class CrawlJobController extends BaseController
             return $this->respondSuccess(new CrawlJobResource($result), 'Crawl job started successfully.');
         } catch (\DomainException $e) {
             return $this->respondError($e->getMessage(), 422);
+        } catch (\RuntimeException $e) {
+            $code = $e->getCode() === 503 ? 503 : 500;
+            return $this->respondError($e->getMessage(), $code);
         } catch (\Throwable $e) {
             return $this->respondError($e->getMessage(), 500);
         }
@@ -105,6 +130,29 @@ class CrawlJobController extends BaseController
             }
 
             return $this->respondSuccess(new CrawlJobResource($result), 'Crawl job retried successfully.');
+        } catch (\DomainException $e) {
+            return $this->respondError($e->getMessage(), 422);
+        } catch (\RuntimeException $e) {
+            $code = $e->getCode() === 503 ? 503 : 500;
+            return $this->respondError($e->getMessage(), $code);
+        } catch (\Throwable $e) {
+            return $this->respondError($e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * REST Custom Action: stop (POST /{module}/crawl-job/{id}/stop)
+     * Stops a running or queued crawl job even if the Python crawler service is offline.
+     */
+    public function stop(int $id): JsonResponse
+    {
+        try {
+            $result = $this->crawlJobService->stop((int) $id);
+            if (!$result) {
+                return $this->respondError('Crawl job not found.', 404);
+            }
+
+            return $this->respondSuccess(new CrawlJobResource($result), 'Crawl job stopped successfully.');
         } catch (\DomainException $e) {
             return $this->respondError($e->getMessage(), 422);
         } catch (\Throwable $e) {
@@ -136,6 +184,8 @@ class CrawlJobController extends BaseController
             return $this->respondError('Crawl job not found.', 404);
         }
 
-        return $this->respondSuccess(CrawlResultResource::collection($results), 'Crawl results retrieved successfully.');
+        $results->through(fn($item) => new CrawlResultResource($item));
+
+        return $this->respondPaginated($results, 'Crawl results retrieved successfully.');
     }
 }

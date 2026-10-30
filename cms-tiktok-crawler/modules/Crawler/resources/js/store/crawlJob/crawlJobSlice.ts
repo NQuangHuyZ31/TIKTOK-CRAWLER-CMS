@@ -55,8 +55,10 @@ const crawlJobSlice = createSlice({
 	extraReducers: (builder) => {
 		// 1. Fetch all crawl jobs
 		builder
-			.addCase(fetchCrawlJobs.pending, (state) => {
-				state.loading = true;
+			.addCase(fetchCrawlJobs.pending, (state, action) => {
+				if (!action.meta.arg?.silent) {
+					state.loading = true;
+				}
 				state.error = null;
 			})
 			.addCase(fetchCrawlJobs.fulfilled, (state, action) => {

@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import dayjs from 'dayjs';
 import { Space, Button, Popconfirm, Tooltip } from 'antd';
-import { EyeOutlined, EditOutlined, DeleteOutlined, RedoOutlined, PlayCircleOutlined } from '@ant-design/icons';
+import { EyeOutlined, EditOutlined, DeleteOutlined, RedoOutlined, PlayCircleOutlined, StopOutlined } from '@ant-design/icons';
 import { useDispatch, useSelector } from '@core/store';
 import ListLayout from '@core/components/ListLayout';
 import StatusTag from '@core/components/StatusTag';
@@ -47,9 +47,39 @@ export default function CrawlJobsPage() {
 		},
 	);
 
+	const { execute: handleStop } = useAction(
+		(id: number | string) => crawlJobAPI.stopCrawlJobByID(id),
+		'Crawl job stopped successfully',
+		() => {
+			dispatch(fetchCrawlJobs(params));
+			dispatch(fetchStatisticsSummary());
+		},
+	);
+
+	const hasActiveJobs = jobs.some(
+		(job) =>
+			(job.status === 'running' || job.status === 'queued') &&
+			!String(job.error_message || '').includes('waiting for service'),
+	);
+	const hasShutdownWaitingJobs = jobs.some(
+		(job) =>
+			(job.status === 'running' || job.status === 'queued') &&
+			String(job.error_message || '').includes('waiting for service'),
+	);
+
 	useEffect(() => {
 		dispatch(fetchCrawlJobs(params));
 	}, [dispatch, params]);
+
+	useEffect(() => {
+		if (!hasActiveJobs) return;
+		const interval = setInterval(() => {
+			dispatch(fetchCrawlJobs({ ...params, silent: true }));
+			dispatch(fetchStatisticsSummary());
+		}, 5000);
+
+		return () => clearInterval(interval);
+	}, [dispatch, params, hasActiveJobs]);
 
 	return (
 		<ListLayout
@@ -59,6 +89,13 @@ export default function CrawlJobsPage() {
 			onAdd="/crawler/crawl-job/create"
 			addText="Create Job"
 			cardTitle="Crawl Jobs List"
+			topContent={
+				hasShutdownWaitingJobs ? (
+					<div style={{ color: '#d46b08', background: '#fffbe6', border: '1px solid #ffe58f', padding: '12px 16px', borderRadius: 8 }}>
+						<strong>Crawler service has shut down:</strong> Active jobs are preserved in <code>running</code> / <code>queued</code> state and will automatically resume (Crash Recovery) as soon as the crawler service is restarted.
+					</div>
+				) : undefined
+			}
 			showSearch
 			searchPlaceholder="Search crawl jobs..."
 			searchValue={params.search}
@@ -142,6 +179,20 @@ export default function CrawlJobsPage() {
 									</Popconfirm>
 								</>
 							)}
+							{(record.status === 'running' || record.status === 'queued') && (
+								<Popconfirm
+									title="Stop crawl job"
+									description="Are you sure you want to stop this crawl job?"
+									onConfirm={() => handleStop(record.id)}
+									okText="Stop"
+									cancelText="Cancel"
+									okButtonProps={{ danger: true }}
+								>
+									<Tooltip title="Stop">
+										<Button size="small" type="text" danger icon={<StopOutlined />} />
+									</Tooltip>
+								</Popconfirm>
+							)}
 							{record.status === 'failed' && (
 								<Popconfirm
 									title="Retry crawl job"
@@ -156,20 +207,22 @@ export default function CrawlJobsPage() {
 								</Popconfirm>
 							)}
 						</PermissionGate>
-						<PermissionGate module="crawler" action="delete">
-							<Popconfirm
-								title="Delete crawl job"
-								description="Are you sure you want to delete this crawl job?"
-								onConfirm={() => handleDelete(record.id)}
-								okText="Delete"
-								cancelText="Cancel"
-								okButtonProps={{ danger: true }}
-							>
-								<Tooltip title="Delete">
-									<Button type="text" danger size="small" icon={<DeleteOutlined />} />
-								</Tooltip>
-							</Popconfirm>
-						</PermissionGate>
+						{record.status !== 'running' && (
+							<PermissionGate module="crawler" action="delete">
+								<Popconfirm
+									title="Delete crawl job"
+									description="Are you sure you want to delete this crawl job?"
+									onConfirm={() => handleDelete(record.id)}
+									okText="Delete"
+									cancelText="Cancel"
+									okButtonProps={{ danger: true }}
+								>
+									<Tooltip title="Delete">
+										<Button type="text" danger size="small" icon={<DeleteOutlined />} />
+									</Tooltip>
+								</Popconfirm>
+							</PermissionGate>
+						)}
 					</Space>
 				),
 			}}

@@ -1,5 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { Avatar } from 'antd';
+import { UserOutlined } from '@ant-design/icons';
 import TableComponent from '@core/components/Table';
 import StatusTag from '@core/components/StatusTag';
 import { formatNumber } from '@core/utils/formatNumber';
@@ -39,16 +41,21 @@ const CrawlResultTable: React.FC<CrawlResultTableProps> = ({ data, loading, pagi
 			handlePageChange={handlePage}
 			loading={loading}
 			renderColumns={{
+				avatar_path: (val) => <Avatar size={40} src={val || undefined} icon={<UserOutlined />} />,
+				username: (val) => (val ? <span style={{ fontWeight: 500 }}>@{val}</span> : '-'),
 				status: (status) => <StatusTag status={status} />,
 				followers_count: (val) => formatNumber(val),
 				following_count: (val) => formatNumber(val),
 				likes_count: (val) => formatNumber(val),
 				crawled_at: (val) => formatDateTime(val),
-				profile_url: (text: string) => (
-					<Link to={text} target="_blank" rel="noopener noreferrer">
-						{text}
-					</Link>
-				),
+				profile_url: (text: string) =>
+					text ? (
+						<Link to={text} target="_blank" rel="noopener noreferrer">
+							{text}
+						</Link>
+					) : (
+						'-'
+					),
 			}}
 		/>
 	);

@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Notifications\Notifiable;
 use Modules\System\Traits\LogsActivity;
 
-#[Fillable(['code', 'name', 'source_type', 'status', 'data_crawls', 'total_accounts', 'success_count', 'failed_count', 'error_message', 'started_at', 'finished_at', 'created_by',])]
+#[Fillable(['code', 'name', 'source_type', 'status', 'data_crawls', 'total_accounts', 'success_count', 'failed_count', 'resume_count', 'error_message', 'queued_at', 'worker_id', 'started_at', 'finished_at', 'created_by', 'started_by'])]
 
 class CrawlJob extends Model
 {
@@ -35,5 +35,13 @@ class CrawlJob extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    /**
+     * Relationship to user who started/retried the job.
+     */
+    public function starter(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'started_by');
     }
 }

@@ -30,4 +30,9 @@ interface CrawlJobRepositoryInterface extends BaseRepositoryInterface
      * Retrieve crawl jobs matching a specific status.
      */
     public function findByStatus(string $status): Collection;
+
+    /**
+     * Retrieve unfinished ('running' and 'queued') crawl jobs ordered by Recovery Priority + FIFO.
+     */
+    public function getUnfinishedJobs(): Collection;
 }

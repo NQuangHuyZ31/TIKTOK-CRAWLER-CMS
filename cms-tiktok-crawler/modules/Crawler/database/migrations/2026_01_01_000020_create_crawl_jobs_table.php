@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('code', 50)->nullable()->unique();
             $table->string('name')->nullable();
             $table->string('source_type')->default('usernames');
-            $table->enum('status', ['pending', 'running', 'completed', 'failed', 'cancelled'])->default('pending');
+            $table->enum('status', ['pending', 'queued', 'running', 'completed', 'failed', 'cancelled'])->default('pending');
             $table->text('data_crawls')->nullable();
             $table->integer('total_accounts')->default(0);
             $table->integer('success_count')->default(0);

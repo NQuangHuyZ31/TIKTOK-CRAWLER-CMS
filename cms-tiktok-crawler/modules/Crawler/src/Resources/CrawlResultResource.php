@@ -28,6 +28,7 @@ class CrawlResultResource extends JsonResource
 			'avatar_url' => $this->avatar_url,
 			'avatar_path' => $this->resolveAvatarUrl(),
 			'status' => $this->status,
+			'error_code' => $this->error_code,
 			'error_message' => $this->error_message,
 			'crawled_at' => $this->crawled_at,
 			'created_at' => $this->created_at,
@@ -37,16 +38,17 @@ class CrawlResultResource extends JsonResource
 
     private function resolveAvatarUrl(): ?string
     {
-        if (empty($this->avatar_path)) {
+        $path = $this->avatar_path ?: ($this->relationLoaded('tiktokAccount') ? $this->tiktokAccount?->avatar_path : null);
+        if (empty($path)) {
             return null;
         }
 
         // Never allow external URLs for display - strictly use local public images
-        if (str_starts_with($this->avatar_path, 'http://') || str_starts_with($this->avatar_path, 'https://')) {
+        if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
             return null;
         }
 
-        $cleanPath = ltrim($this->avatar_path, '/\\');
+        $cleanPath = ltrim($path, '/\\');
 
         if (file_exists(public_path($cleanPath))) {
             return asset($cleanPath);
