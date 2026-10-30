@@ -251,9 +251,9 @@ export default function UserFormPage() {
 				>
 					<Form.Item
 						name="permission_type"
-						label="Cơ chế phân quyền (Chỉ cho phép 1 trong 2 hình thức)"
-						rules={[{ required: true, message: 'Vui lòng chọn cơ chế phân quyền.' }]}
-						extra="Chọn hình thức cấp quyền độc lập: Phân quyền theo vai trò (Role-based) hoặc phân quyền trực tiếp cho User (Direct Permissions). Hai hình thức này không gộp chung."
+						label="Authorization Mode (Choose one mutually exclusive mode)"
+						rules={[{ required: true, message: 'Please select an authorization mode.' }]}
+						extra="Select an independent authorization model: Role-based permissions or Direct User permissions. These two mechanisms are strictly mutually exclusive and never merged."
 					>
 						<Radio.Group
 							buttonStyle="solid"
@@ -277,13 +277,13 @@ export default function UserFormPage() {
 							<Radio.Button value="role" style={{ padding: '0 18px', height: 40, lineHeight: '38px' }}>
 								<Space>
 									<SafetyCertificateOutlined />
-									<span>Phân quyền theo Vai trò (Role)</span>
+									<span>Role-based Permissions</span>
 								</Space>
 							</Radio.Button>
 							<Radio.Button value="user" style={{ padding: '0 18px', height: 40, lineHeight: '38px' }}>
 								<Space>
 									<KeyOutlined />
-									<span>Phân quyền trực tiếp cho User</span>
+									<span>Direct User Permissions</span>
 								</Space>
 							</Radio.Button>
 						</Radio.Group>
@@ -296,14 +296,14 @@ export default function UserFormPage() {
 							<Alert
 								type="info"
 								showIcon
-								message="Cơ chế: Phân quyền theo Vai trò (Role-based)"
-								description="Người dùng này sẽ kế thừa toàn bộ quyền hạn từ vai trò được chỉ định bên dưới. Không áp dụng quyền tùy chỉnh riêng lẻ."
+								message="Mode: Role-based Authorization"
+								description="This user inherits all access privileges granted by the assigned system role. Individual custom permissions do not apply."
 								style={{ marginBottom: 20, borderRadius: 8 }}
 							/>
 							<Form.Item
 								name="roles"
-								label="Chỉ định vai trò hệ thống"
-								rules={[{ required: true, message: 'Vui lòng chọn vai trò cho người dùng.' }]}
+								label="Assign System Role"
+								rules={[{ required: true, message: 'Please select a system role.' }]}
 							>
 								<RoleSelector availableRoles={rolesCatalog} />
 							</Form.Item>
@@ -313,14 +313,14 @@ export default function UserFormPage() {
 							<Alert
 								type="warning"
 								showIcon
-								message="Cơ chế: Phân quyền trực tiếp cho User (Direct Permissions)"
-								description="Người dùng này không thuộc vai trò cố định nào. Toàn bộ quyền truy cập (Xem/Tạo/Sửa/Xóa) được cấu hình trực tiếp theo từng module bên dưới."
+								message="Mode: Direct User Authorization"
+								description="This user does not belong to any fixed role. All privileges (View/Create/Edit/Delete) are configured directly per module below."
 								style={{ marginBottom: 20, borderRadius: 8 }}
 							/>
 							<Form.Item
 								name="permissions"
-								label="Cấu hình quyền hạn trực tiếp theo module"
-								extra="Tick chọn các quyền cụ thể người dùng được phép thao tác trên từng module."
+								label="Direct Module Privileges Configuration"
+								extra="Select specific granular privileges this user is allowed to perform for each module."
 							>
 								<PermissionMatrixSelector isAdmin={false} />
 							</Form.Item>

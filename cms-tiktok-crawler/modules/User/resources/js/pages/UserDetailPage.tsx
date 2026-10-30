@@ -152,7 +152,7 @@ export default function UserDetailPage() {
 										padding: '2px 8px',
 									}}
 								>
-									Phân quyền trực tiếp (User)
+									Direct Permissions
 								</Tag>
 							) : (
 								<Tag

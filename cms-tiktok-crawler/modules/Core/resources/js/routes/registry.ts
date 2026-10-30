@@ -155,7 +155,7 @@ function buildMenuTree(routes: readonly RouteDef[]): RouteDef[] {
     const itemMap = new Map<string, RouteDef>();
     const rootNodes: RouteDef[] = [];
 
-    // Clone dữ liệu để tránh mutate mảng gốc
+    // Clone array to avoid mutating the original registry
     menuOnly.forEach((item) => {
         itemMap.set(item.path, { ...item, subMenu: item.subMenu ? [...item.subMenu] : [] });
     });

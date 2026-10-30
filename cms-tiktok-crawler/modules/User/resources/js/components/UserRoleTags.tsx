@@ -15,7 +15,7 @@ export const UserRoleTags = ({ roles, permissionType }: { roles?: any[]; permiss
 					borderRadius: 4,
 				}}
 			>
-				Quyền trực tiếp
+				Direct Permissions
 			</Tag>
 		);
 	}
