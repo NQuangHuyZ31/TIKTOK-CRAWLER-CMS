@@ -286,17 +286,17 @@ class CrawlerArchitectureTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertJsonPath('status', 'success');
-        $response->assertJsonPath('data.status', 'running');
+        $response->assertJsonPath('data.status', 'queued');
         $response->assertJsonPath('data.error_message', null);
         $response->assertJsonPath('data.finished_at', null);
         $response->assertJsonPath('data.success_count', 0);
         $response->assertJsonPath('data.failed_count', 0);
 
         $failedJob->refresh();
-        $this->assertSame('running', $failedJob->status);
+        $this->assertSame('queued', $failedJob->status);
         $this->assertNull($failedJob->error_message);
         $this->assertNull($failedJob->finished_at);
-        $this->assertNotNull($failedJob->started_at);
+        $this->assertNotNull($failedJob->queued_at);
         $this->assertSame(0, $failedJob->success_count);
         $this->assertSame(0, $failedJob->failed_count);
 

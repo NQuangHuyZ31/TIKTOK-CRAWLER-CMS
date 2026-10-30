@@ -27,6 +27,9 @@ class CheckModulePermission
             ], 401);
         }
 
+        auth()->setUser($user);
+        $request->setUserResolver(fn () => $user);
+
         if ($module !== '' && method_exists($user, 'canAccessModule')) {
             if (!$user->canAccessModule($module, $action)) {
                 return response()->json([
