@@ -3,13 +3,17 @@ set -e
 
 echo "[Render] Starting CMS TikTok Crawler Web Service..."
 
-# Ensure storage directories exist and have proper permissions
+# Ensure storage and public avatar directories exist and have proper permissions
 mkdir -p /var/www/html/storage/framework/cache/data \
          /var/www/html/storage/framework/sessions \
          /var/www/html/storage/framework/views \
-         /var/www/html/storage/logs
+         /var/www/html/storage/logs \
+         /var/www/html/storage/app/public/tiktok-accounts/avatars \
+         /var/www/html/public/tiktok-accounts/avatars
 
-chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
+chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache /var/www/html/public/tiktok-accounts
+chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache /var/www/html/public/tiktok-accounts
+php /var/www/html/artisan storage:link --force || true
 
 # Run database migrations with force in production
 if [ "${RUN_MIGRATIONS:-true}" = "true" ]; then

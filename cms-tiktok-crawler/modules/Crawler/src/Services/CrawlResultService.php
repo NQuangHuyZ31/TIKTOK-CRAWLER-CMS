@@ -4,6 +4,7 @@ namespace Modules\Crawler\Services;
 
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use InvalidArgumentException;
 use Modules\Crawler\Models\CrawlResult;
 use Modules\Crawler\Repositories\Interfaces\CrawlJobRepositoryInterface;
@@ -144,6 +145,9 @@ class CrawlResultService
                         'errors' => ['avatar' => [$e->getMessage()]],
                     ],
                 ];
+            } catch (\Throwable $e) {
+                Log::warning("Failed to store avatar for @{$username}, continuing without avatar file: " . $e->getMessage());
+                $storedAvatarPath = null;
             }
         }
 

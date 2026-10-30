@@ -2,7 +2,9 @@
 
 namespace Modules\Crawler\Services;
 
+use Illuminate\Support\Facades\Storage;
 use InvalidArgumentException;
+use RuntimeException;
 
 class AvatarStorageService
 {
@@ -50,11 +52,23 @@ class AvatarStorageService
         $relativeDir = 'tiktok-accounts/avatars';
         $targetDir = public_path($relativeDir);
         if (!is_dir($targetDir)) {
-            @mkdir($targetDir, 0755, true);
+            @mkdir($targetDir, 0775, true);
         }
 
         $relativePath = "{$relativeDir}/{$safeUsername}{$extension}";
-        file_put_contents(public_path($relativePath), $binary);
+        $written = false;
+
+        if (is_dir($targetDir) && is_writable($targetDir)) {
+            $written = @file_put_contents(public_path($relativePath), $binary) !== false;
+        }
+
+        if (!$written) {
+            $written = Storage::disk('public')->put($relativePath, $binary);
+        }
+
+        if (!$written) {
+            throw new RuntimeException("Unable to write avatar file for {$safeUsername}.");
+        }
 
         return $relativePath;
     }
