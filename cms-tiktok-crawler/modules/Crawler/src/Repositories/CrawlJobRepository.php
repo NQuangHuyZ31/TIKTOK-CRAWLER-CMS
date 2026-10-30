@@ -17,6 +17,18 @@ class CrawlJobRepository extends BaseRepository implements CrawlJobRepositoryInt
         return new CrawlJob();
     }
 
+    public function findById(int|string $id): ?Model
+    {
+        return $this->model->with(['creator', 'starter'])->find($id);
+    }
+
+    public function create(array $attributes): Model
+    {
+        $model = parent::create($attributes);
+
+        return $model->load(['creator', 'starter']);
+    }
+
     /** Get Lastest Created Job */
     public function getLastestJob(int $limit = 10, array $columns = ['*']) : Collection
     {
@@ -76,5 +88,18 @@ class CrawlJobRepository extends BaseRepository implements CrawlJobRepositoryInt
     public function findByStatus(string $status): Collection
     {
         return $this->model->where('status', $status)->get();
+    }
+
+    /**
+     * Retrieve unfinished ('running' and 'queued') crawl jobs ordered by Recovery Priority + FIFO.
+     */
+    public function getUnfinishedJobs(): Collection
+    {
+        return $this->model
+            ->whereIn('status', ['running', 'queued'])
+            ->orderByRaw("CASE WHEN status = 'running' THEN 0 ELSE 1 END ASC")
+            ->orderBy('queued_at', 'asc')
+            ->orderBy('id', 'asc')
+            ->get();
     }
 }

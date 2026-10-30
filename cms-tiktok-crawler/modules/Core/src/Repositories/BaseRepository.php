@@ -7,9 +7,12 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Modules\Core\Repositories\Interfaces\BaseRepositoryInterface;
+use Modules\Core\Traits\FilterSearchTrait;
 
 abstract class BaseRepository implements BaseRepositoryInterface
 {
+    use FilterSearchTrait;
+
     protected Model $model;
 
     abstract protected function getModel(): Model;

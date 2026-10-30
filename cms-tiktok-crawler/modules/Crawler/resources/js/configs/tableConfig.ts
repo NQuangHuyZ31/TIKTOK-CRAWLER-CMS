@@ -58,6 +58,12 @@ export const crawlJobColumnConfig: TableColumn[] = [
 
 export const crawlResultColumnConfig: TableColumn[] = [
 	{
+		title: 'Avatar',
+		dataIndex: 'avatar_path',
+		key: 'avatar_path',
+		width: 85,
+	},
+	{
 		title: 'Username',
 		dataIndex: 'username',
 		key: 'username',

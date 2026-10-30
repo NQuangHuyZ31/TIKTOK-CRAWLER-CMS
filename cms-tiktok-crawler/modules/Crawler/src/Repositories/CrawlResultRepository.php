@@ -3,6 +3,7 @@
 namespace Modules\Crawler\Repositories;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Modules\Core\Repositories\BaseRepository;
 use Modules\Crawler\Models\CrawlResult;
@@ -10,6 +11,26 @@ use Modules\Crawler\Repositories\Interfaces\CrawlResultRepositoryInterface;
 
 class CrawlResultRepository extends BaseRepository implements CrawlResultRepositoryInterface
 {
+    protected array $searchableColumns = ['username', 'profile_url', 'error_message'];
+    protected array $filterableColumns = [
+        'status',
+        'followers_count',
+        'following_count',
+        'likes_count',
+        'crawled_at',
+    ];
+    protected array $sortableColumns = [
+        'id',
+        'username',
+        'followers_count',
+        'following_count',
+        'likes_count',
+        'crawled_at',
+        'created_at',
+        'updated_at',
+    ];
+    protected array $defaultSort = ['id', 'desc'];
+
     protected function getModel(): Model
     {
         return new CrawlResult();
@@ -20,16 +41,17 @@ class CrawlResultRepository extends BaseRepository implements CrawlResultReposit
      */
     public function getByJobId(int $jobId, int $perPage = 10, array $params = []): LengthAwarePaginator
     {
-        $query = $this->model->where('crawl_job_id', $jobId);
+        $request = new Request($params);
+        $query = $this->model->with('tiktokAccount')->where('crawl_job_id', $jobId);
 
         if (!empty($params['username'])) {
             $query->where('username', 'like', '%' . $params['username'] . '%');
         }
 
-        if (!empty($params['status'])) {
-            $query->where('status', $params['status']);
-        }
+        $this->applySearch($query, $request);
+        $this->applyFilters($query, $request);
+        $this->applySorting($query, $request);
 
-        return $query->paginate($perPage);
+        return $query->paginate(min(max($perPage, 1), 100));
     }
 }

@@ -70,6 +70,7 @@ export function getModuleConfig(mod: string): ModuleConfigItem {
 // -----------------------------------------------------------------------------
 export const GLOBAL_STATUS_CONFIG: Record<string, { color: string; label?: string }> = {
 	pending: { color: 'default', label: 'Pending' },
+	queued: { color: 'gold', label: 'Queued' },
 	in_progress: { color: 'processing', label: 'In Progress' },
 	running: { color: 'processing', label: 'Running' },
 	completed: { color: 'success', label: 'Completed' },
