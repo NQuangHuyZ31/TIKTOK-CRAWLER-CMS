@@ -36,6 +36,13 @@ export const getResults = (id: string | number, params: Record<string, any> = {}
     api(`/crawler/crawl-job/${id}/results`, { params });
 
 /**
+ * Fetch crawled video results of a specific job.
+ * API: GET /crawler/crawl-job/{id}/videos
+ */
+export const getVideoResults = (id: string | number, params: Record<string, any> = {}) =>
+    api(`/crawler/crawl-job/${id}/videos`, { params });
+
+/**
  * Fetch aggregate crawl job statistics summary for KPI dashboard cards.
  * API: GET /crawler/crawl-job/statistics-summary
  */
@@ -81,4 +88,5 @@ export default {
     retryCrawlJobByID,
     stopCrawlJobByID,
     getResults,
+    getVideoResults,
 };

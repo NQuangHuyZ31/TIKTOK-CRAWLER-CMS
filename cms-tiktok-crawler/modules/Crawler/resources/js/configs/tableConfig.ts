@@ -15,6 +15,12 @@ export const crawlJobColumnConfig: TableColumn[] = [
 		width: 120,
 	},
 	{
+		title: 'Crawl Mode',
+		dataIndex: 'crawl_mode',
+		key: 'crawl_mode',
+		width: 150,
+	},
+	{
 		title: 'Total Accounts',
 		dataIndex: 'total_account',
 		key: 'total_account',
@@ -31,6 +37,12 @@ export const crawlJobColumnConfig: TableColumn[] = [
 		dataIndex: 'failed_count',
 		key: 'failed_count',
 		sorter: (a: any, b: any) => (a.failed_count ?? 0) - (b.failed_count ?? 0),
+	},
+	{
+		title: 'Videos',
+		dataIndex: 'total_videos_crawled',
+		key: 'total_videos_crawled',
+		sorter: (a: any, b: any) => (a.total_videos_crawled ?? 0) - (b.total_videos_crawled ?? 0),
 	},
 	{
 		title: 'Started',
@@ -93,6 +105,13 @@ export const crawlResultColumnConfig: TableColumn[] = [
 		sorter: (a: any, b: any) => (a.likes_count ?? 0) - (b.likes_count ?? 0),
 	},
 	{
+		title: 'Videos Crawled',
+		dataIndex: 'videos_crawled_count',
+		key: 'videos_crawled_count',
+		width: 130,
+		sorter: (a: any, b: any) => (a.videos_crawled_count ?? 0) - (b.videos_crawled_count ?? 0),
+	},
+	{
 		title: 'Error Message',
 		dataIndex: 'error_message',
 		key: 'error_message',
@@ -108,5 +127,74 @@ export const crawlResultColumnConfig: TableColumn[] = [
 		dataIndex: 'profile_url',
 		key: 'profile_url',
 		width: 200,
+	},
+];
+
+export const crawlVideoResultColumnConfig: TableColumn[] = [
+	{
+		title: 'Cover',
+		dataIndex: 'cover_url',
+		key: 'cover_url',
+		width: 80,
+	},
+	{
+		title: 'Video ID',
+		dataIndex: 'video_id',
+		key: 'video_id',
+		width: 165,
+	},
+	{
+		title: 'Username',
+		dataIndex: 'username',
+		key: 'username',
+		width: 140,
+	},
+	{
+		title: 'Description',
+		dataIndex: 'description',
+		key: 'description',
+		width: 240,
+	},
+	{
+		title: 'Views',
+		dataIndex: 'play_count',
+		key: 'play_count',
+		sorter: (a: any, b: any) => (a.play_count ?? 0) - (b.play_count ?? 0),
+	},
+	{
+		title: 'Likes',
+		dataIndex: 'digg_count',
+		key: 'digg_count',
+		sorter: (a: any, b: any) => (a.digg_count ?? 0) - (b.digg_count ?? 0),
+	},
+	{
+		title: 'Comments',
+		dataIndex: 'comment_count',
+		key: 'comment_count',
+		sorter: (a: any, b: any) => (a.comment_count ?? 0) - (b.comment_count ?? 0),
+	},
+	{
+		title: 'Shares',
+		dataIndex: 'share_count',
+		key: 'share_count',
+		sorter: (a: any, b: any) => (a.share_count ?? 0) - (b.share_count ?? 0),
+	},
+	{
+		title: 'Saves',
+		dataIndex: 'collect_count',
+		key: 'collect_count',
+		sorter: (a: any, b: any) => (a.collect_count ?? 0) - (b.collect_count ?? 0),
+	},
+	{
+		title: 'Published At',
+		dataIndex: 'published_at',
+		key: 'published_at',
+		width: 160,
+	},
+	{
+		title: 'Video URL',
+		dataIndex: 'video_url',
+		key: 'video_url',
+		width: 180,
 	},
 ];

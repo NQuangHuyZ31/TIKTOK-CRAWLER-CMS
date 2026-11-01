@@ -1,31 +1,136 @@
-import { Form, Select, App as AntdApp } from 'antd';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
+import { Avatar, Button, Flex, Form, Select, Space, Tag, Typography } from 'antd';
+import { CheckOutlined, ClearOutlined, UserOutlined } from '@ant-design/icons';
 import { useDispatch, useSelector } from '@core/store';
 import { fetchAllTiktokAccounts } from '@modules/TiktokAccount/resources/js/store/tiktokAccount/tiktokAccountThunks';
+import { formatCompactNumber } from '@core/utils/formatNumber';
 
-const TiktokAccountSelect = ({ onChange }) => {
+const { Text } = Typography;
+
+interface TiktokAccountSelectProps {
+	onChange?: (value: number[]) => void;
+	disabled?: boolean;
+}
+
+const TiktokAccountSelect: React.FC<TiktokAccountSelectProps> = ({ onChange, disabled = false }) => {
 	const dispatch = useDispatch();
+	const form = Form.useFormInstance();
 	const { data: accounts, loading, error } = useSelector((state) => state.tiktokAccount);
+	const selectedIds = Form.useWatch('account_ids', form) || [];
 
 	useEffect(() => {
 		dispatch(fetchAllTiktokAccounts({ pagination: false }));
 	}, [dispatch]);
 
+	const handleSelectTop = (count: number) => {
+		if (!accounts || accounts.length === 0) return;
+		const topIds = accounts.slice(0, count).map((acc: any) => acc.id);
+		form.setFieldsValue({ account_ids: topIds });
+		onChange?.(topIds);
+	};
+
+	const handleSelectAll = () => {
+		if (!accounts || accounts.length === 0) return;
+		const allIds = accounts.map((acc: any) => acc.id);
+		form.setFieldsValue({ account_ids: allIds });
+		onChange?.(allIds);
+	};
+
+	const handleClear = () => {
+		form.setFieldsValue({ account_ids: [] });
+		onChange?.([]);
+	};
+
 	return (
-		<Form.Item preserve={false} name="account_ids" label="Saved Accounts" rules={[{ required: true, message: 'Please select at least one account' }]}>
-			<Select
-				mode="multiple"
-				disabled={accounts.length === 0}
-				onChange={onChange}
-				options={accounts.map((account) => ({
-					label: account.username,
-					value: account.id,
-				}))}
-				loading={loading}
-				placeholder={accounts.length ? 'Select accounts' : 'No accounts available'}
-				notFoundContent={error ? <span style={{ color: 'red' }}>{error}</span> : 'Loading accounts...'}
-			/>
-		</Form.Item>
+		<div style={{ marginBottom: 16 }}>
+			<Flex justify="space-between" align="center" style={{ marginBottom: 8 }} wrap="wrap" gap={8}>
+				<Space orientation="horizontal" size={8}>
+					<Text strong>Chọn tài khoản đã lưu</Text>
+					<Tag color={selectedIds.length > 0 ? 'blue' : 'default'}>
+						Đã chọn: {selectedIds.length} / {accounts?.length || 0}
+					</Tag>
+				</Space>
+
+				{!disabled && accounts?.length > 0 && (
+					<Space orientation="horizontal" size={6} wrap>
+						{accounts.length > 10 && (
+							<Button size="small" type="dashed" onClick={() => handleSelectTop(10)}>
+								Chọn 10 đầu
+							</Button>
+						)}
+						<Button size="small" type="dashed" icon={<CheckOutlined />} onClick={handleSelectAll}>
+							Chọn tất cả
+						</Button>
+						{selectedIds.length > 0 && (
+							<Button size="small" danger type="text" icon={<ClearOutlined />} onClick={handleClear}>
+								Bỏ chọn
+							</Button>
+						)}
+					</Space>
+				)}
+			</Flex>
+
+			<Form.Item
+				preserve={false}
+				name="account_ids"
+				rules={[{ required: true, message: 'Vui lòng chọn ít nhất 1 tài khoản từ danh sách' }]}
+				style={{ marginBottom: 0 }}
+			>
+				<Select
+					mode="multiple"
+					disabled={disabled || !accounts || accounts.length === 0}
+					onChange={onChange}
+					loading={loading}
+					placeholder={
+						accounts?.length
+							? 'Tìm kiếm và chọn tài khoản theo tên hoặc username...'
+							: 'Không có tài khoản nào trong hệ thống'
+					}
+					filterOption={(input, option) => {
+						const search = input.toLowerCase();
+						const labelStr = String(option?.label ?? '').toLowerCase();
+						const valStr = String(option?.value ?? '').toLowerCase();
+						return labelStr.includes(search) || valStr.includes(search);
+					}}
+					options={(accounts || []).map((account: any) => ({
+						value: account.id,
+						label: `${account.nickname || account.username} (@${account.username})`,
+						itemData: account,
+					}))}
+					optionRender={(option) => {
+						const acc = (option.data as any)?.itemData;
+						if (!acc) return option.label;
+						return (
+							<Flex justify="space-between" align="center" style={{ padding: '2px 0' }}>
+								<Space size={8}>
+									<Avatar
+										size={24}
+										src={acc.avatar_path || undefined}
+										icon={!acc.avatar_path ? <UserOutlined /> : undefined}
+									/>
+									<div>
+										<Text strong style={{ fontSize: 13 }}>
+											{acc.nickname || acc.username}
+										</Text>
+										<Text type="secondary" style={{ fontSize: 12, marginLeft: 6 }}>
+											@{acc.username}
+										</Text>
+									</div>
+								</Space>
+								{acc.followers_count !== undefined && (
+									<Tag color="cyan" style={{ fontSize: 11, margin: 0 }}>
+										{formatCompactNumber(acc.followers_count)} flws
+									</Tag>
+								)}
+							</Flex>
+						);
+					}}
+					notFoundContent={
+						error ? <span style={{ color: 'red' }}>{error}</span> : 'Không tìm thấy tài khoản phù hợp'
+					}
+				/>
+			</Form.Item>
+		</div>
 	);
 };
 

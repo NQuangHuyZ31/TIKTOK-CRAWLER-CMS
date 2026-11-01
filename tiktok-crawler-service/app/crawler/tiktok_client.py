@@ -19,6 +19,7 @@ from core.config import (
 from core.utils import build_profile_url, normalize_username
 from crawler.avatar import AvatarDownloader
 from crawler.extractor import ExtractorError, extract_profile
+from crawler.video_extractor import fetch_account_videos
 from schemas.models import AccountCrawlOutcome
 
 logger = logging.getLogger(__name__)
@@ -190,6 +191,7 @@ class TikTokClient:
         self,
         username: str,
         profile_url: str | None = None,
+        max_videos: int = 20,
     ) -> AccountCrawlOutcome:
         """
         Crawl a single TikTok account via HTTP request, extract embedded JSON,
@@ -364,12 +366,26 @@ class TikTokClient:
                 if avatar_payload is None and local_avatar_path is None:
                     error_code = "AVATAR_FAILED"
 
+            videos = []
+            if max_videos > 0:
+                videos = await fetch_account_videos(
+                    client=client,
+                    username=account.username or clean_username,
+                    profile_body=text,
+                    max_videos=max_videos,
+                    headers=self._default_headers(chosen_ua),
+                    timeout=min(self.request_timeout, 15.0),
+                )
+                if videos and account.video_count == 0:
+                    account.video_count = len(videos)
+
             return AccountCrawlOutcome(
                 username=account.username or clean_username,
                 profile_url=url,
                 status="success",
                 account=account,
                 avatar=avatar_payload,
+                videos=videos,
                 error_code=error_code,
             )
 

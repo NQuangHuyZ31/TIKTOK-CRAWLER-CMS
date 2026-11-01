@@ -8,6 +8,7 @@ if str(APP_DIR) not in sys.path:
     sys.path.insert(0, str(APP_DIR))
 
 from crawler.extractor import ExtractorError, extract_profile
+from crawler.video_extractor import extract_videos_from_body
 
 FIXTURES_DIR = Path(__file__).resolve().parent / "fixtures"
 
@@ -100,6 +101,66 @@ class TestExtractor(unittest.TestCase):
             account.avatar_url,
             "https://p16-common-sign.tiktokcdn.com/tos-maliva-avt-0068/avatar.jpeg?x=1&y=2",
         )
+
+    def test_extract_videos_from_rehydration_and_sigi_json(self):
+        html = """
+        <!DOCTYPE html>
+        <html>
+        <body>
+            <script id="__UNIVERSAL_DATA_FOR_REHYDRATION__" type="application/json">
+            {
+                "__DEFAULT_SCOPE__": {
+                    "webapp.user-detail": {
+                        "itemList": [
+                            {
+                                "id": "735000111222333444",
+                                "desc": "Testing video extraction #fyp #tiktok",
+                                "createTime": "1711800000",
+                                "isPinnedItem": true,
+                                "author": {"uniqueId": "khaby.lame"},
+                                "video": {
+                                    "duration": 24,
+                                    "width": 576,
+                                    "height": 1024,
+                                    "definition": "540p",
+                                    "cover": "https://p16-sign.tiktokcdn.com/cover1.jpg"
+                                },
+                                "music": {
+                                    "id": "999888777",
+                                    "title": "Original Sound",
+                                    "authorName": "Khaby Lame",
+                                    "original": true
+                                },
+                                "stats": {
+                                    "playCount": 1250000,
+                                    "diggCount": 89000,
+                                    "commentCount": 1200,
+                                    "shareCount": 450,
+                                    "collectCount": 3100
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
+            </script>
+        </body>
+        </html>
+        """
+        videos = extract_videos_from_body(body=html, target_username="khaby.lame", max_videos=10)
+        self.assertEqual(len(videos), 1)
+        v = videos[0]
+        self.assertEqual(v.video_id, "735000111222333444")
+        self.assertEqual(v.username, "khaby.lame")
+        self.assertEqual(v.play_count, 1_250_000)
+        self.assertEqual(v.digg_count, 89_000)
+        self.assertEqual(v.comment_count, 1_200)
+        self.assertEqual(v.share_count, 450)
+        self.assertEqual(v.collect_count, 3_100)
+        self.assertEqual(v.duration, 24)
+        self.assertTrue(v.is_pinned)
+        self.assertTrue(v.is_original_sound)
+        self.assertEqual(v.hashtags, ["fyp", "tiktok"])
 
 
 if __name__ == "__main__":

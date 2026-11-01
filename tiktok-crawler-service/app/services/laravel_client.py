@@ -147,6 +147,8 @@ class LaravelClient:
                 data["error_code"] = outcome.error_code
             if outcome.avatar is not None:
                 data["avatar"] = outcome.avatar.model_dump(mode="json")
+            if outcome.videos:
+                data["videos"] = [v.model_dump(mode="json") for v in outcome.videos]
         else:
             data = {
                 "status": "failed",

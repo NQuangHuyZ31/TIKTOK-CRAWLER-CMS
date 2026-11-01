@@ -30,6 +30,8 @@ class TestTikTokClient(unittest.IsolatedAsyncioTestCase):
             if "avatar" in str(request.url):
                 # Valid JPEG magic bytes
                 return httpx.Response(200, content=b"\xff\xd8\xff\xe0" + b"0" * 32)
+            if "/embed/" in str(request.url):
+                return httpx.Response(200, text="<html></html>")
             attempts += 1
             if attempts < 3:
                 return httpx.Response(503, text="Service Unavailable")

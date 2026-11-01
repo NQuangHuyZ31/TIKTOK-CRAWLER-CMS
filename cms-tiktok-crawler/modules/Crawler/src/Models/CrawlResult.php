@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Notifications\Notifiable;
 use Modules\System\Traits\LogsActivity;
 use Modules\TiktokAccount\Models\TiktokAccount;
@@ -13,6 +14,7 @@ use Modules\TiktokAccount\Models\TiktokAccount;
 #[Fillable(['crawl_job_id','tiktok_account_id','username','nickname','avatar_url','avatar_path','profile_url','followers_count','following_count',
     'likes_count',
     'video_count',
+    'videos_crawled_count',
     'bio',
     'status',
     'error_code',
@@ -41,5 +43,13 @@ class CrawlResult extends Model
     public function tiktokAccount(): BelongsTo
     {
         return $this->belongsTo(TiktokAccount::class, 'tiktok_account_id');
+    }
+
+    /**
+     * Relationship to CrawlVideoResults.
+     */
+    public function videoResults(): HasMany
+    {
+        return $this->hasMany(CrawlVideoResult::class, 'crawl_result_id');
     }
 }

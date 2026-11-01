@@ -9,6 +9,7 @@ use Modules\Crawler\Models\CrawlJob;
 use Modules\Crawler\Models\CrawlResult;
 use Modules\Crawler\Repositories\Interfaces\CrawlJobRepositoryInterface;
 use Modules\Crawler\Repositories\Interfaces\CrawlResultRepositoryInterface;
+use Modules\Crawler\Repositories\Interfaces\CrawlVideoResultRepositoryInterface;
 use Modules\System\Facades\Audit;
 use Modules\TiktokAccount\Repositories\Interfaces\TiktokAccountRepositoryInterface;
 
@@ -16,11 +17,15 @@ class CrawlJobService
 {
     public const SERVICE_SHUTDOWN_MESSAGE = 'Crawler service has shut down — waiting for service to restart and resume.';
 
+    protected CrawlVideoResultRepositoryInterface $crawlVideoResultRepository;
+
     public function __construct(
         protected CrawlJobRepositoryInterface $crawlJobRepository,
         protected TiktokAccountRepositoryInterface $tiktokAccountRepository,
-        protected CrawlResultRepositoryInterface $crawlResultRepository
+        protected CrawlResultRepositoryInterface $crawlResultRepository,
+        ?CrawlVideoResultRepositoryInterface $crawlVideoResultRepository = null
     ) {
+        $this->crawlVideoResultRepository = $crawlVideoResultRepository ?? app(CrawlVideoResultRepositoryInterface::class);
     }
 
     /**
@@ -29,6 +34,8 @@ class CrawlJobService
     public function create(array $data): CrawlJob
     {
         $sourceType = $data['source_type'] ?? 'usernames';
+        $crawlMode = $data['crawl_mode'] ?? 'account_with_videos';
+        $maxVideosPerAccount = isset($data['max_videos_per_account']) ? (int) $data['max_videos_per_account'] : 20;
         $dataCrawl = $data['data_crawl'] ?? [];
 
         if (is_string($dataCrawl)) {
@@ -44,11 +51,14 @@ class CrawlJobService
 
         return $this->crawlJobRepository->create([
             'source_type' => $sourceType,
+            'crawl_mode' => $crawlMode,
+            'max_videos_per_account' => $maxVideosPerAccount,
             'data_crawls' => json_encode($dataCrawl),
             'total_accounts' => $totalAccounts,
             'status' => 'pending',
             'success_count' => 0,
             'failed_count' => 0,
+            'total_videos_crawled' => 0,
             'created_by' => $data['created_by'] ?? $this->currentUserId(),
         ]);
     }
@@ -71,6 +81,14 @@ class CrawlJobService
 
         if (isset($data['source_type'])) {
             $updateData['source_type'] = $data['source_type'];
+        }
+
+        if (isset($data['crawl_mode']) && in_array($data['crawl_mode'], ['account_only', 'account_with_videos', 'video_only'], true)) {
+            $updateData['crawl_mode'] = $data['crawl_mode'];
+        }
+
+        if (isset($data['max_videos_per_account'])) {
+            $updateData['max_videos_per_account'] = max(0, min(100, (int) $data['max_videos_per_account']));
         }
 
         if (isset($data['data_crawl'])) {
@@ -138,6 +156,19 @@ class CrawlJobService
         }
 
         return $this->crawlResultRepository->getByJobId($jobId, $perPage, $filters);
+    }
+
+    /**
+     * Domain logic: Retrieve paginated video crawl results for a specific job.
+     */
+    public function getJobVideoResults(int $jobId, int $perPage = 10, array $filters = []): ?LengthAwarePaginator
+    {
+        $job = $this->crawlJobRepository->findById($jobId);
+        if (!$job) {
+            return null;
+        }
+
+        return $this->crawlVideoResultRepository->getByJobId($jobId, $perPage, $filters);
     }
 
     /**
@@ -489,6 +520,9 @@ class CrawlJobService
             throw new \InvalidArgumentException('Crawl job data is empty or invalid.');
         }
 
+        $crawlMode = $crawlJob->crawl_mode ?? 'account_with_videos';
+        $maxVideos = (int) ($crawlJob->max_videos_per_account ?? 20);
+
         if ($crawlJob->source_type === 'database') {
             $usernames = $this->tiktokAccountRepository->getUsernamesByIds($data);
 
@@ -500,6 +534,8 @@ class CrawlJobService
                 'job_id' => $jobId,
                 'source_type' => 'usernames',
                 'usernames' => $usernames,
+                'crawl_mode' => $crawlMode,
+                'max_videos_per_account' => $maxVideos,
             ];
         }
 
@@ -510,6 +546,8 @@ class CrawlJobService
                     'job_id' => $jobId,
                     'source_type' => 'usernames',
                     'usernames' => array_values($data),
+                    'crawl_mode' => $crawlMode,
+                    'max_videos_per_account' => $maxVideos,
                 ];
             }
 
@@ -517,6 +555,8 @@ class CrawlJobService
                 'job_id' => $jobId,
                 'source_type' => 'count',
                 'total_accounts' => (int) ($data[0] ?? $crawlJob->total_accounts ?? 0),
+                'crawl_mode' => $crawlMode,
+                'max_videos_per_account' => $maxVideos,
             ];
         }
 
@@ -525,11 +565,15 @@ class CrawlJobService
                 'job_id' => $jobId,
                 'source_type' => 'usernames',
                 'usernames' => $data,
+                'crawl_mode' => $crawlMode,
+                'max_videos_per_account' => $maxVideos,
             ],
             'urls' => [
                 'job_id' => $jobId,
                 'source_type' => 'urls',
                 'urls' => $data,
+                'crawl_mode' => $crawlMode,
+                'max_videos_per_account' => $maxVideos,
             ],
             default => throw new \InvalidArgumentException("Unsupported crawl source type: {$crawlJob->source_type}"),
         };

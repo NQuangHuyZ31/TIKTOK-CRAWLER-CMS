@@ -65,6 +65,9 @@ def _extract_from_user_info_node(
     if raw_likes is None:
         raw_likes = stats.get("likes")
     likes = _fix_int32_overflow(parse_stat_value(raw_likes))
+    video_count = parse_stat_value(
+        stats.get("videoCount") if "videoCount" in stats else stats.get("video_count")
+    )
 
     avatar_url = (
         user.get("avatarLarger")
@@ -76,9 +79,14 @@ def _extract_from_user_info_node(
 
     return {
         "username": unique_id or target_username,
+        "sec_uid": user.get("secUid") or user.get("sec_uid"),
+        "nickname": user.get("nickname"),
+        "bio": user.get("signature") or user.get("bio"),
+        "is_verified": bool(user.get("verified") or user.get("is_verified")),
         "followers": followers,
         "following": following,
         "likes": likes,
+        "video_count": video_count if video_count is not None else 0,
         "avatar_url": avatar_url,
         "is_private": is_private,
     }
@@ -433,9 +441,14 @@ def extract_profile(
 
     return TikTokAccount(
         username=final_username,
+        sec_uid=extracted.get("sec_uid"),
+        nickname=extracted.get("nickname"),
+        bio=extracted.get("bio"),
+        is_verified=bool(extracted.get("is_verified", False)),
         followers=followers if followers is not None else 0,
         following=following if following is not None else 0,
         likes=likes if likes is not None else 0,
+        video_count=int(extracted.get("video_count") or 0),
         profile_url=profile_url,
         avatar_url=extracted.get("avatar_url"),
         avatar_path=None,

@@ -24,6 +24,8 @@ class StoreCrawlJobRequest extends FormRequest
     {
         return [
             "source_type" => "required|in:usernames,urls,database,count",
+            "crawl_mode" => "nullable|in:account_only,account_with_videos,video_only",
+            "max_videos_per_account" => "nullable|integer|min:0|max:100",
             'data_crawl' => 'required|array',
         ];
     }

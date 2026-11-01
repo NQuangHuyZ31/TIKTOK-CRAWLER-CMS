@@ -81,6 +81,8 @@ class QueueStore:
         return CrawlJobRecord(
             job_id=int(row["job_id"]),
             source_type=payload.get("source_type", "usernames"),
+            crawl_mode=payload.get("crawl_mode", "account_with_videos"),
+            max_videos_per_account=int(payload.get("max_videos_per_account", 20)),
             targets=payload.get("targets", []),
             status=row["status"],
             worker_id=row["worker_id"],
@@ -101,6 +103,8 @@ class QueueStore:
         callback_url: str | None = None,
         callback_token: str | None = None,
         done_usernames: list[str] | set[str] | None = None,
+        crawl_mode: str = "account_with_videos",
+        max_videos_per_account: int = 20,
         reset_if_terminal: bool = True,
     ) -> tuple[CrawlJobRecord, bool]:
         """
@@ -114,6 +118,8 @@ class QueueStore:
         payload_json = json.dumps(
             {
                 "source_type": source_type,
+                "crawl_mode": crawl_mode,
+                "max_videos_per_account": max_videos_per_account,
                 "targets": list(targets),
                 "callback_url": callback_url,
                 "callback_token": callback_token,

@@ -402,4 +402,179 @@ class CrawlerArchitectureTest extends TestCase
         $this->assertSame(1, $results->total());
         $this->assertSame('service_user', $results->items()[0]->username);
     }
+
+    public function test_video_crawl_upserts_master_video_and_computes_growth_deltas_across_jobs(): void
+    {
+        $jobService = app(CrawlJobService::class);
+        $resultService = app(CrawlResultService::class);
+
+        $job1 = $jobService->create([
+            'source_type' => 'usernames',
+            'crawl_mode' => 'account_with_videos',
+            'max_videos_per_account' => 20,
+            'data_crawl' => ['video_creator'],
+        ]);
+
+        // Job #1: First time discovering video 735000111222
+        $res1 = $resultService->handleWebhookEvent($job1->id, [
+            'event' => 'account',
+            'job_id' => $job1->id,
+            'status' => 'success',
+            'username' => 'video_creator',
+            'profile_url' => 'https://www.tiktok.com/@video_creator',
+            'account' => [
+                'username' => 'video_creator',
+                'followers' => 5000,
+                'following' => 20,
+                'likes' => 15000,
+                'video_count' => 10,
+                'status' => 'active',
+            ],
+            'videos' => [
+                [
+                    'video_id' => '735000111222',
+                    'description' => 'First viral video #fyp #viral',
+                    'hashtags' => ['fyp', 'viral'],
+                    'duration' => 18,
+                    'cover_url' => 'https://p16-sign.tiktokcdn.com/cover.jpg',
+                    'play_count' => 10000,
+                    'digg_count' => 500,
+                    'comment_count' => 40,
+                    'share_count' => 15,
+                    'collect_count' => 80,
+                    'published_at' => '2026-10-01 10:00:00',
+                    'crawled_at' => '2026-10-29 12:00:00',
+                ],
+            ],
+        ]);
+
+        $this->assertSame(201, $res1['status_code']);
+        $this->assertSame(1, $res1['body']['videos_crawled_count']);
+
+        $this->assertDatabaseHas('tiktok_videos', [
+            'video_id' => '735000111222',
+            'username' => 'video_creator',
+            'play_count' => 10000,
+            'digg_count' => 500,
+            'comment_count' => 40,
+            'share_count' => 15,
+            'collect_count' => 80,
+        ]);
+
+        $this->assertDatabaseHas('crawl_video_results', [
+            'crawl_job_id' => $job1->id,
+            'video_id' => '735000111222',
+            'play_count' => 10000,
+            'play_count_delta' => 0,
+            'digg_count_delta' => 0,
+        ]);
+
+        // Job #2: Subsequent crawl of the SAME video with updated stats (25,000 views, 1,200 likes)
+        $job2 = $jobService->create([
+            'source_type' => 'usernames',
+            'crawl_mode' => 'account_with_videos',
+            'max_videos_per_account' => 20,
+            'data_crawl' => ['video_creator'],
+        ]);
+
+        $res2 = $resultService->handleWebhookEvent($job2->id, [
+            'event' => 'account',
+            'job_id' => $job2->id,
+            'status' => 'success',
+            'username' => 'video_creator',
+            'profile_url' => 'https://www.tiktok.com/@video_creator',
+            'account' => [
+                'username' => 'video_creator',
+                'followers' => 5500,
+                'following' => 20,
+                'likes' => 22000,
+                'video_count' => 10,
+                'status' => 'active',
+            ],
+            'videos' => [
+                [
+                    'video_id' => '735000111222',
+                    'description' => 'First viral video (Updated caption) #fyp',
+                    'hashtags' => ['fyp'],
+                    'duration' => 18,
+                    'cover_url' => 'https://p16-sign.tiktokcdn.com/cover-new.jpg',
+                    'play_count' => 25000,
+                    'digg_count' => 1200,
+                    'comment_count' => 95,
+                    'share_count' => 30,
+                    'collect_count' => 200,
+                    'published_at' => '2026-10-01 10:00:00',
+                    'crawled_at' => '2026-10-30 12:00:00',
+                ],
+            ],
+        ]);
+
+        $this->assertSame(201, $res2['status_code']);
+
+        // 1. Master table `tiktok_videos` MUST be updated in-place (still 1 row, latest stats, original crawled_at preserved)
+        $this->assertSame(1, \Modules\TiktokAccount\Models\TiktokVideo::where('video_id', '735000111222')->count());
+        $masterVideo = \Modules\TiktokAccount\Models\TiktokVideo::where('video_id', '735000111222')->firstOrFail();
+        $this->assertSame(25000, $masterVideo->play_count);
+        $this->assertSame(1200, $masterVideo->digg_count);
+        $this->assertSame(95, $masterVideo->comment_count);
+        $this->assertSame(30, $masterVideo->share_count);
+        $this->assertSame(200, $masterVideo->collect_count);
+        $this->assertSame('First viral video (Updated caption) #fyp', $masterVideo->description);
+        $this->assertSame('2026-10-29 12:00:00', (string) $masterVideo->crawled_at);
+        $this->assertSame('2026-10-30 12:00:00', (string) $masterVideo->last_crawled_at);
+
+        // 2. Job #2 snapshot in `crawl_video_results` MUST record exact growth deltas (+15000 views, +700 likes)
+        $this->assertDatabaseHas('crawl_video_results', [
+            'crawl_job_id' => $job2->id,
+            'video_id' => '735000111222',
+            'play_count' => 25000,
+            'digg_count' => 1200,
+            'play_count_delta' => 15000,
+            'digg_count_delta' => 700,
+            'comment_count_delta' => 55,
+            'share_count_delta' => 15,
+            'collect_count_delta' => 120,
+        ]);
+
+        // 3. Idempotent retry of Job #2 must NOT duplicate `crawl_video_results` and must preserve baseline delta
+        $resultService->handleWebhookEvent($job2->id, [
+            'event' => 'account',
+            'job_id' => $job2->id,
+            'status' => 'success',
+            'username' => 'video_creator',
+            'profile_url' => 'https://www.tiktok.com/@video_creator',
+            'account' => [
+                'username' => 'video_creator',
+                'followers' => 5500,
+                'following' => 20,
+                'likes' => 22000,
+                'video_count' => 10,
+                'status' => 'active',
+            ],
+            'videos' => [
+                [
+                    'video_id' => '735000111222',
+                    'play_count' => 26000,
+                    'digg_count' => 1300,
+                    'comment_count' => 100,
+                    'share_count' => 35,
+                    'collect_count' => 210,
+                ],
+            ],
+        ]);
+
+        $this->assertSame(
+            1,
+            \Modules\Crawler\Models\CrawlVideoResult::where('crawl_job_id', $job2->id)
+                ->where('video_id', '735000111222')
+                ->count()
+        );
+        $this->assertDatabaseHas('crawl_video_results', [
+            'crawl_job_id' => $job2->id,
+            'video_id' => '735000111222',
+            'play_count' => 26000,
+            'play_count_delta' => 16000,
+            'digg_count_delta' => 800,
+        ]);
+    }
 }

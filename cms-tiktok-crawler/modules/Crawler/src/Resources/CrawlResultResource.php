@@ -24,6 +24,8 @@ class CrawlResultResource extends JsonResource
 			'following_count' => $this->following_count,
 			'success_count' => $this->success_count,
 			'likes_count' => $this->likes_count,
+			'video_count' => (int) ($this->video_count ?? 0),
+			'videos_crawled_count' => (int) ($this->videos_crawled_count ?? 0),
 			'profile_url' => $this->profile_url,
 			'avatar_url' => $this->avatar_url,
 			'avatar_path' => $this->resolveAvatarUrl(),

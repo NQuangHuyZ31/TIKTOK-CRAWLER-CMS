@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import dayjs from 'dayjs';
-import { Space, Button, Popconfirm, Tooltip } from 'antd';
+import { Space, Button, Popconfirm, Tag, Tooltip } from 'antd';
 import { EyeOutlined, EditOutlined, DeleteOutlined, RedoOutlined, PlayCircleOutlined, StopOutlined } from '@ant-design/icons';
 import { useDispatch, useSelector } from '@core/store';
 import ListLayout from '@core/components/ListLayout';
@@ -144,9 +144,19 @@ export default function CrawlJobsPage() {
 			renderColumns={{
 				id: (id) => <span style={{ fontWeight: 500, color: '#1677ff' }}>#{id}</span>,
 				status: (status) => <StatusTag status={status} />,
-				total_account: (val) => formatNumber(val),
+				crawl_mode: (mode, record) => (
+					<Tag color={mode === 'account_only' ? 'default' : 'purple'}>
+						{mode === 'account_only'
+							? 'Account Only'
+							: mode === 'video_only'
+								? 'Video Only'
+								: `Account + Videos (${record.max_videos_per_account ?? 20})`}
+					</Tag>
+				),
+				total_account: (val, record) => formatNumber(val ?? record.total_accounts ?? 0),
 				success_count: (val) => <span style={{ color: '#52c41a' }}>{formatNumber(val)}</span>,
 				failed_count: (val) => (Number(val) > 0 ? <span style={{ color: '#ff4d4f' }}>{formatNumber(val)}</span> : '0'),
+				total_videos_crawled: (val) => formatNumber(val ?? 0),
 				started_at: (val) => formatDateTime(val),
 				finished_at: (val) => formatDateTime(val),
 				action: (_, record) => (
