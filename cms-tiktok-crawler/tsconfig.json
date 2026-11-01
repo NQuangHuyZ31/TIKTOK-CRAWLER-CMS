@@ -20,7 +20,12 @@
 			"@/*": ["./modules/Core/resources/js/*"],
 			"@core": ["./modules/Core/resources/js/index.ts"],
 			"@core/*": ["./modules/Core/resources/js/*"],
-			"@modules/*": ["./modules/*"]
+			"@modules/*": ["./modules/*"],
+			"@crawler/*": ["./modules/Crawler/resources/js/*"],
+			"@auth/*": ["./modules/Auth/resources/js/*"],
+			"@tiktok/*": ["./modules/TiktokAccount/resources/js/*"],
+			"@user/*": ["./modules/User/resources/js/*"],
+			"@system/*": ["./modules/System/resources/js/*"]
 		}
 	},
 	"include": ["modules/**/resources/js/**/*", "vite.config.ts"]

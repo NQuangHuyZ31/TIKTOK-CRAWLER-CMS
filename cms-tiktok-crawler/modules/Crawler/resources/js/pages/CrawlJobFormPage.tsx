@@ -33,8 +33,15 @@ import {
 	UserOutlined,
 	VideoCameraOutlined,
 } from '@ant-design/icons';
-import crawlJobAPI from '../Action/crawlJob';
-import TiktokAccountSelect from '../components/TiktokAccountSelect';
+import crawlJobAPI from '@crawler/Action/crawlJob';
+import {
+	COUNT_PRESETS,
+	SAMPLE_PROFILE_URLS,
+	SAMPLE_USERNAMES,
+	SAMPLE_VIDEO_URLS,
+	VIDEO_LIMIT_PRESETS,
+} from '@crawler/configs/crawlerOptions';
+import TiktokAccountSelect from '@crawler/components/TiktokAccountSelect';
 import ResourceForm, { type ResourceFormRenderContext } from '@core/components/ResourceForm';
 import { formatNumber } from '@core/utils/formatNumber';
 
@@ -67,28 +74,6 @@ export function extractCleanUrls(text?: string): string[] {
 
 	return Array.from(new Set(items));
 }
-
-const SAMPLE_USERNAMES = ['khaby.lame', 'mrbeast', 'zachking', 'bellapoarch'].join('\n');
-
-const SAMPLE_PROFILE_URLS = [
-	'https://www.tiktok.com/@khaby.lame',
-	'https://www.tiktok.com/@mrbeast',
-	'https://www.tiktok.com/@zachking',
-].join('\n');
-
-const SAMPLE_VIDEO_URLS = [
-	'https://www.tiktok.com/@khaby.lame/video/735000111222333444',
-	'https://www.tiktok.com/@mrbeast/video/736000111222333444',
-].join('\n');
-
-const VIDEO_LIMIT_PRESETS = [
-	{ label: '10 Video', value: 10, desc: 'Nhanh - Thử nghiệm' },
-	{ label: '20 Video', value: 20, desc: 'Tiêu chuẩn (Mặc định)' },
-	{ label: '50 Video', value: 50, desc: 'Phân tích sâu' },
-	{ label: '100 Video', value: 100, desc: 'Tối đa' },
-];
-
-const COUNT_PRESETS = [10, 25, 50, 100, 200];
 
 /**
  * Isolated form fields component obeying React Rules of Hooks.

@@ -55,13 +55,7 @@ class AuthController extends BaseController
             return $this->respondError('Unauthenticated.', 401);
         }
 
-        $currentToken = $user->currentAccessToken();
-        if ($currentToken) {
-            $currentToken->delete();
-        } else {
-            // Fallback: revoke all tokens for this user
-            $user->tokens()->delete();
-        }
+        $this->authService->logout($user);
 
         return $this->respondSuccess(null, 'Logged out successfully.');
     }

@@ -172,3 +172,56 @@ const { execute: handleDelete, loading: isDeleting } = useAction(
 > 
 > - When a module manages entity lists, pagination, filtering, search keywords, or modal forms, the agent **MUST author a dedicated Redux Slice (`store/<domain>/<domain>Slice.ts`) and Thunks (`store/<domain>/<domain>Thunks.ts`)** and register the reducer in Core `store/index.ts`.
 > - Never pollute page components with 5+ `useState` hooks for data, loading, error, pagination, and search with manual `useCallback(loadData)` try-catch boilerplate. Use Redux + `useAction` + `TableComponent` base actions for clean, maintainable architecture.
+
+
+---
+
+## 10. Component Decomposition & Config Externalization
+
+### 10.1. Externalizing Constants & Presets to `configs/`
+- **Never declare configuration arrays, presets, or select options inline inside TSX files**:
+  ```typescript
+  // ❌ BAD: Declaring presets/constants inside a component or page file
+  const VIDEO_LIMIT_PRESETS = [
+      { label: '10 Video', value: 10, desc: 'Nhanh - Thử nghiệm' },
+      { label: '20 Video', value: 20, desc: 'Tiêu chuẩn (Mặc định)' },
+  ];
+
+  // ✅ GOOD: Defined in modules/<Module>/resources/js/configs/<domain>Options.ts
+  // and imported cleanly:
+  import { VIDEO_LIMIT_PRESETS } from '../configs/crawlerOptions';
+  ```
+- All select options, numeric filter presets, table column definitions, and sample templates must reside in `modules/<ModuleName>/resources/js/configs/`.
+
+### 10.2. Modular Component Decomposition
+- **Monolithic TSX files (>150-200 lines) are strictly forbidden**:
+  - Pages (`pages/`) must serve as thin orchestrators.
+  - Break down complex forms, wizards, detail cards, and dashboard widgets into dedicated, focused sub-components under `components/` or `pages/<PageName>/ui/`.
+  - Encapsulate distinct form sections (e.g. Mode Selection, Account Selection, Advanced Config) into separate component files.
+
+### 10.3. Promoting Reusable Components to Core (`@core`)
+- Any UI element with potential reusability across $\ge 2$ views or modules must be placed in `modules/Core/resources/js/components/` (e.g., `PresetSelector`, `CustomModal`, `ResourceForm`, `CardKPI`, `NumericRangeFilter`).
+- Never isolate generic, domain-agnostic UI widgets inside a specific feature module.
+
+
+### 10.4. Path Aliases (`@`) Over Multi-Level Relative Imports (`../../`)
+- **Strictly avoid deep relative traversal** (`../../../../components/...`):
+  ```typescript
+  // ❌ BAD: Brittle and hard-to-maintain relative imports
+  import ResourceForm from '../../../../Core/resources/js/components/ResourceForm';
+  import { VIDEO_LIMIT_PRESETS } from '../../../configs/crawlerOptions';
+  import crawlJobAPI from '../../Action/crawlJob';
+
+  // ✅ GOOD: Clean, reliable path aliases
+  import ResourceForm from '@core/components/ResourceForm';
+  import { VIDEO_LIMIT_PRESETS } from '@crawler/configs/crawlerOptions';
+  import crawlJobAPI from '@crawler/Action/crawlJob';
+  ```
+- **Standardized Aliases Configuration**:
+  - `@core/*` / `@/*`: `modules/Core/resources/js/*`
+  - `@modules/*`: `modules/*`
+  - `@crawler/*`: `modules/Crawler/resources/js/*`
+  - `@auth/*`: `modules/Auth/resources/js/*`
+  - `@tiktok/*`: `modules/TiktokAccount/resources/js/*`
+  - `@user/*`: `modules/User/resources/js/*`
+  - `@system/*`: `modules/System/resources/js/*`

@@ -4,8 +4,8 @@ namespace Modules\System\Http\Controllers;
 
 use Modules\Core\Http\Controllers\BaseController;
 use Modules\System\Models\LoginLog;
-use Modules\System\Repositories\LoginLogRepository;
 use Modules\System\Resources\LoginLogResource;
+use Modules\System\Services\LoginLogService;
 
 class LoginLogController extends BaseController
 {
@@ -16,6 +16,6 @@ class LoginLogController extends BaseController
     protected array $defaultSort = ['id', 'desc'];
 
     public function __construct(
-        protected LoginLogRepository $loginLogRepository
+        protected LoginLogService $loginLogService
     ) {}
 }

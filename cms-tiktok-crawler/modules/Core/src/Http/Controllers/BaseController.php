@@ -29,12 +29,22 @@ abstract class BaseController extends Controller
     /**
      * Fully qualified Eloquent model class.
      */
-    protected string $modelClass;
+    protected string $modelClass = '';
 
     /**
      * Fully qualified API Resource class.
      */
     protected ?string $resourceClass = null;
+
+    /**
+     * Optional FormRequest class for validating store operations.
+     */
+    protected ?string $storeRequestClass = null;
+
+    /**
+     * Optional FormRequest class for validating update operations.
+     */
+    protected ?string $updateRequestClass = null;
 
     /**
      * Relationships to eager load on model queries.
@@ -48,7 +58,6 @@ abstract class BaseController extends Controller
     public function index(Request $request): JsonResponse
     {
         $query = $this->buildIndexQuery($request, $this->getModelQuery());
-        Log::info('sql', ['query' => $query->toSql()]);
 
         if ($request->input('pagination') === 'false' || $request->boolean('all')) {
             return $this->respondSuccess($this->transform($query->get()), 'Records retrieved successfully.');
@@ -141,6 +150,12 @@ abstract class BaseController extends Controller
      */
     protected function getModelQuery(): Builder
     {
+        if (empty($this->modelClass) || !class_exists($this->modelClass)) {
+            throw new \BadMethodCallException(
+                sprintf('Model class is not configured on [%s] to perform database queries.', static::class)
+            );
+        }
+
         return $this->modelClass::query();
     }
 
@@ -195,7 +210,15 @@ abstract class BaseController extends Controller
      */
     protected function validateStore(Request $request): array
     {
-        return $request instanceof \Illuminate\Foundation\Http\FormRequest ? $request->validated() : $request->all();
+        if ($request instanceof \Illuminate\Foundation\Http\FormRequest) {
+            return $request->validated();
+        }
+
+        if ($this->storeRequestClass && class_exists($this->storeRequestClass)) {
+            return app($this->storeRequestClass)->validated();
+        }
+
+        return $request->all();
     }
 
     /**
@@ -203,6 +226,14 @@ abstract class BaseController extends Controller
      */
     protected function validateUpdate(Request $request, int|string $id): array
     {
-        return $request instanceof \Illuminate\Foundation\Http\FormRequest ? $request->validated() : $request->all();
+        if ($request instanceof \Illuminate\Foundation\Http\FormRequest) {
+            return $request->validated();
+        }
+
+        if ($this->updateRequestClass && class_exists($this->updateRequestClass)) {
+            return app($this->updateRequestClass)->validated();
+        }
+
+        return $request->all();
     }
 }

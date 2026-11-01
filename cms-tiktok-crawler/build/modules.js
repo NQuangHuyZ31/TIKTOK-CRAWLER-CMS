@@ -59,6 +59,11 @@ function aliases() {
         '@': path.resolve(modulesDir, 'Core/resources/js'),
         '@core': path.resolve(modulesDir, 'Core/resources/js'),
         '@modules': modulesDir,
+        '@crawler': path.resolve(modulesDir, 'Crawler/resources/js'),
+        '@auth': path.resolve(modulesDir, 'Auth/resources/js'),
+        '@tiktok': path.resolve(modulesDir, 'TiktokAccount/resources/js'),
+        '@user': path.resolve(modulesDir, 'User/resources/js'),
+        '@system': path.resolve(modulesDir, 'System/resources/js'),
     };
 }
 
