@@ -33,15 +33,15 @@ import {
 	UserOutlined,
 	VideoCameraOutlined,
 } from '@ant-design/icons';
-import crawlJobAPI from '@crawler/Action/crawlJob';
+import crawlJobAPI from '@modules/Crawler/resources/js/Action/crawlJob';
 import {
 	COUNT_PRESETS,
 	SAMPLE_PROFILE_URLS,
 	SAMPLE_USERNAMES,
 	SAMPLE_VIDEO_URLS,
 	VIDEO_LIMIT_PRESETS,
-} from '@crawler/configs/crawlerOptions';
-import TiktokAccountSelect from '@crawler/components/TiktokAccountSelect';
+} from '@modules/Crawler/resources/js/configs/crawlerOptions';
+import TiktokAccountSelect from '@modules/Crawler/resources/js/components/TiktokAccountSelect';
 import ResourceForm, { type ResourceFormRenderContext } from '@core/components/ResourceForm';
 import { formatNumber } from '@core/utils/formatNumber';
 

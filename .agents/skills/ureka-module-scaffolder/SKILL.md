@@ -20,7 +20,7 @@ modules/<ModuleName>/
   - **Service**: Domain business logic, data mutations, transactions. Calls `Repository` interfaces via Dependency Injection.
   - **Repository**: Extends `BaseRepository` and implements `<Model>RepositoryInterface`. Handles all Eloquent queries. Bound in `ServiceProvider`.
 - **Frontend (Modular & Decomposed Architecture)**:
-  - **Path Aliases**: ALWAYS use `@` aliases (`@core/...`, `@<module>/...`) instead of brittle `../../..` relative paths.
+  - **Path Aliases**: ONLY use `@core/...` and `@modules/<ModuleName>/...` instead of brittle `../../..` relative paths. NEVER declare per-module aliases (e.g. `@crawler`, `@user`).
   - **Configs Externalization (`configs/`)**: All presets, select options, dictionaries, and constants MUST be placed in `configs/`. Never inline in components.
   - **Component Decomposition (`components/`)**: Never write monolithic TSX pages (>150-200 lines). Decompose complex views into focused sub-components.
   - **Core Component Reusability**: Reusable UI widgets and controls must be placed in `@core` (`modules/Core/resources/js/components/`).
