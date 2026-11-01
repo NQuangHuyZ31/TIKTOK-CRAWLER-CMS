@@ -72,6 +72,10 @@ def parse_video_item(
         )
     elif isinstance(author, str):
         author_username = normalize_username(author)
+    elif item.get("authorUniqueId"):
+        author_username = normalize_username(item.get("authorUniqueId"))
+    elif item.get("author_unique_id"):
+        author_username = normalize_username(item.get("author_unique_id"))
 
     username = author_username or normalize_username(fallback_username) or "unknown"
 
@@ -89,16 +93,24 @@ def parse_video_item(
     duration = parse_stat_value(video_meta.get("duration") or item.get("duration")) or 0
     width = parse_stat_value(video_meta.get("width") or item.get("width")) or 0
     height = parse_stat_value(video_meta.get("height") or item.get("height")) or 0
-    definition = video_meta.get("definition") or video_meta.get("ratio") or item.get("definition")
+    definition = (
+        video_meta.get("definition")
+        or video_meta.get("ratio")
+        or item.get("definition")
+        or item.get("ratio")
+    )
     cover_url = (
         video_meta.get("cover")
         or video_meta.get("originCover")
         or video_meta.get("defaultCover")
+        or item.get("coverUrl")
+        or item.get("originCoverUrl")
         or item.get("cover_url")
         or item.get("thumbnail")
     )
     dynamic_cover_url = (
         video_meta.get("dynamicCover")
+        or item.get("dynamicCoverUrl")
         or item.get("dynamic_cover_url")
     )
 
@@ -115,27 +127,27 @@ def parse_video_item(
     play_raw = (
         stats.get("playCount")
         if "playCount" in stats
-        else (stats.get("plays") or item.get("play_count") or item.get("view_count"))
+        else (stats.get("plays") or item.get("playCount") or item.get("play_count") or item.get("view_count"))
     )
     digg_raw = (
         stats.get("diggCount")
         if "diggCount" in stats
-        else (stats.get("likes") or item.get("digg_count") or item.get("like_count"))
+        else (stats.get("likes") or item.get("diggCount") or item.get("digg_count") or item.get("like_count"))
     )
     comment_raw = (
         stats.get("commentCount")
         if "commentCount" in stats
-        else (stats.get("comments") or item.get("comment_count"))
+        else (stats.get("comments") or item.get("commentCount") or item.get("comment_count"))
     )
     share_raw = (
         stats.get("shareCount")
         if "shareCount" in stats
-        else (stats.get("shares") or item.get("share_count") or item.get("repost_count"))
+        else (stats.get("shares") or item.get("shareCount") or item.get("share_count") or item.get("repost_count"))
     )
     collect_raw = (
         stats.get("collectCount")
         if "collectCount" in stats
-        else (stats.get("collects") or item.get("collect_count") or item.get("save_count"))
+        else (stats.get("collects") or item.get("collectCount") or item.get("collect_count") or item.get("save_count"))
     )
 
     play_count = _fix_int32_overflow(parse_stat_value(play_raw))
@@ -155,6 +167,15 @@ def parse_video_item(
                 published_at = datetime.fromtimestamp(ts, tz=timezone.utc).replace(tzinfo=None)
             except (OSError, ValueError):
                 published_at = None
+
+    if not published_at and video_id.isdigit():
+        try:
+            vid_int = int(video_id)
+            ts = vid_int >> 32
+            if 1_450_000_000 < ts < 2_200_000_000:
+                published_at = datetime.fromtimestamp(ts, tz=timezone.utc).replace(tzinfo=None)
+        except (OSError, ValueError, OverflowError):
+            pass
 
     now = datetime.now()
     video_url = item.get("video_url") or f"https://www.tiktok.com/@{username}/video/{video_id}"
@@ -338,10 +359,33 @@ async def fetch_account_videos(
 
     # Layer 2: Fetch TikTok public Creator Embed SSR page
     embed_url = f"https://www.tiktok.com/embed/@{clean_username}"
+    # Use Desktop Chrome UA because TikTok embed blocks iPhone mobile UAs with HTTP 503
+    embed_headers = {
+        "User-Agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/128.0.0.0 Safari/537.36"
+        ),
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Referer": "https://www.tiktok.com/",
+        "Sec-Fetch-Dest": "iframe",
+        "Sec-Fetch-Mode": "navigate",
+        "Sec-Fetch-Site": "same-origin",
+    }
+    if headers:
+        for k, v in headers.items():
+            if k.lower() == "user-agent":
+                # Only keep caller's UA if it is not mobile/iPhone
+                if "iphone" not in v.lower() and "mobile" not in v.lower() and "android" not in v.lower():
+                    embed_headers[k] = v
+            else:
+                embed_headers[k] = v
+
     try:
         response = await client.get(
             embed_url,
-            headers=headers,
+            headers=embed_headers,
             timeout=timeout,
         )
         if response.status_code == 200 and response.text:
@@ -352,6 +396,12 @@ async def fetch_account_videos(
             )
             if videos:
                 return videos[:max_videos]
+        else:
+            logger.debug(
+                "Embed video fetch returned status %d for @%s",
+                response.status_code,
+                clean_username,
+            )
     except Exception as exc:
         logger.debug("Embed video fetch skipped/failed for @%s: %s", clean_username, exc)
 

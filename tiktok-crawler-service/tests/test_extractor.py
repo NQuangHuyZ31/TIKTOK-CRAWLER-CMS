@@ -162,6 +162,55 @@ class TestExtractor(unittest.TestCase):
         self.assertTrue(v.is_original_sound)
         self.assertEqual(v.hashtags, ["fyp", "tiktok"])
 
+    def test_extract_videos_from_embed_frontity_state(self):
+        # 7420108849767795999 >> 32 = 1727630798
+        html = """
+        <!DOCTYPE html>
+        <html>
+        <body>
+            <script id="__FRONTITY_CONNECT_STATE__" type="application/json">
+            {
+                "source": {
+                    "data": {
+                        "/embed/@khaby.lame": {
+                            "videoList": [
+                                {
+                                    "id": "7420108849767795999",
+                                    "desc": "Check out this embed trick #lifehack",
+                                    "coverUrl": "https://p16-sign.tiktokcdn.com/embed_cover.jpg",
+                                    "dynamicCoverUrl": "https://p16-sign.tiktokcdn.com/embed_dyn.webp",
+                                    "playCount": 5400000,
+                                    "diggCount": 210000,
+                                    "authorUniqueId": "khaby.lame",
+                                    "ratio": "720p",
+                                    "width": 720,
+                                    "height": 1280
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+            </script>
+        </body>
+        </html>
+        """
+        videos = extract_videos_from_body(body=html, target_username="khaby.lame", max_videos=5)
+        self.assertEqual(len(videos), 1)
+        v = videos[0]
+        self.assertEqual(v.video_id, "7420108849767795999")
+        self.assertEqual(v.username, "khaby.lame")
+        self.assertEqual(v.play_count, 5_400_000)
+        self.assertEqual(v.digg_count, 210_000)
+        self.assertEqual(v.cover_url, "https://p16-sign.tiktokcdn.com/embed_cover.jpg")
+        self.assertEqual(v.dynamic_cover_url, "https://p16-sign.tiktokcdn.com/embed_dyn.webp")
+        self.assertEqual(v.definition, "720p")
+        self.assertEqual(v.width, 720)
+        self.assertEqual(v.height, 1280)
+        self.assertIsNotNone(v.published_at)
+        self.assertEqual(v.published_at.year, 2024)
+        self.assertEqual(v.hashtags, ["lifehack"])
+
 
 if __name__ == "__main__":
     unittest.main()
