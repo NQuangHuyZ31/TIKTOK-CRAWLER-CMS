@@ -102,4 +102,15 @@ class CrawlJobRepository extends BaseRepository implements CrawlJobRepositoryInt
             ->orderBy('id', 'asc')
             ->get();
     }
+
+    /**
+     * Retrieve active crawl job by ID if running or queued.
+     */
+    public function getActiveJobById(int $jobId): Collection
+    {
+        return $this->model
+            ->where('id', $jobId)
+            ->whereIn('status', ['running', 'queued'])
+            ->get();
+    }
 }

@@ -7,24 +7,29 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use InvalidArgumentException;
-use Modules\Crawler\Models\CrawlResult;
-use Modules\Crawler\Models\CrawlVideoResult;
 use Modules\Crawler\Repositories\Interfaces\CrawlJobRepositoryInterface;
 use Modules\Crawler\Repositories\Interfaces\CrawlResultRepositoryInterface;
-use Modules\TiktokAccount\Models\TiktokVideo;
+use Modules\Crawler\Repositories\Interfaces\CrawlVideoResultRepositoryInterface;
 use Modules\TiktokAccount\Repositories\Interfaces\TiktokAccountRepositoryInterface;
+use Modules\TiktokAccount\Repositories\Interfaces\TiktokVideoRepositoryInterface;
 
 class CrawlResultService
 {
     protected AvatarStorageService $avatarStorageService;
+    protected CrawlVideoResultRepositoryInterface $crawlVideoResultRepository;
+    protected TiktokVideoRepositoryInterface $tiktokVideoRepository;
 
     public function __construct(
         protected CrawlResultRepositoryInterface $crawlResultRepository,
         protected CrawlJobRepositoryInterface $crawlJobRepository,
         protected TiktokAccountRepositoryInterface $tiktokAccountRepository,
-        ?AvatarStorageService $avatarStorageService = null
+        ?AvatarStorageService $avatarStorageService = null,
+        ?CrawlVideoResultRepositoryInterface $crawlVideoResultRepository = null,
+        ?TiktokVideoRepositoryInterface $tiktokVideoRepository = null
     ) {
         $this->avatarStorageService = $avatarStorageService ?? app(AvatarStorageService::class);
+        $this->crawlVideoResultRepository = $crawlVideoResultRepository ?? app(CrawlVideoResultRepositoryInterface::class);
+        $this->tiktokVideoRepository = $tiktokVideoRepository ?? app(TiktokVideoRepositoryInterface::class);
     }
 
     /**
@@ -219,7 +224,7 @@ class CrawlResultService
         }
 
         // Idempotent upsert by UNIQUE (crawl_job_id, username)
-        $result = CrawlResult::updateOrCreate(
+        $result = $this->crawlResultRepository->updateOrCreate(
             [
                 'crawl_job_id' => $jobId,
                 'username' => $username,
@@ -311,16 +316,10 @@ class CrawlResultService
         $now = now();
 
         // 1. Fetch existing master videos in 1 query (to preserve first crawled_at & compute deltas)
-        $existingMasters = TiktokVideo::withTrashed()
-            ->whereIn('video_id', $videoIds)
-            ->get()
-            ->keyBy('video_id');
+        $existingMasters = $this->tiktokVideoRepository->getExistingByVideoIds($videoIds);
 
         // Also check if THIS job already wrote snapshots (for retry/resume idempotency)
-        $existingJobSnapshots = CrawlVideoResult::where('crawl_job_id', $jobId)
-            ->whereIn('video_id', $videoIds)
-            ->get()
-            ->keyBy('video_id');
+        $existingJobSnapshots = $this->crawlVideoResultRepository->getByJobAndVideoIds($jobId, $videoIds);
 
         $masterRows = [];
         $deltasByVideoId = [];
@@ -419,7 +418,7 @@ class CrawlResultService
         }
 
         // 2. Bulk upsert into master `tiktok_videos` table
-        TiktokVideo::upsert(
+        $this->tiktokVideoRepository->upsert(
             $masterRows,
             ['video_id'],
             [
@@ -455,7 +454,7 @@ class CrawlResultService
         );
 
         // 3. Map video_id -> tiktok_videos.id and bulk upsert into `crawl_video_results`
-        $masterIdMap = TiktokVideo::whereIn('video_id', $videoIds)->pluck('id', 'video_id');
+        $masterIdMap = $this->tiktokVideoRepository->getIdsByVideoIds($videoIds);
 
         $snapshotRows = [];
         foreach ($masterRows as $row) {
@@ -494,7 +493,7 @@ class CrawlResultService
             ];
         }
 
-        CrawlVideoResult::upsert(
+        $this->crawlVideoResultRepository->upsert(
             $snapshotRows,
             ['crawl_job_id', 'video_id'],
             [
@@ -534,9 +533,9 @@ class CrawlResultService
      */
     public function completeJob(array $data, int $jobId): array
     {
-        $dbSuccess = CrawlResult::where('crawl_job_id', $jobId)->where('status', 'success')->count();
-        $dbFailed = CrawlResult::where('crawl_job_id', $jobId)->where('status', 'failed')->count();
-        $totalVideosCrawled = CrawlVideoResult::where('crawl_job_id', $jobId)->where('status', 'success')->count();
+        $dbSuccess = $this->crawlResultRepository->countByStatus($jobId, 'success');
+        $dbFailed = $this->crawlResultRepository->countByStatus($jobId, 'failed');
+        $totalVideosCrawled = $this->crawlVideoResultRepository->countByStatus($jobId, 'success');
         $hasDbResults = ($dbSuccess + $dbFailed) > 0;
 
         $successCount = $hasDbResults ? $dbSuccess : (int) ($data['success_count'] ?? 0);
@@ -575,9 +574,9 @@ class CrawlResultService
             return;
         }
 
-        $successCount = CrawlResult::where('crawl_job_id', $jobId)->where('status', 'success')->count();
-        $failedCount = CrawlResult::where('crawl_job_id', $jobId)->where('status', 'failed')->count();
-        $totalVideosCrawled = CrawlVideoResult::where('crawl_job_id', $jobId)->where('status', 'success')->count();
+        $successCount = $this->crawlResultRepository->countByStatus($jobId, 'success');
+        $failedCount = $this->crawlResultRepository->countByStatus($jobId, 'failed');
+        $totalVideosCrawled = $this->crawlVideoResultRepository->countByStatus($jobId, 'success');
 
         $update = [
             'success_count' => $successCount,

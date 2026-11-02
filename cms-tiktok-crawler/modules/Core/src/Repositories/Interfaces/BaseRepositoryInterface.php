@@ -16,5 +16,7 @@ interface BaseRepositoryInterface
     public function findOrFail(int|string $id): Model;
     public function create(array $attributes): Model;
     public function update(int|string $id, array $attributes): bool|Model;
+    public function updateOrCreate(array $attributes, array $values = []): Model;
+    public function upsert(array $values, array|string $uniqueBy, ?array $update = null): int;
     public function delete(int|string $id): bool;
 }

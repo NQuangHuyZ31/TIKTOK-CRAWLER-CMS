@@ -66,4 +66,27 @@ class CrawlVideoResultRepository extends BaseRepository implements CrawlVideoRes
 
         return $query->paginate(min(max($perPage, 1), 100));
     }
+
+    public function countByStatus(int $jobId, string $status): int
+    {
+        return $this->model->where('crawl_job_id', $jobId)->where('status', $status)->count();
+    }
+
+    public function getExistingVideoIds(int $jobId): array
+    {
+        return $this->model->where('crawl_job_id', $jobId)
+            ->whereNotNull('video_id')
+            ->pluck('video_id')
+            ->filter()
+            ->values()
+            ->all();
+    }
+
+    public function getByJobAndVideoIds(int $jobId, array $videoIds): \Illuminate\Database\Eloquent\Collection
+    {
+        return $this->model->where('crawl_job_id', $jobId)
+            ->whereIn('video_id', $videoIds)
+            ->get()
+            ->keyBy('video_id');
+    }
 }

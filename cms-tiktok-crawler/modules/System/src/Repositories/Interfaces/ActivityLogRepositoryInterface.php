@@ -12,4 +12,9 @@ interface ActivityLogRepositoryInterface extends BaseRepositoryInterface
      * @return array<string, int>
      */
     public function getStatistics(): array;
+
+    /**
+     * Find latest activity log matching event criteria.
+     */
+    public function findLatestByEvent(string $module, string $action, string|int|null $recordId = null): ?\Modules\System\Models\ActivityLog;
 }

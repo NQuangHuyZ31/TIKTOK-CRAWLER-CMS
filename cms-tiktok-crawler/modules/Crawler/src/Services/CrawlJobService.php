@@ -6,7 +6,6 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Http;
 use Modules\Core\Utils\FetchApi;
 use Modules\Crawler\Models\CrawlJob;
-use Modules\Crawler\Models\CrawlResult;
 use Modules\Crawler\Repositories\Interfaces\CrawlJobRepositoryInterface;
 use Modules\Crawler\Repositories\Interfaces\CrawlResultRepositoryInterface;
 use Modules\Crawler\Repositories\Interfaces\CrawlVideoResultRepositoryInterface;
@@ -325,8 +324,8 @@ class CrawlJobService
 
         $this->cancelInCrawlerEngine($id);
 
-        $successCount = CrawlResult::where('crawl_job_id', $id)->where('status', 'success')->count();
-        $failedCount = CrawlResult::where('crawl_job_id', $id)->where('status', 'failed')->count();
+        $successCount = $this->crawlResultRepository->countByStatus($id, 'success');
+        $failedCount = $this->crawlResultRepository->countByStatus($id, 'failed');
 
         $this->crawlJobRepository->update($id, [
             'status' => 'failed',
@@ -365,7 +364,7 @@ class CrawlJobService
         }
 
         $activeJobs = $jobId !== null
-            ? CrawlJob::where('id', $jobId)->whereIn('status', ['running', 'queued'])->get()
+            ? $this->crawlJobRepository->getActiveJobById($jobId)
             : $this->crawlJobRepository->getUnfinishedJobs();
 
         if ($activeJobs->isEmpty()) {
@@ -433,11 +432,7 @@ class CrawlJobService
                 $targets = $this->tiktokAccountRepository->getUsernamesByIds($targets);
             }
 
-            $doneUsernames = CrawlResult::where('crawl_job_id', $job->id)
-                ->pluck('username')
-                ->filter()
-                ->values()
-                ->all();
+            $doneUsernames = $this->crawlResultRepository->getDoneUsernames($job->id);
 
             $items[] = [
                 'job_id' => $job->id,

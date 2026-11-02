@@ -4,6 +4,7 @@ namespace Modules\System\Services;
 
 use Modules\System\Events\ActivityOccurredEvent;
 use Modules\System\Models\ActivityLog;
+use Modules\System\Repositories\Interfaces\ActivityLogRepositoryInterface;
 use Modules\User\Models\User;
 
 class ActivityLogger
@@ -39,10 +40,10 @@ class ActivityLogger
 
         event($event);
 
-        return ActivityLog::where('module', $event->module)
-            ->where('action', $event->action)
-            ->where('record_id', $event->recordId)
-            ->latest('id')
-            ->first();
+        return app(ActivityLogRepositoryInterface::class)->findLatestByEvent(
+            $event->module,
+            $event->action,
+            $event->recordId
+        );
     }
 }

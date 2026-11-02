@@ -54,4 +54,24 @@ class CrawlResultRepository extends BaseRepository implements CrawlResultReposit
 
         return $query->paginate(min(max($perPage, 1), 100));
     }
+
+    /**
+     * Count crawl results by job ID and status.
+     */
+    public function countByStatus(int $jobId, string $status): int
+    {
+        return $this->model->where('crawl_job_id', $jobId)->where('status', $status)->count();
+    }
+
+    /**
+     * Get completed/failed usernames for a crawl job.
+     */
+    public function getDoneUsernames(int $jobId): array
+    {
+        return $this->model->where('crawl_job_id', $jobId)
+            ->whereIn('status', ['success', 'failed'])
+            ->whereNotNull('username')
+            ->pluck('username')
+            ->toArray();
+    }
 }

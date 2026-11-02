@@ -17,7 +17,7 @@ modules/<ModuleName>/
 ## 2. Standards
 - **Backend (Strict 3-Layer Architecture)**:
   - **Controller**: Extends `BaseController`. Exclusively handles HTTP & validation; delegates all business logic to `Service`.
-  - **Service**: Domain business logic, data mutations, transactions. Calls `Repository` interfaces via Dependency Injection.
+  - **Service**: Domain business logic, data mutations, transactions. Calls `Repository` interfaces via Dependency Injection. STRICTLY FORBIDDEN from using Model directly.
   - **Repository**: Extends `BaseRepository` and implements `<Model>RepositoryInterface`. Handles all Eloquent queries. Bound in `ServiceProvider`.
 - **Frontend (Modular & Decomposed Architecture)**:
   - **Path Aliases**: ONLY use `@core/...` and `@modules/<ModuleName>/...` instead of brittle `../../..` relative paths. NEVER declare per-module aliases (e.g. `@crawler`, `@user`).

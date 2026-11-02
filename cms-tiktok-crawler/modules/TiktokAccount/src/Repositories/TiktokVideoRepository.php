@@ -56,4 +56,14 @@ class TiktokVideoRepository extends BaseRepository implements TiktokVideoReposit
 
         return $query->paginate(min(max($perPage, 1), 100));
     }
+
+    public function getIdsByVideoIds(array $videoIds): array
+    {
+        return $this->model->whereIn('video_id', $videoIds)->pluck('id', 'video_id')->toArray();
+    }
+
+    public function getExistingByVideoIds(array $videoIds): \Illuminate\Database\Eloquent\Collection
+    {
+        return $this->model->withTrashed()->whereIn('video_id', $videoIds)->get()->keyBy('video_id');
+    }
 }
