@@ -8,7 +8,6 @@ use Modules\Core\Http\Controllers\BaseController;
 use Modules\System\Http\Requests\UpdateSystemSettingRequest;
 use Modules\System\Jobs\PruneExpiredLogsJob;
 use Modules\System\Models\SystemSetting;
-use Modules\System\Repositories\SystemSettingRepository;
 use Modules\System\Services\SystemSettingService;
 
 class SystemSettingController extends BaseController
@@ -17,7 +16,6 @@ class SystemSettingController extends BaseController
     public string $permissionModule = 'system';
 
     public function __construct(
-        protected SystemSettingRepository $settingRepository,
         protected SystemSettingService $settingService
     ) {}
 

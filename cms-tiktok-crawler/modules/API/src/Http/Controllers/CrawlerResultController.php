@@ -2,13 +2,13 @@
 
 namespace Modules\API\Http\Controllers;
 
-use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Modules\API\Http\Requests\CrawlerResultStoreRequest;
+use Modules\Core\Http\Controllers\BaseController;
 use Modules\Crawler\Services\CrawlJobService;
 use Modules\Crawler\Services\CrawlResultService;
 
-class CrawlerResultController extends Controller
+class CrawlerResultController extends BaseController
 {
     public function __construct(
         private readonly CrawlResultService $crawlResultService,
@@ -35,9 +35,9 @@ class CrawlerResultController extends Controller
 
     public function unfinishedJobs(): JsonResponse
     {
-        return response()->json([
-            'status' => 'success',
-            'data' => $this->crawlJobService->getUnfinishedJobsForRecovery(),
-        ]);
+        return $this->respondSuccess(
+            $this->crawlJobService->getUnfinishedJobsForRecovery(),
+            'Unfinished crawl jobs retrieved successfully.'
+        );
     }
 }

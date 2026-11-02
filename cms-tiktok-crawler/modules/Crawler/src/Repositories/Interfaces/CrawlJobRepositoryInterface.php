@@ -35,4 +35,9 @@ interface CrawlJobRepositoryInterface extends BaseRepositoryInterface
      * Retrieve unfinished ('running' and 'queued') crawl jobs ordered by Recovery Priority + FIFO.
      */
     public function getUnfinishedJobs(): Collection;
+
+    /**
+     * Retrieve active crawl job by ID if running or queued.
+     */
+    public function getActiveJobById(int $jobId): Collection;
 }

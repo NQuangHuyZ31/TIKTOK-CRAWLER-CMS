@@ -6,13 +6,16 @@ use Modules\Core\Utils\CheckFileUpload;
 use Modules\Core\Utils\UploadFile;
 use Modules\TiktokAccount\Models\TiktokAccount;
 use Modules\TiktokAccount\Repositories\Interfaces\TiktokAccountRepositoryInterface;
+use Modules\TiktokAccount\Repositories\Interfaces\TiktokVideoRepositoryInterface;
 
 class TiktokAccountService
 {
     private const ACCOUNT_STATUSES = ['active', 'inactive', 'banned'];
 
-    public function __construct(protected TiktokAccountRepositoryInterface $tiktokAccountRepository)
-    {
+    public function __construct(
+        protected TiktokAccountRepositoryInterface $tiktokAccountRepository,
+        protected TiktokVideoRepositoryInterface $tiktokVideoRepository
+    ) {
     }
 
     /**
@@ -105,5 +108,34 @@ class TiktokAccountService
         }
 
         return $this->tiktokAccountRepository->updateStatus($id, $status);
+    }
+
+    /**
+     * Retrieve paginated crawl history results for an account.
+     */
+    public function getCrawlResults(int $id, int $perPage = 10, array $filters = []): mixed
+    {
+        return $this->tiktokAccountRepository->getCrawlResults($id, $perPage, $filters);
+    }
+
+    /**
+     * Retrieve paginated TikTok videos for an account.
+     */
+    public function getVideos(int $id, int $perPage = 10, array $filters = []): mixed
+    {
+        $account = $this->tiktokAccountRepository->findById($id);
+        if (!$account) {
+            return null;
+        }
+
+        return $this->tiktokVideoRepository->getByAccountId($id, $perPage, $filters);
+    }
+
+    /**
+     * Aggregate statistics summary for TikTok account metrics.
+     */
+    public function getStatisticSummary(): array
+    {
+        return $this->tiktokAccountRepository->getStatisticSummary();
     }
 }

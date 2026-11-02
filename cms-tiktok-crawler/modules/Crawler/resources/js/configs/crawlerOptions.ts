@@ -47,3 +47,35 @@ export const LIKE_PRESETS: NumericPreset[] = [
 	{ label: '1M - 5M', value: '1000000..5000000' },
 	{ label: '≥ 5M', value: '>=5000000' },
 ];
+
+
+// -----------------------------------------------------------------------------
+// FORM PRESETS & SAMPLE TEMPLATES
+// -----------------------------------------------------------------------------
+export interface VideoLimitPreset {
+	label: string;
+	value: number;
+	desc: string;
+}
+
+export const VIDEO_LIMIT_PRESETS: VideoLimitPreset[] = [
+	{ label: '10 Video', value: 10, desc: 'Nhanh - Thử nghiệm' },
+	{ label: '20 Video', value: 20, desc: 'Tiêu chuẩn (Mặc định)' },
+	{ label: '50 Video', value: 50, desc: 'Phân tích sâu' },
+	{ label: '100 Video', value: 100, desc: 'Tối đa' },
+];
+
+export const COUNT_PRESETS = [10, 25, 50, 100, 200];
+
+export const SAMPLE_USERNAMES = ['khaby.lame', 'mrbeast', 'zachking', 'bellapoarch'].join('\n');
+
+export const SAMPLE_PROFILE_URLS = [
+	'https://www.tiktok.com/@khaby.lame',
+	'https://www.tiktok.com/@mrbeast',
+	'https://www.tiktok.com/@zachking',
+].join('\n');
+
+export const SAMPLE_VIDEO_URLS = [
+	'https://www.tiktok.com/@khaby.lame/video/735000111222333444',
+	'https://www.tiktok.com/@mrbeast/video/736000111222333444',
+].join('\n');

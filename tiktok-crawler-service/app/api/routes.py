@@ -26,6 +26,8 @@ class CrawlRequest(BaseModel):
     callback_url: str | None = None
     callback_token: str | None = None
     source_type: Literal["usernames", "urls", "count"] | None = None
+    crawl_mode: str = "account_with_videos"
+    max_videos_per_account: int = Field(default=20, ge=0, le=100)
     usernames: list[str] | None = None
     urls: list[str] | None = None
     total_accounts: int | None = Field(default=None, gt=0)
@@ -120,6 +122,8 @@ def create_app(
                 callback_url=request.callback_url,
                 callback_token=request.callback_token,
                 done_usernames=request.done_usernames,
+                crawl_mode=request.crawl_mode,
+                max_videos_per_account=request.max_videos_per_account,
             )
             return result
         except QueueFullError as err:

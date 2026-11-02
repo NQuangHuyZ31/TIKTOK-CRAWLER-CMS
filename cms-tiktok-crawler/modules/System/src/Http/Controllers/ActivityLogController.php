@@ -5,7 +5,6 @@ namespace Modules\System\Http\Controllers;
 use Illuminate\Http\JsonResponse;
 use Modules\Core\Http\Controllers\BaseController;
 use Modules\System\Models\ActivityLog;
-use Modules\System\Repositories\ActivityLogRepository;
 use Modules\System\Resources\ActivityLogResource;
 use Modules\System\Services\ActivityLogService;
 
@@ -18,7 +17,6 @@ class ActivityLogController extends BaseController
     protected array $defaultSort = ['id', 'desc'];
 
     public function __construct(
-        protected ActivityLogRepository $activityLogRepository,
         protected ActivityLogService $activityLogService
     ) {}
 

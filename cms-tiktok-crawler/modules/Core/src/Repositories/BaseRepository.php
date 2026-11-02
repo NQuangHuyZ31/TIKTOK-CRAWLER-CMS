@@ -60,6 +60,16 @@ abstract class BaseRepository implements BaseRepositoryInterface
         return $record;
     }
 
+    public function updateOrCreate(array $attributes, array $values = []): Model
+    {
+        return $this->model->updateOrCreate($attributes, $values);
+    }
+
+    public function upsert(array $values, array|string $uniqueBy, ?array $update = null): int
+    {
+        return $this->model->upsert($values, $uniqueBy, $update);
+    }
+
     public function delete(int|string $id): bool
     {
         $record = $this->findById($id);

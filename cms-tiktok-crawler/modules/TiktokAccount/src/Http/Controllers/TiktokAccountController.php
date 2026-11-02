@@ -6,10 +6,10 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Modules\Core\Http\Controllers\BaseController;
 use Modules\TiktokAccount\Models\TiktokAccount;
-use Modules\TiktokAccount\Repositories\Interfaces\TiktokAccountRepositoryInterface;
 use Modules\TiktokAccount\Http\Requests\StoreTiktokAccountRequest;
 use Modules\TiktokAccount\Http\Requests\UpdateTiktokAccountRequest;
 use Modules\TiktokAccount\Resources\TiktokAccountResource;
+use Modules\TiktokAccount\Resources\TiktokVideoResource;
 use Modules\TiktokAccount\Services\TiktokAccountService;
 
 class TiktokAccountController extends BaseController
@@ -48,7 +48,6 @@ class TiktokAccountController extends BaseController
     protected array $defaultSort = ['id', 'desc'];
 
     public function __construct(
-        protected TiktokAccountRepositoryInterface $tiktokAccountRepository,
         protected TiktokAccountService $tiktokAccountService
     ) {
     }
@@ -119,16 +118,33 @@ class TiktokAccountController extends BaseController
      * Retrieve paginated crawl history results for an account.
      * api: GET /tiktok-account/tiktok-account/{id}/results
      */
-    public function results(int|string $id, Request $request):JsonResponse
+    public function results(int|string $id, Request $request): JsonResponse
     {
         $perPage = (int) ($request->input('per_page', 10));
-        $results = $this->tiktokAccountRepository->getCrawlResults((int) $id, $perPage, $request->all());
+        $results = $this->tiktokAccountService->getCrawlResults((int) $id, $perPage, $request->all());
 
-        if ($results === false) {
+        if ($results === false || $results === null) {
             return $this->respondError('Invalid account ID or account does not exist.', 404);
         }
 
         return $this->respondPaginated($this->transform($results), 'Crawl results retrieved successfully.');
+    }
+
+    /**
+     * Retrieve paginated TikTok videos for an account.
+     * api: GET /tiktok-account/tiktok-account/{id}/videos
+     */
+    public function videos(int|string $id, Request $request): JsonResponse
+    {
+        $perPage = (int) $request->input('per_page', 10);
+        $videos = $this->tiktokAccountService->getVideos((int) $id, $perPage, $request->all());
+        if ($videos === null) {
+            return $this->respondError('Invalid account ID or account does not exist.', 404);
+        }
+
+        $videos->through(fn($item) => new TiktokVideoResource($item));
+
+        return $this->respondPaginated($videos, 'Account videos retrieved successfully.');
     }
 
     /**
@@ -137,6 +153,6 @@ class TiktokAccountController extends BaseController
      */
     public function statisticSummary(): JsonResponse
     {
-        return $this->respondSuccess($this->tiktokAccountRepository->getStatisticSummary(), 'Statistic summary retrieved successfully.');
+        return $this->respondSuccess($this->tiktokAccountService->getStatisticSummary(), 'Statistic summary retrieved successfully.');
     }
 }

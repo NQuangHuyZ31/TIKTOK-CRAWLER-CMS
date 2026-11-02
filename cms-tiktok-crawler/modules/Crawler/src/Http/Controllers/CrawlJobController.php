@@ -9,6 +9,7 @@ use Modules\Crawler\Http\Requests\StoreCrawlJobRequest;
 use Modules\Crawler\Models\CrawlJob;
 use Modules\Crawler\Resources\CrawlJobResource;
 use Modules\Crawler\Resources\CrawlResultResource;
+use Modules\Crawler\Resources\CrawlVideoResultResource;
 use Modules\Crawler\Services\CrawlJobService;
 
 class CrawlJobController extends BaseController
@@ -187,5 +188,22 @@ class CrawlJobController extends BaseController
         $results->through(fn($item) => new CrawlResultResource($item));
 
         return $this->respondPaginated($results, 'Crawl results retrieved successfully.');
+    }
+
+    /**
+     * REST Sub-resource: videos (GET /{module}/crawl-job/{id}/videos)
+     * Retrieve paginated video crawl results for a specific job.
+     */
+    public function videos(int $id, Request $request): JsonResponse
+    {
+        $perPage = (int) $request->input('per_page', 10);
+        $results = $this->crawlJobService->getJobVideoResults($id, $perPage, $request->all());
+        if ($results === null) {
+            return $this->respondError('Crawl job not found.', 404);
+        }
+
+        $results->through(fn($item) => new CrawlVideoResultResource($item));
+
+        return $this->respondPaginated($results, 'Crawl video results retrieved successfully.');
     }
 }

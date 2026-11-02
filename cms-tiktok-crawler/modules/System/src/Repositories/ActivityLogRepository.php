@@ -35,4 +35,14 @@ class ActivityLogRepository extends BaseRepository implements ActivityLogReposit
             'today_activities' => $today,
         ];
     }
+
+    public function findLatestByEvent(string $module, string $action, string|int|null $recordId = null): ?\Modules\System\Models\ActivityLog
+    {
+        $query = $this->query()->where('module', $module)->where('action', $action);
+        if ($recordId !== null) {
+            $query->where('record_id', (string) $recordId);
+        }
+
+        return $query->latest('id')->first();
+    }
 }

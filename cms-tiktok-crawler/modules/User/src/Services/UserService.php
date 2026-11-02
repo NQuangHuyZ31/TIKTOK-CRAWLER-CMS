@@ -396,4 +396,20 @@ class UserService
             throw new InvalidArgumentException('Failed to send reset password email.', previous: $th);
         }
     }
+
+    /**
+     * Retrieve a specific user account by ID with relations.
+     */
+    public function getUserById(int|string $id, array $relations = ['roles.permissions', 'permissions']): ?User
+    {
+        return $this->userRepository->findById((int) $id, $relations);
+    }
+
+    /**
+     * Retrieve aggregate KPI dashboard statistics for user accounts.
+     */
+    public function getStatisticsSummary(): array
+    {
+        return $this->userRepository->getStatisticsSummary();
+    }
 }

@@ -24,12 +24,15 @@ class CrawlJobResource extends JsonResource
             'duration' => $this->started_at && $this->finished_at ? Carbon::parse($this->started_at)->diffInSeconds($this->finished_at) : null,
             'status' => $this->status,
             'source_type' => $this->source_type,
+            'crawl_mode' => $this->crawl_mode ?? 'account_with_videos',
+            'max_videos_per_account' => (int) ($this->max_videos_per_account ?? 20),
             'data_crawl' => $this->data_crawls
                 ? json_decode($this->data_crawls, true)
                 : [],
             'total_accounts' => $this->total_accounts,
             'success_count' => $this->success_count,
             'failed_count' => $this->failed_count,
+            'total_videos_crawled' => (int) ($this->total_videos_crawled ?? 0),
             'resume_count' => $this->resume_count ?? 0,
             'error_message' => $this->error_message,
             'created_by' => $this->created_by,

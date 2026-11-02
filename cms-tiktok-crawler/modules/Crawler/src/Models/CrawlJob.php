@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Notifications\Notifiable;
 use Modules\System\Traits\LogsActivity;
 
-#[Fillable(['code', 'name', 'source_type', 'status', 'data_crawls', 'total_accounts', 'success_count', 'failed_count', 'resume_count', 'error_message', 'queued_at', 'worker_id', 'started_at', 'finished_at', 'created_by', 'started_by'])]
+#[Fillable(['code', 'name', 'source_type', 'crawl_mode', 'max_videos_per_account', 'status', 'data_crawls', 'total_accounts', 'success_count', 'failed_count', 'total_videos_crawled', 'resume_count', 'error_message', 'queued_at', 'worker_id', 'started_at', 'finished_at', 'created_by', 'started_by'])]
 
 class CrawlJob extends Model
 {
@@ -27,6 +27,14 @@ class CrawlJob extends Model
     public function results(): HasMany
     {
         return $this->hasMany(CrawlResult::class, 'crawl_job_id');
+    }
+
+    /**
+     * Relationship to CrawlVideoResults.
+     */
+    public function videoResults(): HasMany
+    {
+        return $this->hasMany(CrawlVideoResult::class, 'crawl_job_id');
     }
 
     /**

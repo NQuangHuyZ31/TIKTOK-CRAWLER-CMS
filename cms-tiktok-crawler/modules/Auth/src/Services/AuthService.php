@@ -65,6 +65,19 @@ class AuthService
     }
 
     /**
+     * Terminate the user's active session and revoke access tokens.
+     */
+    public function logout(User $user): void
+    {
+        $currentToken = $user->currentAccessToken();
+        if ($currentToken) {
+            $currentToken->delete();
+        } else {
+            $user->tokens()->delete();
+        }
+    }
+
+    /**
      * Parse client device category from User-Agent.
      */
     protected function detectDevice(?string $userAgent): string

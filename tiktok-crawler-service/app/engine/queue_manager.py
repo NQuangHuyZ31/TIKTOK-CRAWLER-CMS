@@ -169,6 +169,8 @@ class QueueManager:
         callback_url: str | None = None,
         callback_token: str | None = None,
         done_usernames: list[str] | None = None,
+        crawl_mode: str = "account_with_videos",
+        max_videos_per_account: int = 20,
     ) -> dict:
         """
         Persist job to SQLite first, then enqueue into `asyncio.Queue`.
@@ -192,6 +194,8 @@ class QueueManager:
                 callback_url=callback_url,
                 callback_token=callback_token,
                 done_usernames=done_usernames,
+                crawl_mode=crawl_mode,
+                max_videos_per_account=max_videos_per_account,
             )
 
             if is_new and job_id not in self._enqueued_ids and job_id not in self._running_jobs:

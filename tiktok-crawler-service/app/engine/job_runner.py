@@ -108,11 +108,17 @@ class JobRunner:
                 profile_url,
             )
 
+            max_videos = (
+                0
+                if getattr(job, "crawl_mode", "account_with_videos") == "account_only"
+                else int(getattr(job, "max_videos_per_account", 20))
+            )
             outcome = await self._crawl_with_timeout(
                 job_id=job_id,
                 worker_id=worker_id,
                 username=username,
                 profile_url=profile_url,
+                max_videos=max_videos,
             )
 
             if outcome.status == "success" and outcome.account is not None:
@@ -122,7 +128,7 @@ class JobRunner:
                     or (f"base64({outcome.avatar.mime})" if outcome.avatar else "none")
                 )
                 logger.info(
-                    "[Job #%d] [Worker %s] [%d/%d] SUCCESS @%s | followers=%d | following=%d | likes=%d | avatar=%s | status=%s",
+                    "[Job #%d] [Worker %s] [%d/%d] SUCCESS @%s | followers=%d | following=%d | likes=%d | videos=%d | avatar=%s | status=%s",
                     job_id,
                     worker_id,
                     index,
@@ -131,6 +137,7 @@ class JobRunner:
                     acc.followers,
                     acc.following,
                     acc.likes,
+                    len(outcome.videos),
                     avatar_info,
                     acc.status,
                 )
@@ -184,14 +191,21 @@ class JobRunner:
         worker_id: str,
         username: str,
         profile_url: str,
+        max_videos: int = 20,
     ) -> AccountCrawlOutcome:
         try:
             breaker = getattr(self.tiktok_client, "circuit_breaker", None)
             if breaker is not None and hasattr(breaker, "wait_if_open"):
                 await breaker.wait_if_open()
 
+            import inspect
+            sig = inspect.signature(self.tiktok_client.crawl_account)
+            kwargs: dict = {"username": username, "profile_url": profile_url}
+            if "max_videos" in sig.parameters:
+                kwargs["max_videos"] = max_videos
+
             return await asyncio.wait_for(
-                self.tiktok_client.crawl_account(username=username, profile_url=profile_url),
+                self.tiktok_client.crawl_account(**kwargs),
                 timeout=self.account_timeout,
             )
         except asyncio.TimeoutError:

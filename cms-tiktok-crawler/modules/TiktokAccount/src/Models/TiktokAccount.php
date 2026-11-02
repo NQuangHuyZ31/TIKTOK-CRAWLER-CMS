@@ -42,4 +42,12 @@ class TiktokAccount extends Model
     {
         return $this->hasMany(CrawlResult::class, 'tiktok_account_id');
     }
+
+    /**
+     * Relationship to TiktokVideos.
+     */
+    public function videos(): HasMany
+    {
+        return $this->hasMany(TiktokVideo::class, 'tiktok_account_id');
+    }
 }

@@ -7,7 +7,6 @@ use Illuminate\Http\Request;
 use InvalidArgumentException;
 use Modules\Core\Http\Controllers\BaseController;
 use Modules\User\Models\User;
-use Modules\User\Repositories\Interfaces\UserRepositoryInterface;
 use Modules\User\Http\Requests\StoreUserRequest;
 use Modules\User\Http\Requests\UpdateUserRequest;
 use Modules\User\Resources\UserResource;
@@ -26,7 +25,6 @@ class UserController extends BaseController
     protected array $withRelations = ['roles.permissions', 'permissions'];
 
     public function __construct(
-        protected UserRepositoryInterface $userRepository,
         protected UserService $userService
     ) {}
 
@@ -42,7 +40,7 @@ class UserController extends BaseController
      */
     public function show(int|string $id): JsonResponse
     {
-        $user = $this->userRepository->findById((int) $id, $this->withRelations);
+        $user = $this->userService->getUserById((int) $id, $this->withRelations);
         if (!$user) {
             return $this->respondError('User account not found.', 404);
         }
@@ -134,7 +132,7 @@ class UserController extends BaseController
      */
     public function statisticsSummary(Request $request = null)
     {
-        $stats = $this->userRepository->getStatisticsSummary();
+        $stats = $this->userService->getStatisticsSummary();
         return $this->respondSuccess($stats, 'User statistics retrieved successfully.');
     }
 
