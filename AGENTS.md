@@ -20,6 +20,7 @@
   - **Repository Layer**: Encapsulates all Eloquent queries, relations, filtering, and aggregations. Every repository MUST implement `<Model>RepositoryInterface` and strictly extend `BaseRepository`. Bound in `<Module>ServiceProvider` (`$this->app->bind(Interface::class, Repository::class)`).
 
 ## 4. Frontend Standards
+- **Language**: 100% English for ALL web UI text (titles, buttons, table headers, form labels, toasts, placeholders, error messages), code comments, docstrings, and commits. NEVER display Vietnamese on the web interface.
 - **Imports**: Use `@core/...` and `@modules/<Module>/...` only. No multi-level `../../..` or custom per-module aliases.
 - **Configs**: Move all constants, presets, options to `configs/`. Never inline in TSX.
 - **Decomposition**: No monolithic TSX (>150 lines). Split into `components/` or `ui/`.

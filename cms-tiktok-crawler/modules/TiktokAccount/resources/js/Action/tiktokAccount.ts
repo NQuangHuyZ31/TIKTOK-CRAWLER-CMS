@@ -59,6 +59,13 @@ export const getResults = (id: string | number, params: Record<string, any> = {}
 	api(`${baseURL}/${id}/results`, { params });
 
 /**
+ * Fetch paginated TikTok videos of a specific TikTok account.
+ * API: GET /tiktok-account/tiktok-account/{id}/videos
+ */
+export const getVideos = (id: string | number, params: Record<string, any> = {}) =>
+	api(`${baseURL}/${id}/videos`, { params });
+
+/**
  * Fetch aggregate TikTok account statistics summary for KPI dashboard cards.
  * API: GET /tiktok-account/tiktok-account/statistic-summary
  */
@@ -74,4 +81,5 @@ export default {
 	updateTiktokAccount,
 	getStatisticSummary,
 	getResults,
+	getVideos,
 };

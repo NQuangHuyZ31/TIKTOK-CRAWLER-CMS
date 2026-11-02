@@ -2,8 +2,8 @@
 
 namespace Modules\TiktokAccount\Services;
 
+use Modules\Core\Services\StorageService;
 use Modules\Core\Utils\CheckFileUpload;
-use Modules\Core\Utils\UploadFile;
 use Modules\TiktokAccount\Models\TiktokAccount;
 use Modules\TiktokAccount\Repositories\Interfaces\TiktokAccountRepositoryInterface;
 use Modules\TiktokAccount\Repositories\Interfaces\TiktokVideoRepositoryInterface;
@@ -14,7 +14,8 @@ class TiktokAccountService
 
     public function __construct(
         protected TiktokAccountRepositoryInterface $tiktokAccountRepository,
-        protected TiktokVideoRepositoryInterface $tiktokVideoRepository
+        protected TiktokVideoRepositoryInterface $tiktokVideoRepository,
+        protected StorageService $storageService
     ) {
     }
 
@@ -41,10 +42,10 @@ class TiktokAccountService
                 throw new \InvalidArgumentException('Invalid avatar file. Please upload a valid image file.');
             }
 
-            $newAvatarPath = UploadFile::uploadFile($data['avatar'], 'tiktok-accounts/avatars');
-            if (!$newAvatarPath) {
-                throw new \RuntimeException('Failed to upload avatar.');
-            }
+            $newAvatarPath = $this->storageService->storeUploadedFile(
+                file: $data['avatar'],
+                destinationDir: 'tiktok-accounts/avatars'
+            );
 
             $data['avatar_path'] = $newAvatarPath;
             unset($data['avatar']);
@@ -79,14 +80,14 @@ class TiktokAccountService
                 throw new \InvalidArgumentException('Invalid avatar file. Please upload a valid image file.');
             }
 
-            $newAvatarPath = UploadFile::uploadFile($data['avatar'], 'tiktok-accounts/avatars');
-            if (!$newAvatarPath) {
-                throw new \RuntimeException('Failed to upload avatar.');
-            }
-
-            if ($account->avatar_path) {
-                UploadFile::deleteFile($account->avatar_path);
-            }
+            $newAvatarPath = $this->storageService->storeUploadedFile(
+                file: $data['avatar'],
+                destinationDir: 'tiktok-accounts/avatars',
+                options: [
+                    'delete_old' => true,
+                    'old_path' => $account->avatar_path,
+                ]
+            );
 
             $data['avatar_path'] = $newAvatarPath;
 

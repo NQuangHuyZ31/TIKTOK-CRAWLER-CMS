@@ -16,16 +16,12 @@ class CrawlJobService
 {
     public const SERVICE_SHUTDOWN_MESSAGE = 'Crawler service has shut down — waiting for service to restart and resume.';
 
-    protected CrawlVideoResultRepositoryInterface $crawlVideoResultRepository;
-
     public function __construct(
         protected CrawlJobRepositoryInterface $crawlJobRepository,
         protected TiktokAccountRepositoryInterface $tiktokAccountRepository,
         protected CrawlResultRepositoryInterface $crawlResultRepository,
-        ?CrawlVideoResultRepositoryInterface $crawlVideoResultRepository = null
-    ) {
-        $this->crawlVideoResultRepository = $crawlVideoResultRepository ?? app(CrawlVideoResultRepositoryInterface::class);
-    }
+        protected CrawlVideoResultRepositoryInterface $crawlVideoResultRepository,
+    ) {}
 
     /**
      * Domain logic: Create a new crawl job.
@@ -270,8 +266,9 @@ class CrawlJobService
             throw $e;
         }
 
-        // Remove previous results on manual retry and reset counters
-        $crawlJob->results()->forceDelete();
+        // Remove previous results on manual retry and reset counters via repository
+        $this->crawlResultRepository->deleteByJobId($id);
+        $this->crawlVideoResultRepository->deleteByJobId($id);
 
         $updateAttributes = [
             'status' => 'queued',

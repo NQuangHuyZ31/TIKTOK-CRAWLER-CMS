@@ -15,4 +15,6 @@ interface CrawlVideoResultRepositoryInterface extends BaseRepositoryInterface
     public function getExistingVideoIds(int $jobId): array;
 
     public function getByJobAndVideoIds(int $jobId, array $videoIds): Collection;
+
+    public function deleteByJobId(int $jobId): int;
 }

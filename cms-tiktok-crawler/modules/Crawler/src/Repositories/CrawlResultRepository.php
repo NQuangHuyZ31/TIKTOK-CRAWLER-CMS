@@ -74,4 +74,12 @@ class CrawlResultRepository extends BaseRepository implements CrawlResultReposit
             ->pluck('username')
             ->toArray();
     }
+
+    /**
+     * Delete all crawl results belonging to a specific job.
+     */
+    public function deleteByJobId(int $jobId): int
+    {
+        return $this->model->where('crawl_job_id', $jobId)->delete();
+    }
 }

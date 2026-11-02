@@ -7,6 +7,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use InvalidArgumentException;
+use Modules\Core\Services\StorageService;
 use Modules\Crawler\Repositories\Interfaces\CrawlJobRepositoryInterface;
 use Modules\Crawler\Repositories\Interfaces\CrawlResultRepositoryInterface;
 use Modules\Crawler\Repositories\Interfaces\CrawlVideoResultRepositoryInterface;
@@ -15,22 +16,15 @@ use Modules\TiktokAccount\Repositories\Interfaces\TiktokVideoRepositoryInterface
 
 class CrawlResultService
 {
-    protected AvatarStorageService $avatarStorageService;
-    protected CrawlVideoResultRepositoryInterface $crawlVideoResultRepository;
-    protected TiktokVideoRepositoryInterface $tiktokVideoRepository;
 
     public function __construct(
         protected CrawlResultRepositoryInterface $crawlResultRepository,
         protected CrawlJobRepositoryInterface $crawlJobRepository,
         protected TiktokAccountRepositoryInterface $tiktokAccountRepository,
-        ?AvatarStorageService $avatarStorageService = null,
-        ?CrawlVideoResultRepositoryInterface $crawlVideoResultRepository = null,
-        ?TiktokVideoRepositoryInterface $tiktokVideoRepository = null
-    ) {
-        $this->avatarStorageService = $avatarStorageService ?? app(AvatarStorageService::class);
-        $this->crawlVideoResultRepository = $crawlVideoResultRepository ?? app(CrawlVideoResultRepositoryInterface::class);
-        $this->tiktokVideoRepository = $tiktokVideoRepository ?? app(TiktokVideoRepositoryInterface::class);
-    }
+        protected StorageService $storageService,
+        protected CrawlVideoResultRepositoryInterface $crawlVideoResultRepository,
+        protected TiktokVideoRepositoryInterface $tiktokVideoRepository
+    ) {}
 
     /**
      * Retrieve paginated crawl results for a specific job.
@@ -141,7 +135,7 @@ class CrawlResultService
         $avatarPayload = $data['avatar'] ?? ($accountData['avatar'] ?? null);
         if (!empty($avatarPayload) && is_array($avatarPayload)) {
             try {
-                $storedAvatarPath = $this->avatarStorageService->storeFromBase64(
+                $storedAvatarPath = $this->storageService->storeAvatar(
                     $username !== '' ? $username : 'account',
                     $avatarPayload
                 );
@@ -250,14 +244,8 @@ class CrawlResultService
         // Process and upsert video metadata + statistics + job snapshots
         $videosCrawledCount = 0;
         if ($isSuccess && !empty($videosPayload)) {
-            $videosCrawledCount = $this->storeVideoResults(
-                $jobId,
-                $result->id,
-                $result->tiktok_account_id,
-                $username,
-                $videosPayload
-            );
-            $result->update(['videos_crawled_count' => $videosCrawledCount]);
+            $videosCrawledCount = $this->storeVideoResults($jobId, $result->id, $result->tiktok_account_id, $username, $videosPayload);
+            $this->crawlResultRepository->update($result->id, ['videos_crawled_count' => $videosCrawledCount]);
         }
 
         // Recalculate job counts directly from DB to guarantee accuracy
@@ -288,13 +276,8 @@ class CrawlResultService
      * Automatically updates existing videos in `tiktok_videos` with latest statistics and computes
      * growth deltas (`*_delta`) against the previous crawl snapshot.
      */
-    public function storeVideoResults(
-        int $jobId,
-        int $crawlResultId,
-        ?int $tiktokAccountId,
-        string $username,
-        array $videos
-    ): int {
+    public function storeVideoResults(int $jobId, int $crawlResultId, ?int $tiktokAccountId, string $username, array $videos): int
+    {
         // Deduplicate incoming videos by video_id
         $normalizedByVideoId = [];
         foreach ($videos as $video) {

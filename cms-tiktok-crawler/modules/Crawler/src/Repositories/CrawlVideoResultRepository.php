@@ -89,4 +89,9 @@ class CrawlVideoResultRepository extends BaseRepository implements CrawlVideoRes
             ->get()
             ->keyBy('video_id');
     }
+
+    public function deleteByJobId(int $jobId): int
+    {
+        return $this->model->where('crawl_job_id', $jobId)->delete();
+    }
 }

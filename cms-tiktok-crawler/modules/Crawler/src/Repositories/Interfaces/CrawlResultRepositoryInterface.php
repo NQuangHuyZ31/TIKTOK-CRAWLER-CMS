@@ -21,4 +21,9 @@ interface CrawlResultRepositoryInterface extends BaseRepositoryInterface
      * Get completed/failed usernames for a crawl job.
      */
     public function getDoneUsernames(int $jobId): array;
+
+    /**
+     * Delete all crawl results belonging to a specific job.
+     */
+    public function deleteByJobId(int $jobId): int;
 }
