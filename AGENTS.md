@@ -10,7 +10,11 @@
 - **Checks**: `npm.cmd run check-types` (0 errors) & `php artisan test` (100% pass) before committing.
 - **🛑 Human Deploy Gate**: Merge to `main` ONLY creates Draft Release. Production deploys ONLY when human publishes release.
 
-## 3. Core Reusability Matrix & 3-Layer Architecture (DO NOT Reinvent)
+## 3. Code Reusability & Architecture Protocol (DO NOT Reinvent)
+- **Mandatory Analysis & Reuse Strategy**:
+  1. **Analyze First**: Search codebase for existing components, hooks, services, or APIs before writing new code.
+  2. **Strategy**: **REUSE** (fits need) > **EXTEND** (add optional props/configs, preserve backward compatibility) > **CREATE** (only if novel; justify why reuse/extend is unsuitable).
+  3. **Shared Design**: Decouple from page-specific logic, configurable via props, clean TypeScript types, no duplicate filter/table/fetching logic.
 - Listings: `@core/components/ListLayout` | Tables: `@core/components/Table`
 - Actions: `@core/hooks/useAction` | Modals/Forms: `@core/components/ResourceForm`, `CustomModal`
 - State: Redux (`store/<domain>/`) | RBAC: `<PermissionGate module="x" action="y">`
@@ -27,8 +31,8 @@
 - **Decomposition**: No monolithic TSX (>150 lines). Split into `components/` or `ui/`.
 - **Core Reusability**: Generic/shared components go to `@core`.
 
-## 5. Token Efficiency
+## 5. Token Efficiency & Agent Reporting
 - **Files**: Specify `StartLine`/`EndLine`; never dump large files.
 - **Commands**: Filter command outputs (`--filter`, `Select-Object -First 25`).
 - **Docs**: Update `PROJECT_SUMMARY.md` ONLY for major features (never bug fixes).
-- **Output**: Concise, direct, no code repetition.
+- **Output & Reporting**: Concise, direct, no code repetition. Conclude tasks by reporting: existing components discovered, components reused/extended, new components created (with rationale), and refactored duplicates.

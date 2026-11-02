@@ -128,7 +128,7 @@ export const fetchCrawlJobs = createAsyncThunk(
 1. **Always Check Core First**:
    - Use [`TableComponent`](file:///E:/Urekamedia/TIKTOK-CRAWLER/cms-tiktok-crawler/modules/Core/resources/js/components/Table.tsx) instead of wrapping `antd.Table` manually.
    - Use [`CardKPI`](file:///E:/Urekamedia/TIKTOK-CRAWLER/cms-tiktok-crawler/modules/Core/resources/js/components/CardKPI.tsx) for metrics widgets.
-   - Use [`ListLayout`](file:///E:/Urekamedia/TIKTOK-CRAWLER/cms-tiktok-crawler/modules/Core/resources/js/components/ListLayout.tsx) for standard admin list views.
+   - Use [`ListLayout`](file:///E:/Urekamedia/TIKTOK-CRAWLER/cms-tiktok-crawler/modules/Core/resources/js/components/ListLayout.tsx) for standard admin list and detail views.
    - Use [`CustomModal`](file:///E:/Urekamedia/TIKTOK-CRAWLER/cms-tiktok-crawler/modules/Core/resources/js/components/CustomModal.tsx) and [`ConfirmDialog`](file:///E:/Urekamedia/TIKTOK-CRAWLER/cms-tiktok-crawler/modules/Core/resources/js/components/ConfirmDialog.tsx) for modals.
 2. **Strict Type Safety**:
    - Always define explicit interfaces for component Props.

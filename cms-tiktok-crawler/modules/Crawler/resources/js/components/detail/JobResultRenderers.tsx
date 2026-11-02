@@ -1,21 +1,13 @@
 import React from 'react';
-import { Avatar, Button, Space, Tag, Typography } from 'antd';
+import { Avatar, Button, Typography } from 'antd';
 import { UserOutlined, VideoCameraOutlined } from '@ant-design/icons';
 import { Link } from 'react-router-dom';
 import StatusTag from '@core/components/StatusTag';
 import { formatNumber } from '@core/utils/formatNumber';
 import { formatDateTime } from '@core/utils/formatDate';
+import { renderStatWithDelta } from '@core/components/TiktokVideoTable';
 
-export const renderStatWithDelta = (value: number, delta?: number) => (
-	<Space size={4}>
-		<span>{formatNumber(value ?? 0)}</span>
-		{typeof delta === 'number' && delta !== 0 && (
-			<Tag color={delta > 0 ? 'green' : 'volcano'} style={{ margin: 0, fontSize: 11 }}>
-				{delta > 0 ? `+${formatNumber(delta)}` : formatNumber(delta)}
-			</Tag>
-		)}
-	</Space>
-);
+export { renderStatWithDelta } from '@core/components/TiktokVideoTable';
 
 export const createAccountColumnRenderers = (onSelectUserVideos: (username: string) => void) => ({
 	avatar_path: (val: any) => <Avatar size={40} src={val || undefined} icon={<UserOutlined />} />,
@@ -68,3 +60,4 @@ export const createVideoColumnRenderers = () => ({
 			'-'
 		),
 });
+

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Avatar, Button, Card, Flex, Popconfirm, Space, Tag, Typography } from 'antd';
 import {
 	CheckCircleFilled,
@@ -40,7 +40,7 @@ export default function AccountDetailHeader({ account, deleting, onDelete }: Acc
 							</Title>
 							{account?.is_verified ? (
 								<Tag icon={<CheckCircleFilled />} color="blue" style={{ margin: 0 }}>
-									Đã xác minh
+									Verified
 								</Tag>
 							) : null}
 							<StatusTag status={account?.status} />
@@ -50,7 +50,7 @@ export default function AccountDetailHeader({ account, deleting, onDelete }: Acc
 						</Text>
 						{account?.bio && (
 							<Paragraph
-								ellipsis={{ rows: 2, expandable: true, symbol: 'Xem thêm' }}
+								ellipsis={{ rows: 2, expandable: true, symbol: 'More' }}
 								style={{ margin: '4px 0 0', maxWidth: 650, color: '#4b5563' }}
 							>
 								{account.bio}
@@ -67,7 +67,7 @@ export default function AccountDetailHeader({ account, deleting, onDelete }: Acc
 							target="_blank"
 							rel="noopener noreferrer"
 						>
-							Xem trên TikTok
+							View on TikTok
 						</Button>
 					)}
 
@@ -77,7 +77,7 @@ export default function AccountDetailHeader({ account, deleting, onDelete }: Acc
 							icon={<ReloadOutlined />}
 							onClick={() => navigate('/crawler/crawl-job/create')}
 						>
-							Tạo Crawl Job
+							New Crawl Job
 						</Button>
 					</PermissionGate>
 
@@ -86,21 +86,21 @@ export default function AccountDetailHeader({ account, deleting, onDelete }: Acc
 							icon={<EditOutlined />}
 							onClick={() => navigate(`/tiktok-account/${account?.id}/edit`)}
 						>
-							Sửa tài khoản
+							Edit Account
 						</Button>
 					</PermissionGate>
 
 					<PermissionGate module="tiktok_account" action="delete">
 						<Popconfirm
-							title="Xoá tài khoản TikTok"
-							description={`Bạn có chắc chắn muốn xoá tài khoản @${account?.username}?`}
+							title="Delete TikTok Account"
+							description={`Are you sure you want to delete @${account?.username}?`}
 							onConfirm={onDelete}
-							okText="Xoá"
-							cancelText="Huỷ"
+							okText="Delete"
+							cancelText="Cancel"
 							okButtonProps={{ danger: true, loading: deleting }}
 						>
 							<Button danger icon={<DeleteOutlined />} loading={deleting}>
-								Xoá
+								Delete
 							</Button>
 						</Popconfirm>
 					</PermissionGate>

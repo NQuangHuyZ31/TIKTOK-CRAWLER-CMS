@@ -18,7 +18,7 @@ export default function AccountKpiSection({ account }: AccountKpiSectionProps) {
 		<Row gutter={[16, 16]}>
 			<Col xs={24} sm={12} md={6}>
 				<CardKPI
-					title="Người theo dõi (Followers)"
+					title="Followers"
 					value={formatNumber(account?.followers_count || 0)}
 					icon={<UserAddOutlined />}
 					color="#1677ff"
@@ -26,7 +26,7 @@ export default function AccountKpiSection({ account }: AccountKpiSectionProps) {
 			</Col>
 			<Col xs={24} sm={12} md={6}>
 				<CardKPI
-					title="Đang theo dõi (Following)"
+					title="Following"
 					value={formatNumber(account?.following_count || 0)}
 					icon={<UserOutlined />}
 					color="#52c41a"
@@ -34,7 +34,7 @@ export default function AccountKpiSection({ account }: AccountKpiSectionProps) {
 			</Col>
 			<Col xs={24} sm={12} md={6}>
 				<CardKPI
-					title="Tổng lượt thích (Likes)"
+					title="Total Likes"
 					value={formatNumber(account?.likes_count || 0)}
 					icon={<HeartOutlined />}
 					color="#fa8c16"
@@ -42,7 +42,7 @@ export default function AccountKpiSection({ account }: AccountKpiSectionProps) {
 			</Col>
 			<Col xs={24} sm={12} md={6}>
 				<CardKPI
-					title="Tổng số video (Videos)"
+					title="Total Videos"
 					value={formatNumber(account?.video_count || 0)}
 					icon={<VideoCameraOutlined />}
 					color="#722ed1"

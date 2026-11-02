@@ -13,27 +13,27 @@ interface AccountInfoTabProps {
 
 export default function AccountInfoTab({ account }: AccountInfoTabProps) {
 	return (
-		<Card title="Thông tin hồ sơ chi tiết">
+		<Card title="Account Profile Details">
 			<Descriptions bordered column={{ xs: 1, sm: 2, lg: 3 }} size="middle">
-				<Descriptions.Item label="Mã ID">#{account?.id || '-'}</Descriptions.Item>
+				<Descriptions.Item label="ID">#{account?.id || '-'}</Descriptions.Item>
 				<Descriptions.Item label="Username">@{account?.username || '-'}</Descriptions.Item>
-				<Descriptions.Item label="Tên hiển thị (Nickname)">
+				<Descriptions.Item label="Nickname">
 					{account?.nickname || '-'}
 				</Descriptions.Item>
 
-				<Descriptions.Item label="Trạng thái">
+				<Descriptions.Item label="Status">
 					<StatusTag status={account?.status} />
 				</Descriptions.Item>
-				<Descriptions.Item label="Tích xanh xác minh">
+				<Descriptions.Item label="Verification">
 					{account?.is_verified ? (
 						<Tag icon={<CheckCircleFilled />} color="blue">
-							Đã xác minh
+							Verified
 						</Tag>
 					) : (
-						<Text type="secondary">Chưa xác minh</Text>
+						<Text type="secondary">Unverified</Text>
 					)}
 				</Descriptions.Item>
-				<Descriptions.Item label="Tổng số video">
+				<Descriptions.Item label="Total Videos">
 					{formatNumber(account?.video_count || 0)}
 				</Descriptions.Item>
 
@@ -47,14 +47,14 @@ export default function AccountInfoTab({ account }: AccountInfoTabProps) {
 					)}
 				</Descriptions.Item>
 
-				<Descriptions.Item label="Thu thập lần đầu">
-					{account?.created_at ? formatDateTime(account.created_at) : 'Chưa có'}
+				<Descriptions.Item label="First Crawled">
+					{account?.created_at ? formatDateTime(account.created_at) : 'None'}
 				</Descriptions.Item>
-				<Descriptions.Item label="Cập nhật lần cuối" span={2}>
-					{account?.last_crawled_at ? formatDateTime(account.last_crawled_at) : 'Chưa từng cào'}
+				<Descriptions.Item label="Last Crawled" span={2}>
+					{account?.last_crawled_at ? formatDateTime(account.last_crawled_at) : 'Never'}
 				</Descriptions.Item>
 
-				<Descriptions.Item label="Đường dẫn TikTok" span={3}>
+				<Descriptions.Item label="TikTok Profile URL" span={3}>
 					{account?.profile_url ? (
 						<a href={account.profile_url} target="_blank" rel="noopener noreferrer">
 							{account.profile_url}
@@ -65,7 +65,7 @@ export default function AccountInfoTab({ account }: AccountInfoTabProps) {
 				</Descriptions.Item>
 
 				{account?.bio && (
-					<Descriptions.Item label="Tiểu sử (Bio)" span={3}>
+					<Descriptions.Item label="Bio" span={3}>
 						<Paragraph style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{account.bio}</Paragraph>
 					</Descriptions.Item>
 				)}

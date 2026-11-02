@@ -77,7 +77,48 @@ This document establishes the official coding standards, architectural conventio
 
 ---
 
-## 4. Git Commit Guidelines
+## 4. Code Reusability & Architecture Rules
+
+### 4.1. General Principles
+- Always prioritize reusing existing code over creating new implementations.
+- Follow the existing project architecture and coding patterns.
+- Do not duplicate components, hooks, services, API calls, or business logic.
+- Apply DRY and Single Responsibility principles.
+- Prefer extending existing components through props or configuration rather than creating similar components.
+- Do not introduce unnecessary abstractions or over-engineer solutions.
+
+### 4.2. Mandatory Codebase Analysis
+Before implementing any feature:
+1. Analyze the existing project structure.
+2. Identify related pages, components, hooks, services, and API endpoints.
+3. Search for existing implementations with similar functionality.
+4. Check whether other modules or pages already implement the same feature.
+5. Compare their UI structure, business logic, data requirements, and API behavior.
+*Do not create a new component before completing this analysis.*
+
+### 4.3. Component Reusability & Decision Rules
+Choose one of the following strategies:
+- **A. REUSE**: Existing component already satisfies the requirements. Use it without unnecessary modifications.
+- **B. EXTEND**: Existing component covers most requirements. Add optional props, configuration, or composition while preserving backward compatibility.
+- **C. CREATE**: No suitable reusable component exists, or requirements have significantly different UI/business logic. Reusing would introduce excessive complexity. When creating a new component overlapping an existing one, justify why reuse/extension is not appropriate.
+
+### 4.4. Shared Component Design
+- Clearly defined single responsibility.
+- Configurable props instead of hardcoding page-specific values.
+- Decoupled from specific page or business module logic.
+- Explicit TypeScript interfaces; avoid boolean flag explosion.
+
+### 4.5. Agent Reporting
+At the end of implementation, report:
+- Existing components and implementations discovered.
+- Components reused or extended.
+- New components created and the reasons.
+- Duplicated code identified or refactored.
+- Pages and modules affected by the changes.
+
+---
+
+## 5. Git Commit Guidelines
 
 Follow the **Conventional Commits** specification:
 

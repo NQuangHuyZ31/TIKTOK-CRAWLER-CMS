@@ -10,6 +10,7 @@ import useAction from '@core/hooks/useAction';
 import SpinComponent from '@core/components/SpinComponent';
 import PageHeader from '@core/components/PageHeader';
 import { formatNumber } from '@core/utils/formatNumber';
+import type { VideoFilterValues } from '@core/components/TiktokVideoTable';
 import tiktokAccountAPI from '../Action/tiktokAccount';
 import AccountDetailHeader from '../components/detail/AccountDetailHeader';
 import AccountKpiSection from '../components/detail/AccountKpiSection';
@@ -36,7 +37,7 @@ export default function TiktokAccountDetailPage() {
 	const [videosData, setVideosData] = useState<any[]>([]);
 	const [videosLoading, setVideosLoading] = useState(false);
 	const [videosPagination, setVideosPagination] = useState({ page: 1, per_page: 10, total: 0 });
-	const [videoSearch, setVideoSearch] = useState('');
+	const [videoFilters, setVideoFilters] = useState<VideoFilterValues>({});
 
 	const loadAccount = useCallback(async () => {
 		if (!id) return;
@@ -44,7 +45,7 @@ export default function TiktokAccountDetailPage() {
 			const res: any = await tiktokAccountAPI.getTiktokAccountByID(id);
 			setAccount(res?.data ?? res);
 		} catch (err: any) {
-			setError(err?.response?.data?.message ?? err?.message ?? 'Không thể tải thông tin tài khoản');
+			setError(err?.response?.data?.message ?? err?.message ?? 'Failed to load account details');
 		} finally {
 			setLoading(false);
 		}
@@ -68,14 +69,14 @@ export default function TiktokAccountDetailPage() {
 		}
 	}, [id]);
 
-	const loadVideos = useCallback(async (page = 1, perPage = 10, search = '') => {
+	const loadVideos = useCallback(async (page = 1, perPage = 10, currentFilters: VideoFilterValues = {}) => {
 		if (!id) return;
 		setVideosLoading(true);
 		try {
 			const res: any = await tiktokAccountAPI.getVideos(id, {
 				page,
 				per_page: perPage,
-				...(search ? { search } : {}),
+				...currentFilters,
 			});
 			setVideosData(res?.data ?? []);
 			setVideosPagination({
@@ -93,14 +94,28 @@ export default function TiktokAccountDetailPage() {
 	useEffect(() => {
 		loadAccount();
 		loadHistory(1, 10);
-		loadVideos(1, 10, videoSearch);
-	}, [loadAccount, loadHistory, loadVideos]);
+	}, [loadAccount, loadHistory]);
+
+	useEffect(() => {
+		loadVideos(1, videosPagination.per_page, videoFilters);
+	}, [loadVideos, videoFilters]);
+
+	const handleFilterChange = (key: string, value: any) => {
+		setVideoFilters((prev) => ({
+			...prev,
+			[key]: value,
+		}));
+	};
+
+	const handleResetFilters = () => {
+		setVideoFilters({});
+	};
 
 	const handleDelete = () => {
 		if (!id) return;
 		act(
 			() => tiktokAccountAPI.deleteTiktokAccount(id),
-			'Đã xoá tài khoản thành công',
+			'Account deleted successfully',
 			() => navigate('/tiktok-account'),
 		);
 	};
@@ -111,8 +126,8 @@ export default function TiktokAccountDetailPage() {
 	return (
 		<Space direction="vertical" size={20} style={{ width: '100%' }}>
 			<PageHeader
-				title={`Tài khoản @${account?.username || id}`}
-				subtitle="Xem chi tiết hồ sơ tài khoản, chỉ số tương tác, các video đã thu thập và lịch sử các phiên crawl."
+				title={`Account @${account?.username || id}`}
+				subtitle="View account profile details, engagement metrics, crawled videos, and crawl session history."
 				onBack={() => navigate('/tiktok-account')}
 			/>
 
@@ -127,13 +142,13 @@ export default function TiktokAccountDetailPage() {
 				size="middle"
 			>
 				<Radio.Button value="videos">
-					<VideoCameraOutlined /> Danh sách Video ({formatNumber(videosPagination.total)})
+					<VideoCameraOutlined /> Videos ({formatNumber(videosPagination.total)})
 				</Radio.Button>
 				<Radio.Button value="history">
-					<HistoryOutlined /> Lịch sử Crawl ({formatNumber(historyPagination.total)})
+					<HistoryOutlined /> Crawl History ({formatNumber(historyPagination.total)})
 				</Radio.Button>
 				<Radio.Button value="info">
-					<InfoCircleOutlined /> Thông tin hồ sơ
+					<InfoCircleOutlined /> Profile Info
 				</Radio.Button>
 			</Radio.Group>
 
@@ -142,13 +157,11 @@ export default function TiktokAccountDetailPage() {
 					data={videosData}
 					loading={videosLoading}
 					pagination={videosPagination}
-					search={videoSearch}
-					onSearchChange={(val) => {
-						setVideoSearch(val);
-						loadVideos(1, videosPagination.per_page, val);
-					}}
-					onPageChange={(page, perPage) => loadVideos(page, perPage, videoSearch)}
-					onRefresh={() => loadVideos(videosPagination.page, videosPagination.per_page, videoSearch)}
+					filters={videoFilters}
+					onFilterChange={handleFilterChange}
+					onResetFilters={handleResetFilters}
+					onPageChange={(page, perPage) => loadVideos(page, perPage, videoFilters)}
+					onRefresh={() => loadVideos(videosPagination.page, videosPagination.per_page, videoFilters)}
 				/>
 			)}
 

@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Button, Card, Flex, Space, Tag, Typography } from 'antd';
+import { Button, Card, Space, Tag, Typography } from 'antd';
 import { HistoryOutlined, ReloadOutlined } from '@ant-design/icons';
 import TableComponent from '@core/components/Table';
 import StatusTag from '@core/components/StatusTag';
@@ -33,7 +33,7 @@ export default function AccountCrawlHistoryTab({
 			likes_count: (val: any) => formatNumber(val ?? 0),
 			videos_crawled_count: (val: any) => (
 				<Tag color={Number(val) > 0 ? 'purple' : 'default'}>
-					{formatNumber(val ?? 0)} video
+					{formatNumber(val ?? 0)} videos
 				</Tag>
 			),
 			crawled_at: (val: any) => formatDateTime(val),
@@ -54,12 +54,12 @@ export default function AccountCrawlHistoryTab({
 			title={
 				<Space size={8}>
 					<HistoryOutlined />
-					<span>Lịch sử các phiên Crawl ({formatNumber(pagination.total)})</span>
+					<span>Crawl History ({formatNumber(pagination.total)})</span>
 				</Space>
 			}
 			extra={
 				<Button icon={<ReloadOutlined />} onClick={onRefresh} loading={loading} size="small">
-					Làm mới
+					Refresh
 				</Button>
 			}
 		>
