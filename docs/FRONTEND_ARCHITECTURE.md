@@ -91,9 +91,17 @@ Routes are collected and mounted automatically by `modules/Core/resources/js/rou
 
 ## 5. State Management: Redux Toolkit
 
-### 5.1. Global State vs Local State
-- **Local State (`useState`, `useReducer`)**: Form inputs before submission, modal visibility, active tab, row selection.
-- **Redux Global State**: Cached server entities, user profile, permissions, system notification counters.
+### 5.1. Global State vs Local State (API & State Evaluation)
+Before implementing an API caller in Action/, assess whether to route it through Redux:
+- **Use Redux Store & Thunk (store/<domain>/)**:
+  - Paginated entity lists (e.g. etchCrawlJobs, etchUsers, etchTiktokAccounts).
+  - Search keywords, column filters, and sorting parameters shared across listing subcomponents.
+  - Global user authentication, active profile, and permission matrix.
+- **Use Direct API (Action/) / useAction hook**:
+  - Single record mutations (e.g. deleteCrawlJob, startCrawlJob, stopCrawlJob).
+  - Isolated form submissions (e.g. createCrawlJob, updateUser).
+  - One-off modal triggers, file uploads/exports, and quick status toggles.
+  - Avoids boilerplate thunks and slice pollution for operations that only need loading feedback and a success toast.
 
 ### 5.2. Async Thunks Pattern
 ```typescript

@@ -21,6 +21,7 @@
 
 ## 4. Frontend Standards
 - **Language**: 100% English for ALL web UI text (titles, buttons, table headers, form labels, toasts, placeholders, error messages), code comments, docstrings, and commits. NEVER display Vietnamese on the web interface.
+- **API & State Evaluation**: When authoring APIs in `Action/`, assess state scope: Put into **Redux Thunk/Slice** (`store/<domain>/`) for shared entity lists, filters, pagination, and global cache; use **direct API / `useAction`** for isolated row mutations (delete, toggle, single form submit, export).
 - **Imports**: Use `@core/...` and `@modules/<Module>/...` only. No multi-level `../../..` or custom per-module aliases.
 - **Configs**: Move all constants, presets, options to `configs/`. Never inline in TSX.
 - **Decomposition**: No monolithic TSX (>150 lines). Split into `components/` or `ui/`.

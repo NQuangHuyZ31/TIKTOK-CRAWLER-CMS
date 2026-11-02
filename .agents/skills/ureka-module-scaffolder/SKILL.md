@@ -24,5 +24,5 @@ modules/<ModuleName>/
   - **Configs Externalization (`configs/`)**: All presets, select options, dictionaries, and constants MUST be placed in `configs/`. Never inline in components.
   - **Component Decomposition (`components/`)**: Never write monolithic TSX pages (>150-200 lines). Decompose complex views into focused sub-components.
   - **Core Component Reusability**: Reusable UI widgets and controls must be placed in `@core` (`modules/Core/resources/js/components/`).
-  - **State & API**: Typed API client via `@core/Action/api`. State managed via Redux slice in `store/`.
+  - **State & API**: Typed API client via `@core/Action/api`. Evaluate state: Entity lists, pagination, filters use Redux Thunk/Slice (`store/`); one-off mutations (delete, toggle, submit) use direct API / `useAction`.
 - **Verification**: Run `npm.cmd run check-types` and `php artisan test`.
