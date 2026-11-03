@@ -174,30 +174,6 @@ class AuthController extends BaseController
     }
 
     /**
-     * Update user profile information.
-     */
-    public function updateProfile(Request $request): JsonResponse
-    {
-        $request->validate([
-            'name' => 'nullable|string|max:255',
-            'phone' => 'nullable|string|max:20',
-            'avatar' => 'nullable|string',
-        ]);
-
-        $user = $this->getAuthenticatedUser($request);
-        if (!$user) {
-            return $this->respondError('Unauthenticated.', 401);
-        }
-
-        return $this->executeAuthAction(fn () =>
-            $this->respondSuccess(
-                $this->authService->updateProfile($user, $request->only('name', 'phone', 'avatar')),
-                'Profile updated successfully.'
-            )
-        );
-    }
-
-    /**
      * Generate password reset token.
      */
     public function forgotPassword(Request $request): JsonResponse
@@ -220,27 +196,6 @@ class AuthController extends BaseController
         return $this->executeAuthAction(function () use ($request) {
             $this->authService->resetPassword($request->validated());
             return $this->respondSuccess(null, 'Password has been reset successfully.');
-        });
-    }
-
-    /**
-     * Change current password.
-     */
-    public function changePassword(Request $request): JsonResponse
-    {
-        $request->validate([
-            'current_password' => 'required|string',
-            'password' => 'required|string|min:8|confirmed',
-        ]);
-
-        $user = $this->getAuthenticatedUser($request);
-        if (!$user) {
-            return $this->respondError('Unauthenticated.', 401);
-        }
-
-        return $this->executeAuthAction(function () use ($user, $request) {
-            $this->authService->changePassword($user, $request->only('current_password', 'password'));
-            return $this->respondSuccess(null, 'Password changed successfully.');
         });
     }
 
