@@ -2,41 +2,61 @@
 
 namespace Modules\Core\Utils;
 
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
+use Illuminate\Http\UploadedFile;
+use Modules\Core\Services\StorageService;
 
-class UploadFile {
-    public static function uploadFile($file, $destinationPath, $filename = null, $deleteOldFile = false, $oldFilePath = null, $disk = 'public') {
-        // File does not exist or is invalid
-        if (!$file || !$file->isValid()) {
+/**
+ * @deprecated Use Modules\Core\Services\StorageService instead.
+ * Retained strictly for backward compatibility with legacy callers.
+ */
+class UploadFile
+{
+    /**
+     * @deprecated Use StorageService::storeUploadedFile() instead.
+     */
+    public static function uploadFile(
+        mixed $file,
+        string $destinationPath,
+        ?string $filename = null,
+        bool $deleteOldFile = false,
+        ?string $oldFilePath = null,
+        string $disk = 'public'
+    ): string|false {
+        if (!$file instanceof UploadedFile || !$file->isValid()) {
             return false;
         }
 
-        // Delete old file if requested
-        if ($deleteOldFile && $oldFilePath) {
-            self::deleteFile($oldFilePath, $disk);
-        }
+        try {
+            /** @var StorageService $storageService */
+            $storageService = app(StorageService::class);
 
-        // Generate unique filename if not provided
-        if (!$filename) {
-            $filename = Str::uuid() . '.' . $file->getClientOriginalExtension();
+            return $storageService->storeUploadedFile(
+                file: $file,
+                destinationDir: $destinationPath,
+                filename: $filename ? pathinfo($filename, PATHINFO_FILENAME) : null,
+                options: [
+                    'disk' => $disk,
+                    'delete_old' => $deleteOldFile,
+                    'old_path' => $oldFilePath,
+                ]
+            );
+        } catch (\Throwable) {
+            return false;
         }
-
-        // Upload and store file
-        return $file->storeAs($destinationPath, $filename, $disk);
     }
 
-    public static function deleteFile($filePath, $disk = 'public') {
+    /**
+     * @deprecated Use StorageService::delete() instead.
+     */
+    public static function deleteFile(?string $filePath, string $disk = 'public'): bool
+    {
         if (!$filePath) {
             return false;
         }
 
-        $storage = Storage::disk($disk);
+        /** @var StorageService $storageService */
+        $storageService = app(StorageService::class);
 
-        if (!$storage->exists($filePath)) {
-            return false;
-        }
-
-        return $storage->delete($filePath);
+        return $storageService->delete($filePath, $disk);
     }
 }

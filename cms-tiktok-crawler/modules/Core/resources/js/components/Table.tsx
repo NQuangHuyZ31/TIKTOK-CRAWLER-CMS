@@ -1,22 +1,11 @@
 import React, { useMemo } from 'react';
-import { Button, Popconfirm, Space, Table, Tooltip } from 'antd';
-import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
+import { Table } from 'antd';
 import type { TableProps } from 'antd';
-import type { ColumnsType, ColumnType } from 'antd/es/table';
-import PermissionGate from './PermissionGate';
+import { buildColumns, TableColumn, PaginationInfo } from './table/tableColumnBuilder';
+import TableRowActions from './table/TableRowActions';
 
-export interface PaginationInfo {
-	page?: number;
-	current_page?: number;
-	per_page?: number;
-	limit?: number;
-	total?: number;
-}
-
-export type TableColumn<T = any> = ColumnType<T> & {
-	defaultValue?: React.ReactNode;
-	[key: string]: any;
-};
+export type { TableColumn, PaginationInfo };
+export { buildColumns };
 
 export interface TableComponentProps<T = any> extends Omit<TableProps<T>, 'dataSource' | 'columns'> {
 	columns: TableColumn<T>[];
@@ -27,15 +16,11 @@ export interface TableComponentProps<T = any> extends Omit<TableProps<T>, 'dataS
 	loading?: boolean;
 	rowKey?: string | ((record: T) => string);
 
-	// Custom column renderers by key or dataIndex
 	renderColumns?: Record<string, (value: any, record: T, index: number) => React.ReactNode>;
-
-	// Additional columns prepended or appended flexibly
 	prependColumns?: TableColumn<T>[];
 	extraColumns?: TableColumn<T>[];
 	appendColumns?: TableColumn<T>[];
 
-	// Native action props (Single Standard across all modules)
 	onEdit?: (record: T) => void;
 	onDelete?: (record: T) => void;
 	canEdit?: boolean | ((record: T) => boolean);
@@ -45,51 +30,6 @@ export interface TableComponentProps<T = any> extends Omit<TableProps<T>, 'dataS
 	permissionModule?: string;
 }
 
-/**
- * Merges column configurations, prepended/extra columns, and applies custom renderers.
- */
-export function buildColumns<T = any>(
-	baseColumns: TableColumn<T>[],
-	renderColumns: Record<string, (value: any, record: T, index: number) => React.ReactNode> = {},
-	prependColumns: TableColumn<T>[] = [],
-	extraColumns: TableColumn<T>[] = [],
-	actionsColumn?: TableColumn<T>,
-): ColumnsType<T> {
-	const allColumns = [...prependColumns, ...baseColumns, ...extraColumns, ...(actionsColumn ? [actionsColumn] : [])];
-
-	return allColumns.map((col) => {
-		const key = String(col.key ?? col.dataIndex ?? '');
-		const dataIndex = typeof col.dataIndex === 'string' ? col.dataIndex : undefined;
-
-		const colKey = col.key !== undefined && col.key !== null ? String(col.key) : undefined;
-		const customRender = (colKey && renderColumns[colKey]) || (dataIndex && renderColumns[dataIndex]);
-
-		if (customRender) {
-			return {
-				...col,
-				render: (value: any, record: T, index: number) => customRender(value, record, index),
-			};
-		}
-
-		if (typeof col.render === 'function') {
-			return col;
-		}
-
-		return {
-			...col,
-			render: (value: any) => {
-				if (value === null || value === undefined || value === '') {
-					return col.defaultValue ?? '-';
-				}
-				return value;
-			},
-		};
-	});
-}
-
-/**
- * Streamlined TableComponent with concise base actions (Edit, Delete) and extra action slot.
- */
 export default function TableComponent<T = any>({
 	columns,
 	data,
@@ -124,63 +64,18 @@ export default function TableComponent<T = any>({
 			width: onEdit && onDelete ? 120 : 90,
 			align: 'center',
 			fixed: 'right',
-			render: (_: any, record: T) => {
-				const isEditable = typeof canEdit === 'function' ? canEdit(record) : canEdit;
-				const isDeletable = typeof canDelete === 'function' ? canDelete(record) : canDelete;
-				const confirmDescription = typeof deleteConfirmTitle === 'function' ? deleteConfirmTitle(record) : deleteConfirmTitle;
-
-				return (
-					<Space size={4}>
-						{extraActions && extraActions(record)}
-
-						{onEdit && isEditable && (
-							permissionModule ? (
-								<PermissionGate module={permissionModule} action="edit">
-									<Tooltip title="Edit">
-										<Button size="small" type="text" icon={<EditOutlined style={{ color: '#52c41a' }} />} onClick={() => onEdit(record)} />
-									</Tooltip>
-								</PermissionGate>
-							) : (
-								<Tooltip title="Edit">
-									<Button size="small" type="text" icon={<EditOutlined style={{ color: '#52c41a' }} />} onClick={() => onEdit(record)} />
-								</Tooltip>
-							)
-						)}
-
-						{onDelete && isDeletable && (
-							permissionModule ? (
-								<PermissionGate module={permissionModule} action="delete">
-									<Popconfirm
-										title="Delete"
-										description={confirmDescription}
-										onConfirm={() => onDelete(record)}
-										okText="Delete"
-										cancelText="Cancel"
-										okButtonProps={{ danger: true }}
-									>
-										<Tooltip title="Delete">
-											<Button type="text" danger size="small" icon={<DeleteOutlined />} />
-										</Tooltip>
-									</Popconfirm>
-								</PermissionGate>
-							) : (
-								<Popconfirm
-									title="Delete"
-									description={confirmDescription}
-									onConfirm={() => onDelete(record)}
-									okText="Delete"
-									cancelText="Cancel"
-									okButtonProps={{ danger: true }}
-								>
-									<Tooltip title="Delete">
-										<Button type="text" danger size="small" icon={<DeleteOutlined />} />
-									</Tooltip>
-								</Popconfirm>
-							)
-						)}
-					</Space>
-				);
-			},
+			render: (_: any, record: T) => (
+				<TableRowActions
+					record={record}
+					onEdit={onEdit}
+					onDelete={onDelete}
+					canEdit={canEdit}
+					canDelete={canDelete}
+					deleteConfirmTitle={deleteConfirmTitle}
+					extraActions={extraActions}
+					permissionModule={permissionModule}
+				/>
+			),
 		};
 	}, [onEdit, onDelete, canEdit, canDelete, deleteConfirmTitle, extraActions, permissionModule]);
 

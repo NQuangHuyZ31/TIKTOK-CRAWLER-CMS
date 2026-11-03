@@ -60,12 +60,12 @@ export const createVideoTableColumns = (options: VideoTableColumnOptions = {}): 
 	}
 
 	columns.push(
-		{
-			title: 'Description & Hashtags',
-			dataIndex: 'description',
-			key: 'description',
-			minWidth: 240,
-		},
+		// {
+		// 	title: 'Description & Hashtags',
+		// 	dataIndex: 'description',
+		// 	key: 'description',
+		// 	minWidth: 240,
+		// },
 		{
 			title: 'Duration',
 			dataIndex: 'duration',
@@ -131,7 +131,7 @@ export const createVideoTableColumns = (options: VideoTableColumnOptions = {}): 
 			title: 'Link',
 			dataIndex: 'video_url',
 			key: 'video_url',
-			width: 90,
+			width: 150,
 			fixed: 'right',
 		},
 	);

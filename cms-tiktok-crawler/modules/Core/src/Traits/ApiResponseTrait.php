@@ -7,17 +7,31 @@ use Illuminate\Pagination\LengthAwarePaginator;
 
 trait ApiResponseTrait
 {
-    protected function respondSuccess(mixed $data = null, string $message = 'Success', int $status = 200): JsonResponse
-    {
+    /**
+     * Return a standardized success JSON response.
+     */
+    protected function respondSuccess(
+        mixed $data = null,
+        string $message = 'Success',
+        int $status = 200,
+        array $headers = []
+    ): JsonResponse {
         return response()->json([
             'status' => 'success',
             'message' => $message,
             'data' => $data,
-        ], $status);
+        ], $status, $headers);
     }
 
-    protected function respondError(string $message = 'Error', int $status = 400, mixed $errors = null): JsonResponse
-    {
+    /**
+     * Return a standardized error JSON response.
+     */
+    protected function respondError(
+        string $message = 'Error',
+        int $status = 400,
+        mixed $errors = null,
+        array $headers = []
+    ): JsonResponse {
         $payload = [
             'status' => 'error',
             'message' => $message,
@@ -27,11 +41,18 @@ trait ApiResponseTrait
             $payload['errors'] = $errors;
         }
 
-        return response()->json($payload, $status);
+        return response()->json($payload, $status, $headers);
     }
 
-    protected function respondPaginated(LengthAwarePaginator $paginator, string $message = 'Success'): JsonResponse
-    {
+    /**
+     * Return a standardized paginated JSON response.
+     */
+    protected function respondPaginated(
+        LengthAwarePaginator $paginator,
+        string $message = 'Success',
+        int $status = 200,
+        array $headers = []
+    ): JsonResponse {
         return response()->json([
             'status' => 'success',
             'message' => $message,
@@ -48,6 +69,6 @@ trait ApiResponseTrait
                 'prev' => $paginator->previousPageUrl(),
                 'next' => $paginator->nextPageUrl(),
             ],
-        ]);
+        ], $status, $headers);
     }
 }
