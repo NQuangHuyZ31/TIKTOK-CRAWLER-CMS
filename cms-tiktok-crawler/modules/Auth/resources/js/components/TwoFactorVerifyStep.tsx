@@ -13,19 +13,19 @@ export interface TwoFactorVerifyStepProps {
 	onBack: () => void;
 }
 
-export default function TwoFactorVerifyStep({
-	challenge,
-	loading,
-	error,
-	onVerify,
-	onBack,
-}: TwoFactorVerifyStepProps) {
-	const [otp, setOtp] = useState('');
+export default function TwoFactorVerifyStep({ challenge, loading, error, onVerify, onBack }: TwoFactorVerifyStepProps) {
+	const [otp, setOtp] = useState<string>('');
 
 	const handleComplete = (value: string) => {
 		setOtp(value);
-		if (value.length === 6) {
+		if (value.length === 6 && !loading) {
 			onVerify(value);
+		}
+	};
+
+	const handleManualSubmit = () => {
+		if (otp.length === 6 && !loading) {
+			onVerify(otp);
 		}
 	};
 
@@ -34,22 +34,34 @@ export default function TwoFactorVerifyStep({
 			{error && <Alert type="error" showIcon message={error} style={{ marginBottom: 16, borderRadius: 8 }} />}
 
 			<div style={{ textAlign: 'center', marginBottom: 20 }}>
-				{!challenge.has_secret ? (
-					<Space direction="vertical" size={12} style={{ width: '100%' }}>
+				{!challenge.enrolled && challenge.qr_code_url ? (
+					<Space direction="vertical" size={10} style={{ width: '100%' }}>
 						<Text strong style={{ fontSize: 14 }}>
 							Step 1: Scan QR Code with Google Authenticator
 						</Text>
 						<Flex justify="center">
-							<div style={{ padding: 10, background: '#f8fafc', borderRadius: 12, border: '1px solid #e2e8f0' }}>
+							<div
+								style={{
+									padding: 12,
+									background: '#ffffff',
+									borderRadius: 12,
+									border: '1px solid #e2e8f0',
+									boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+								}}
+							>
 								<QRCode value={challenge.qr_code_url} size={150} bordered={false} />
 							</div>
 						</Flex>
-						<Text type="secondary" style={{ fontSize: 12 }}>
-							Or enter secret key manually:
-						</Text>
-						<Paragraph copyable style={{ fontSize: 13, fontFamily: 'monospace', margin: 0, color: '#1e293b' }}>
-							{challenge.secret_key}
-						</Paragraph>
+						{challenge.secret_key && (
+							<>
+								<Text type="secondary" style={{ fontSize: 12 }}>
+									Or enter secret key manually:
+								</Text>
+								<Paragraph copyable style={{ fontSize: 13, fontFamily: 'monospace', margin: 0, color: '#1e293b' }}>
+									{challenge.secret_key}
+								</Paragraph>
+							</>
+						)}
 					</Space>
 				) : (
 					<div style={{ padding: '8px 0' }}>
@@ -66,14 +78,7 @@ export default function TwoFactorVerifyStep({
 					Verification Code (6 digits)
 				</Text>
 				<Flex justify="center">
-					<Input.OTP
-						size="large"
-						length={6}
-						value={otp}
-						onChange={handleComplete}
-						disabled={loading}
-						autoFocus
-					/>
+					<Input.OTP size="large" length={6} value={otp} onChange={handleComplete} disabled={loading} autoFocus />
 				</Flex>
 			</div>
 
@@ -83,8 +88,8 @@ export default function TwoFactorVerifyStep({
 					block
 					size="large"
 					loading={loading}
-					disabled={otp.length !== 6}
-					onClick={() => onVerify(otp)}
+					disabled={otp.length !== 6 || loading}
+					onClick={handleManualSubmit}
 					style={{
 						height: 44,
 						fontWeight: 600,
@@ -95,14 +100,7 @@ export default function TwoFactorVerifyStep({
 					Verify & Sign In
 				</Button>
 
-				<Button
-					type="link"
-					block
-					icon={<ArrowLeftOutlined />}
-					onClick={onBack}
-					disabled={loading}
-					style={{ fontSize: 13, color: '#64748b' }}
-				>
+				<Button type="link" block icon={<ArrowLeftOutlined />} onClick={onBack} disabled={loading} style={{ fontSize: 13, color: '#64748b' }}>
 					Back to Login
 				</Button>
 			</Space>

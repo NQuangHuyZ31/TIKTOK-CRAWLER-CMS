@@ -2,24 +2,29 @@
 
 namespace Modules\Auth\Http\Controllers;
 
-use Modules\User\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
-use Modules\Auth\Http\Requests\GoogleLoginRequest;
+use Laravel\Socialite\Facades\Socialite;
 use Modules\Auth\Http\Requests\LoginRequest;
 use Modules\Auth\Http\Requests\ResetPasswordRequest;
 use Modules\Auth\Http\Requests\Verify2FARequest;
+use Modules\Auth\Http\Requests\VerifyAuthCodeRequest;
 use Modules\Auth\Services\AuthService;
 use Modules\Core\Http\Controllers\BaseController;
+use Modules\User\Models\User;
 
 class AuthController extends BaseController
 {
     public array $publicActions = [
         'login',
+        'verifyCode',
         'verify2fa',
-        'googleLogin',
-        'config2fa',
+        'verifyEmailOtp',
+        'resendEmailOtp',
+        'challenge2fa',
+        'googleRedirect',
+        'googleCallback',
         'forgotPassword',
         'resetPassword',
     ];
@@ -29,169 +34,147 @@ class AuthController extends BaseController
     ) {}
 
     /**
-     * Resolve the currently authenticated user either from request or Sanctum guard.
-     */
-    protected function getAuthenticatedUser(Request $request): ?User
-    {
-        return $request->user() ?? auth('sanctum')->user();
-    }
-
-    /**
-     * Authenticate user with credentials and issue Bearer token (or require 2FA).
-     * api: POST /{admin_path}/api/auth/auth/login
+     * Standard email + password login (issues Bearer token or requires challenge).
      */
     public function login(LoginRequest $request): JsonResponse
     {
-        try {
+        return $this->executeAuthAction(function () use ($request) {
             $data = $this->authService->login($request->validated(), $request->ip(), $request->userAgent());
-
             $message = !empty($data['require_2fa'])
                 ? 'Two-factor authentication required.'
-                : 'Login successful.';
-
+                : (!empty($data['require_otp']) ? 'Email verification code sent.' : 'Login successful.');
             return $this->respondSuccess($data, $message);
-        } catch (ValidationException $e) {
-            $message = $e->validator->errors()->first() ?: 'Invalid email or password.';
-            return $this->respondError($message, 401, $e->errors());
-        } catch (\Throwable $e) {
-            return $this->respondError($e->getMessage(), 400);
-        }
+        }, 401);
     }
 
     /**
-     * Verify 6-digit TOTP code and finalize authentication.
-     * api: POST /{admin_path}/api/auth/auth/verify-2fa
+     * Unified challenge code verification (Email OTP or Google 2FA).
      */
-    public function verify2fa(Verify2FARequest $request): JsonResponse
+    public function verifyCode(VerifyAuthCodeRequest $request): JsonResponse
     {
+        return $this->executeAuthAction(function () use ($request) {
+            $data = $this->authService->verifyCode($request->validated('temp_token'), $request->validated('code'));
+            return $this->respondSuccess($data, 'Verification successful.');
+        });
+    }
+
+    /**
+     * Verify 6-digit TOTP code and issue Sanctum token (backward-compatible).
+     */
+    public function verify2fa(VerifyAuthCodeRequest $request): JsonResponse
+    {
+        return $this->verifyCode($request);
+    }
+
+    /**
+     * Verify email 6-digit OTP code and issue Sanctum token (backward-compatible).
+     */
+    public function verifyEmailOtp(VerifyAuthCodeRequest $request): JsonResponse
+    {
+        return $this->verifyCode($request);
+    }
+
+    /**
+     * Resend fresh OTP code to user's email.
+     */
+    public function resendEmailOtp(Request $request): JsonResponse
+    {
+        $request->validate([
+            'temp_token' => 'required|string',
+        ]);
+
+        return $this->executeAuthAction(function () use ($request) {
+            $data = $this->authService->resendEmailOtp($request->input('temp_token'));
+            return $this->respondSuccess($data, 'A new verification code has been sent.');
+        });
+    }
+
+    /**
+     * Fetch active 2FA challenge details (QR code and secret) by temp_token.
+     */
+    public function challenge2fa(Request $request): JsonResponse
+    {
+        $tempToken = (string) $request->query('temp_token', '');
+        if ($tempToken === '') {
+            return $this->respondError('Temporary token is required.', 422);
+        }
+
+        $challenge = $this->authService->get2FAChallenge($tempToken);
+        return $challenge
+            ? $this->respondSuccess($challenge, '2FA challenge retrieved successfully.')
+            : $this->respondError('The 2FA verification session has expired or is invalid.', 404);
+    }
+
+    /**
+     * Redirect to Google OAuth authorization consent screen via Socialite.
+     */
+    public function googleRedirect(): mixed
+    {
+        return Socialite::driver('google')->stateless()->redirect();
+    }
+
+    /**
+     * Handle OAuth callback from Google via Socialite.
+     */
+    public function googleCallback(Request $request): mixed
+    {
+        $adminPath = trim((string) config('admin.admin_path', 'admin'), '/') ?: 'admin';
+        $loginUrl = "/{$adminPath}/auth/login";
+
+        if ($request->has('error') || !$request->has('code')) {
+            $error = $request->input('error_description') ?: $request->input('error', 'Google authentication was cancelled.');
+            return redirect($loginUrl . '?error=' . urlencode($error));
+        }
+
         try {
-            $validated = $request->validated();
-            $data = $this->authService->verify2fa($validated['temp_token'], $validated['code']);
+            $googleUser = Socialite::driver('google')->stateless()->user();
+            $data = $this->authService->loginWithGoogle([
+                'email' => $googleUser->getEmail(),
+                'name' => $googleUser->getName(),
+                'google_id' => $googleUser->getId(),
+                'avatar' => $googleUser->getAvatar(),
+            ], $request->ip(), $request->userAgent());
 
-            return $this->respondSuccess($data, 'Two-factor authentication verified successfully.');
+            if (!empty($data['require_2fa'])) {
+                return redirect($loginUrl . '?step=2fa&temp_token=' . urlencode($data['temp_token']));
+            }
+
+            return redirect($loginUrl . '?token=' . urlencode($data['token']));
         } catch (ValidationException $e) {
-            $message = $e->validator->errors()->first() ?: 'Invalid 2FA verification code.';
-            return $this->respondError($message, 422, $e->errors());
+            $error = $e->validator->errors()->first() ?: 'This Google account is not registered in the system.';
+            return redirect($loginUrl . '?error=' . urlencode($error));
         } catch (\Throwable $e) {
-            return $this->respondError($e->getMessage(), 400);
+            return redirect($loginUrl . '?error=' . urlencode($e->getMessage()));
         }
     }
 
     /**
-     * Authenticate with Google credential / OAuth payload.
-     * api: POST /{admin_path}/api/auth/auth/google-login
+     * Get profile and module permissions for authenticated user.
      */
-    public function googleLogin(GoogleLoginRequest $request): JsonResponse
+    public function me(Request $request): JsonResponse
     {
-        try {
-            $data = $this->authService->loginWithGoogle($request->validated(), $request->ip(), $request->userAgent());
-
-            $message = !empty($data['require_2fa'])
-                ? 'Two-factor authentication required.'
-                : 'Google sign-in successful.';
-
-            return $this->respondSuccess($data, $message);
-        } catch (ValidationException $e) {
-            $message = $e->validator->errors()->first() ?: 'Google authentication failed.';
-            return $this->respondError($message, 401, $e->errors());
-        } catch (\Throwable $e) {
-            return $this->respondError($e->getMessage(), 400);
-        }
+        $user = $this->getAuthenticatedUser($request);
+        return $user
+            ? $this->respondSuccess($this->authService->getMe($user), 'Profile retrieved successfully.')
+            : $this->respondError('Unauthenticated.', 401);
     }
 
     /**
-     * Retrieve global 2FA configuration status.
-     * api: GET /{admin_path}/api/auth/auth/config-2fa
-     */
-    public function config2fa(): JsonResponse
-    {
-        return $this->respondSuccess($this->authService->get2faConfig(), '2FA configuration retrieved.');
-    }
-
-    /**
-     * Terminate the user's active session and revoke the current access token.
-     * api: POST /{admin_path}/api/auth/auth/logout
+     * Revoke access token and terminate active session.
      */
     public function logout(Request $request): JsonResponse
     {
         $user = $this->getAuthenticatedUser($request);
-
         if (!$user) {
             return $this->respondError('Unauthenticated.', 401);
         }
 
         $this->authService->logout($user);
-
         return $this->respondSuccess(null, 'Logged out successfully.');
     }
 
     /**
-     * Get the authenticated user's profile and module permissions matrix.
-     * api: GET /{admin_path}/api/auth/auth/me
-     */
-    public function me(Request $request): JsonResponse
-    {
-        $user = $this->getAuthenticatedUser($request);
-
-        if (!$user) {
-            return $this->respondError('Unauthenticated.', 401);
-        }
-
-        return $this->respondSuccess(
-            $this->authService->getMe($user),
-            'Profile retrieved successfully.'
-        );
-    }
-
-    /**
-     * Initiate forgot password flow by issuing a password reset token.
-     * api: POST /{admin_path}/api/auth/auth/forgot-password
-     */
-    public function forgotPassword(Request $request): JsonResponse
-    {
-        $request->validate(['email' => 'required|email']);
-
-        try {
-            $token = $this->authService->forgotPassword($request->input('email'));
-
-            return $this->respondSuccess(['token' => $token], 'Password reset token generated successfully.');
-        } catch (ValidationException $e) {
-            return $this->respondError($e->getMessage(), 422, $e->errors());
-        } catch (\Throwable $e) {
-            return $this->respondError($e->getMessage(), 400);
-        }
-    }
-
-    /**
-     * Change user password with current password verification.
-     * api: POST /{admin_path}/api/auth/auth/change-password
-     */
-    public function changePassword(Request $request): JsonResponse
-    {
-        $request->validate([
-            'current_password' => 'required|string',
-            'password' => 'required|string|min:8|confirmed',
-        ]);
-
-        $user = $this->getAuthenticatedUser($request);
-        if (!$user) {
-            return $this->respondError('Unauthenticated.', 401);
-        }
-
-        try {
-            $this->authService->changePassword($user, $request->only('current_password', 'password'));
-
-            return $this->respondSuccess(null, 'Password changed successfully.');
-        } catch (ValidationException $e) {
-            return $this->respondError($e->getMessage(), 422, $e->errors());
-        } catch (\Throwable $e) {
-            return $this->respondError($e->getMessage(), 400);
-        }
-    }
-
-    /**
-     * Update profile details for the authenticated user.
-     * api: PUT /{admin_path}/api/auth/auth/profile
+     * Update user profile information.
      */
     public function updateProfile(Request $request): JsonResponse
     {
@@ -206,27 +189,79 @@ class AuthController extends BaseController
             return $this->respondError('Unauthenticated.', 401);
         }
 
-        try {
-            $data = $this->authService->updateProfile($user, $request->only('name', 'phone', 'avatar'));
-
-            return $this->respondSuccess($data, 'Profile updated successfully.');
-        } catch (\Throwable $e) {
-            return $this->respondError($e->getMessage(), 400);
-        }
+        return $this->executeAuthAction(fn () =>
+            $this->respondSuccess(
+                $this->authService->updateProfile($user, $request->only('name', 'phone', 'avatar')),
+                'Profile updated successfully.'
+            )
+        );
     }
 
     /**
-     * Reset account password using the reset token.
-     * api: POST /{admin_path}/api/auth/auth/reset-password
+     * Generate password reset token.
+     */
+    public function forgotPassword(Request $request): JsonResponse
+    {
+        $request->validate(['email' => 'required|email']);
+
+        return $this->executeAuthAction(fn () =>
+            $this->respondSuccess(
+                ['token' => $this->authService->forgotPassword($request->input('email'))],
+                'Password reset token generated successfully.'
+            )
+        );
+    }
+
+    /**
+     * Reset password using token.
      */
     public function resetPassword(ResetPasswordRequest $request): JsonResponse
     {
-        try {
+        return $this->executeAuthAction(function () use ($request) {
             $this->authService->resetPassword($request->validated());
-
             return $this->respondSuccess(null, 'Password has been reset successfully.');
+        });
+    }
+
+    /**
+     * Change current password.
+     */
+    public function changePassword(Request $request): JsonResponse
+    {
+        $request->validate([
+            'current_password' => 'required|string',
+            'password' => 'required|string|min:8|confirmed',
+        ]);
+
+        $user = $this->getAuthenticatedUser($request);
+        if (!$user) {
+            return $this->respondError('Unauthenticated.', 401);
+        }
+
+        return $this->executeAuthAction(function () use ($user, $request) {
+            $this->authService->changePassword($user, $request->only('current_password', 'password'));
+            return $this->respondSuccess(null, 'Password changed successfully.');
+        });
+    }
+
+    /**
+     * Resolve the currently authenticated user from request or Sanctum guard.
+     */
+    protected function getAuthenticatedUser(Request $request): ?User
+    {
+        return $request->user() ?? auth('sanctum')->user();
+    }
+
+    /**
+     * Unified execution wrapper to centralize validation and error handling.
+     */
+    protected function executeAuthAction(callable $action, int $validationStatus = 422): JsonResponse
+    {
+        try {
+            return $action();
         } catch (ValidationException $e) {
-            return $this->respondError($e->getMessage(), 422, $e->errors());
+            $message = $e->validator->errors()->first() ?: $e->getMessage();
+            return $this->respondError($message, $validationStatus, $e->errors());
         } catch (\Throwable $e) {
             return $this->respondError($e->getMessage(), 400);
         }

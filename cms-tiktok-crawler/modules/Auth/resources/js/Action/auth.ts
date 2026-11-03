@@ -7,34 +7,44 @@ export interface LoginPayload {
 }
 
 export interface TwoFactorChallengeData {
+	step?: '2fa';
 	require_2fa: true;
+	require_otp?: false;
+	enrolled: boolean;
 	temp_token: string;
-	has_secret: boolean;
-	qr_code_url: string;
-	secret_key: string;
+	has_secret?: boolean;
+	qr_code_url?: string;
+	secret_key?: string;
+	email?: string;
 }
 
 export interface LoginSuccessData {
+	step?: 'completed';
 	require_2fa: false;
+	require_otp?: false;
 	token: string;
 	token_type: string;
 	user: UserProfile;
 }
 
-export type LoginResponseData = LoginSuccessData | TwoFactorChallengeData;
+export interface EmailOtpChallengeData {
+	step: 'email_otp';
+	require_otp: true;
+	require_2fa?: false;
+	temp_token: string;
+	email: string;
+	message?: string;
+}
 
-export interface Verify2FAPayload {
+export type LoginResponseData = LoginSuccessData | TwoFactorChallengeData | EmailOtpChallengeData;
+
+export interface VerifyCodePayload {
 	temp_token: string;
 	code: string;
 }
 
-export interface GoogleLoginPayload {
-	credential?: string;
-	email?: string;
-	name?: string;
-	google_id?: string;
-	avatar?: string;
-}
+export type Verify2FAPayload = VerifyCodePayload;
+export type VerifyEmailOtpPayload = VerifyCodePayload;
 
 export interface ResetPasswordPayload {
 	email: string;
@@ -54,31 +64,45 @@ export const login = (data: LoginPayload) =>
 	});
 
 /**
- * Verify 6-digit TOTP code and finalize authentication.
+ * Unified verification for 6-digit challenge code (Email OTP or Google 2FA).
+ * API: POST /auth/auth/verify-code
+ */
+export const verifyCode = (data: VerifyCodePayload) =>
+	api<{ status: string; data: LoginSuccessData; message: string }>('/auth/auth/verify-code', {
+		method: 'POST',
+		data,
+	});
+
+/**
+ * Verify 6-digit TOTP code (alias to unified verifyCode).
  * API: POST /auth/auth/verify-2fa
  */
-export const verify2FA = (data: Verify2FAPayload) =>
-	api<{ status: string; data: LoginSuccessData; message: string }>('/auth/auth/verify-2fa', {
+export const verify2FA = (data: VerifyCodePayload) => verifyCode(data);
+
+/**
+ * Verify 6-digit email OTP (alias to unified verifyCode).
+ * API: POST /auth/auth/verify-email-otp
+ */
+export const verifyEmailOtp = (data: VerifyCodePayload) => verifyCode(data);
+
+/**
+ * Resend fresh email OTP code.
+ * API: POST /auth/auth/resend-email-otp
+ */
+export const resendEmailOtp = (temp_token: string) =>
+	api<{ status: string; data: EmailOtpChallengeData; message: string }>('/auth/auth/resend-email-otp', {
 		method: 'POST',
-		data,
+		data: { temp_token },
 	});
 
 /**
- * Sign in via Google ID / OAuth payload.
- * API: POST /auth/auth/google-login
+ * Retrieve active 2FA challenge data using temporary token.
+ * API: GET /auth/auth/challenge-2fa?temp_token=...
  */
-export const googleLogin = (data: GoogleLoginPayload) =>
-	api<{ status: string; data: LoginResponseData; message: string }>('/auth/auth/google-login', {
-		method: 'POST',
-		data,
-	});
-
-/**
- * Fetch 2FA configuration status from backend.
- * API: GET /auth/auth/config-2fa
- */
-export const get2FAConfig = () =>
-	api<{ status: string; data: { enabled: boolean }; message: string }>('/auth/auth/config-2fa');
+export const get2FAChallenge = (temp_token: string) =>
+	api<{ status: string; data: TwoFactorChallengeData; message: string }>(
+		`/auth/auth/challenge-2fa?temp_token=${encodeURIComponent(temp_token)}`
+	);
 
 /**
  * Revoke the current access token and log out the user.
@@ -95,6 +119,16 @@ export const logout = () =>
  */
 export const getMe = () =>
 	api<{ status: string; data: UserProfile; message: string }>('/auth/me');
+
+/**
+ * Initiate forgot password flow by requesting a password reset token.
+ * API: POST /auth/auth/forgot-password
+ */
+export const forgotPassword = (email: string) =>
+	api<{ status: string; data: { token: string }; message: string }>('/auth/auth/forgot-password', {
+		method: 'POST',
+		data: { email },
+	});
 
 /**
  * Reset account password with token.

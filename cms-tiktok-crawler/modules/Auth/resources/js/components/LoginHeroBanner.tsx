@@ -1,11 +1,6 @@
 import React from 'react';
 import { Card, Flex, Space, Tag, Typography } from 'antd';
-import {
-	CheckCircleFilled,
-	RobotOutlined,
-	SafetyCertificateFilled,
-	ThunderboltFilled,
-} from '@ant-design/icons';
+import { CheckCircleFilled, RobotOutlined, SafetyCertificateFilled, ThunderboltFilled } from '@ant-design/icons';
 
 const { Title, Text, Paragraph } = Typography;
 

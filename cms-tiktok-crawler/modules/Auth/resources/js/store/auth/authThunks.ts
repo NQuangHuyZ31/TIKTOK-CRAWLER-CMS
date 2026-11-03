@@ -10,9 +10,9 @@ export const loginThunk = createAsyncThunk(
 	async (payload: authApi.LoginPayload, { rejectWithValue }) => {
 		try {
 			const res = await authApi.login(payload);
-			const data = res.data;
+			const data = (res as any)?.data ?? res;
 
-			if (data.require_2fa) {
+			if (data?.require_2fa || data?.require_otp || data?.step === '2fa' || data?.step === 'email_otp') {
 				return data;
 			}
 
@@ -26,45 +26,26 @@ export const loginThunk = createAsyncThunk(
 );
 
 /**
- * Thunk to verify 6-digit TOTP code and finalize authentication.
+ * Unified thunk to verify 6-digit challenge code (Email OTP or Google 2FA).
  */
-export const verify2FAThunk = createAsyncThunk(
-	'auth/verify2FA',
-	async (payload: authApi.Verify2FAPayload, { rejectWithValue }) => {
+export const verifyCodeThunk = createAsyncThunk(
+	'auth/verifyCode',
+	async (payload: authApi.VerifyCodePayload, { rejectWithValue }) => {
 		try {
-			const res = await authApi.verify2FA(payload);
-			const data = res.data;
+			const res = await authApi.verifyCode(payload);
+			const data = (res as any)?.data ?? res;
 
 			localStorage.setItem(AUTH_STORAGE_KEYS.TOKEN, data.token);
 			return data;
 		} catch (error: any) {
-			return rejectWithValue(error.message || '2FA verification failed.');
+			return rejectWithValue(error.message || 'Verification failed. Please check your code.');
 		}
 	}
 );
 
-/**
- * Thunk to sign in via Google OAuth payload.
- */
-export const googleLoginThunk = createAsyncThunk(
-	'auth/googleLogin',
-	async (payload: authApi.GoogleLoginPayload, { rejectWithValue }) => {
-		try {
-			const res = await authApi.googleLogin(payload);
-			const data = res.data;
-
-			if (data.require_2fa) {
-				return data;
-			}
-
-			const successData = data as authApi.LoginSuccessData;
-			localStorage.setItem(AUTH_STORAGE_KEYS.TOKEN, successData.token);
-			return successData;
-		} catch (error: any) {
-			return rejectWithValue(error.message || 'Google sign-in failed.');
-		}
-	}
-);
+// Backward-compatible thunk aliases
+export const verify2FAThunk = verifyCodeThunk;
+export const verifyEmailOtpThunk = verifyCodeThunk;
 
 /**
  * Thunk to fetch current authenticated user profile.

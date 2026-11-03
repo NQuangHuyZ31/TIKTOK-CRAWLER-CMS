@@ -42,6 +42,10 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
+        'sanctum' => [
+            'driver' => 'sanctum',
+            'provider' => 'users',
+        ],
     ],
 
     /*
@@ -124,6 +128,20 @@ return [
     */
     'two_factor' => [
         'enabled' => filter_var(env('AUTH_2FA_ENABLED', false), FILTER_VALIDATE_BOOLEAN),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Email OTP Verification
+    |--------------------------------------------------------------------------
+    |
+    | When enabled via AUTH_EMAIL_OTP_ENABLED in .env, email/password logins
+    | require an email OTP verification code.
+    |
+    */
+    'email_otp' => [
+        'enabled' => filter_var(env('AUTH_EMAIL_OTP_ENABLED', false), FILTER_VALIDATE_BOOLEAN),
+        'ttl_minutes' => (int) env('AUTH_EMAIL_OTP_TTL', 5),
     ],
 
 ];

@@ -1,7 +1,7 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import type { UserProfile } from '../../configs/authConfig';
 import { AUTH_STORAGE_KEYS } from '../../configs/authConfig';
-import { fetchMeThunk, loginThunk, logoutThunk, verify2FAThunk, googleLoginThunk } from './authThunks';
+import { fetchMeThunk, loginThunk, logoutThunk, verifyCodeThunk, verify2FAThunk, verifyEmailOtpThunk } from './authThunks';
 
 export interface AuthState {
 	user: UserProfile | null;
@@ -37,9 +37,11 @@ const initialState: AuthState = {
 
 function applyAuthSuccess(state: AuthState, action: PayloadAction<any>): void {
 	state.loading = false;
-	const payload = action.payload;
-	if (payload?.require_2fa) {
+	const payload = action.payload?.data ?? action.payload;
+	if (payload?.require_2fa || payload?.require_otp || payload?.step === '2fa' || payload?.step === 'email_otp') {
 		state.isAuthenticated = false;
+		state.token = null;
+		state.user = null;
 		return;
 	}
 	state.token = payload.token;
@@ -85,19 +87,13 @@ const authSlice = createSlice({
 			.addCase(loginThunk.fulfilled, applyAuthSuccess)
 			.addCase(loginThunk.rejected, (s, a) => { s.loading = false; s.error = (a.payload as string) || 'Authentication failed.'; });
 
-		// 2. 2FA Verification
+		// 2. Challenge Code Verification (Email OTP / 2FA)
 		builder
-			.addCase(verify2FAThunk.pending, (s) => { s.loading = true; s.error = null; })
-			.addCase(verify2FAThunk.fulfilled, applyAuthSuccess)
-			.addCase(verify2FAThunk.rejected, (s, a) => { s.loading = false; s.error = (a.payload as string) || '2FA verification failed.'; });
+			.addCase(verifyCodeThunk.pending, (s) => { s.loading = true; s.error = null; })
+			.addCase(verifyCodeThunk.fulfilled, applyAuthSuccess)
+			.addCase(verifyCodeThunk.rejected, (s, a) => { s.loading = false; s.error = (a.payload as string) || 'Verification failed.'; });
 
-		// 3. Google Login
-		builder
-			.addCase(googleLoginThunk.pending, (s) => { s.loading = true; s.error = null; })
-			.addCase(googleLoginThunk.fulfilled, applyAuthSuccess)
-			.addCase(googleLoginThunk.rejected, (s, a) => { s.loading = false; s.error = (a.payload as string) || 'Google authentication failed.'; });
-
-		// 4. Fetch Me
+		// 3. Fetch Me
 		builder
 			.addCase(fetchMeThunk.fulfilled, (s, a) => {
 				s.user = a.payload;

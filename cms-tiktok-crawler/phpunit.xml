@@ -34,5 +34,7 @@
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>
         <env name="CRAWLER_SERVICE_TOKEN" value=""/>
+        <env name="AUTH_2FA_ENABLED" value="false"/>
+        <env name="AUTH_EMAIL_OTP_ENABLED" value="false"/>
     </php>
 </phpunit>
