@@ -14,8 +14,8 @@ use Laravel\Sanctum\HasApiTokens;
 use Modules\Core\Traits\HasRolesAndPermissions;
 use Modules\System\Traits\LogsActivity;
 
-#[Fillable(['name', 'email', 'password', 'phone', 'avatar', 'status', 'is_admin', 'permission_type'])]
-#[Hidden(['password', 'remember_token'])]
+#[Fillable(['name', 'email', 'password', 'phone', 'avatar', 'status', 'is_admin', 'permission_type', 'google_id', 'google2fa_secret', 'google2fa_enabled'])]
+#[Hidden(['password', 'remember_token', 'google2fa_secret'])]
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
@@ -43,6 +43,7 @@ class User extends Authenticatable
             'password' => 'hashed',
             'is_admin' => 'boolean',
             'permission_type' => 'string',
+            'google2fa_enabled' => 'boolean',
         ];
     }
 

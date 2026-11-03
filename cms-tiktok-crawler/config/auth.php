@@ -114,4 +114,16 @@ return [
 
     'password_timeout' => env('AUTH_PASSWORD_TIMEOUT', 10800),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Two-Factor Authentication (Google Authenticator)
+    |--------------------------------------------------------------------------
+    |
+    | When enabled via AUTH_2FA_ENABLED in .env, logins require TOTP validation.
+    |
+    */
+    'two_factor' => [
+        'enabled' => filter_var(env('AUTH_2FA_ENABLED', false), FILTER_VALIDATE_BOOLEAN),
+    ],
+
 ];

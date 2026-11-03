@@ -1,12 +1,26 @@
 import React, { useState } from 'react';
-import { Form, Input, Button, Checkbox, Alert, Flex } from 'antd';
+import { Form, Input, Button, Checkbox, Alert, Flex, Divider } from 'antd';
 import { UserOutlined, LockOutlined, LoginOutlined } from '@ant-design/icons';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from '@core/store';
 import { loginThunk } from '../store/auth/authThunks';
 import { AUTH_ROUTES } from '../configs/authConfig';
+import type { TwoFactorChallengeData } from '../Action/auth';
+import GoogleLoginButton from './GoogleLoginButton';
 
-export default function LoginForm() {
+export interface LoginFormProps {
+	onRequire2FA: (challenge: TwoFactorChallengeData) => void;
+	onForgotPassword: () => void;
+	onGoogleLoginClick: () => void;
+	googleLoading?: boolean;
+}
+
+export default function LoginForm({
+	onRequire2FA,
+	onForgotPassword,
+	onGoogleLoginClick,
+	googleLoading,
+}: LoginFormProps) {
 	const [form] = Form.useForm();
 	const dispatch = useDispatch();
 	const navigate = useNavigate();
@@ -24,11 +38,16 @@ export default function LoginForm() {
 				loginThunk({
 					email: values.email,
 					password: values.password,
-				}),
+				})
 			);
 
 			if (loginThunk.fulfilled.match(resultAction)) {
-				navigate(from, { replace: true });
+				const payload = resultAction.payload as any;
+				if (payload?.require_2fa) {
+					onRequire2FA(payload as TwoFactorChallengeData);
+				} else {
+					navigate(from, { replace: true });
+				}
 			} else {
 				setLocalError((resultAction.payload as string) || 'Invalid email or password.');
 			}
@@ -39,7 +58,16 @@ export default function LoginForm() {
 
 	return (
 		<div>
-			{(localError || error) && <Alert type="error" showIcon message={localError || error} style={{ marginBottom: 20, borderRadius: 8 }} closable onClose={() => setLocalError(null)} />}
+			{(localError || error) && (
+				<Alert
+					type="error"
+					showIcon
+					message={localError || error}
+					style={{ marginBottom: 20, borderRadius: 8 }}
+					closable
+					onClose={() => setLocalError(null)}
+				/>
+			)}
 
 			<Form form={form} layout="vertical" size="large" initialValues={{ remember: true }} onFinish={handleSubmit}>
 				<Form.Item
@@ -60,6 +88,9 @@ export default function LoginForm() {
 					<Form.Item name="remember" valuePropName="checked" noStyle>
 						<Checkbox>Remember me</Checkbox>
 					</Form.Item>
+					<Button type="link" onClick={onForgotPassword} style={{ padding: 0, fontSize: 13 }}>
+						Forgot password?
+					</Button>
 				</Flex>
 
 				<Form.Item style={{ marginBottom: 16 }}>
@@ -79,6 +110,12 @@ export default function LoginForm() {
 						Sign In
 					</Button>
 				</Form.Item>
+
+				<Divider plain style={{ margin: '16px 0', color: '#94a3b8', fontSize: 12 }}>
+					or continue with
+				</Divider>
+
+				<GoogleLoginButton loading={googleLoading} onClick={onGoogleLoginClick} />
 			</Form>
 		</div>
 	);
