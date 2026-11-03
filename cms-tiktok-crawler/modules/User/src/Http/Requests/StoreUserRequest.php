@@ -26,7 +26,7 @@ class StoreUserRequest extends FormRequest
         return [
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users,email',
-            'password' => 'required|string|min:6',
+            'password' => 'string|min:6',
             'phone' => 'nullable|string|max:20',
             'avatar' => 'nullable|string|max:255',
             'status' => 'nullable|string|in:active,inactive,blocked',
@@ -51,7 +51,7 @@ class StoreUserRequest extends FormRequest
             'email.required' => 'Email address is required.',
             'email.email' => 'Please provide a valid email address.',
             'email.unique' => 'This email address is already in use.',
-            'password.required' => 'Password is required.',
+            // 'password.required' => 'Password is required.',
             'password.min' => 'Password must be at least 6 characters.',
             'status.in' => 'Status must be active, inactive, or blocked.',
         ];

@@ -52,8 +52,8 @@ export default function UserFormPage() {
 				avatar: user.avatar,
 				status: user.status,
 				permission_type: isDirectUser ? 'user' : 'role',
-				roles: isDirectUser ? [] : (user.role_slugs || (user.roles?.map((r) => r.slug) ?? ['editor'])),
-				permissions: isDirectUser ? (user.permissions?.map((p: any) => typeof p === 'string' ? p : p.slug) || user.all_permissions || []) : [],
+				roles: isDirectUser ? [] : user.role_slugs || (user.roles?.map((r) => r.slug) ?? ['editor']),
+				permissions: isDirectUser ? user.permissions?.map((p: any) => (typeof p === 'string' ? p : p.slug)) || user.all_permissions || [] : [],
 			});
 		}
 	}, [isEdit, user, form]);
@@ -70,22 +70,19 @@ export default function UserFormPage() {
 			status: values.status,
 			permission_type: values.permission_type || 'role',
 			roles: isRoleMode ? (Array.isArray(values.roles) ? values.roles : [values.roles]) : [],
-			permissions: !isRoleMode ? (values.permissions || []) : [],
+			permissions: !isRoleMode ? values.permissions || [] : [],
 		};
 
 		if (values.password) {
 			payload.password = values.password;
 		}
 
-		await act(
-			() => (isEdit && id ? userAPI.updateUser(id, payload) : userAPI.createUser(payload)),
-			{
-				successMessage: isEdit ? 'User account updated successfully' : 'User account created successfully',
-				errorMessage: 'Failed to save user account. Please check your permissions.',
-				onSuccess: () => navigate('/user'),
-				onError: (err) => setFormError(err?.response?.data?.message || err?.message),
-			}
-		);
+		await act(() => (isEdit && id ? userAPI.updateUser(id, payload) : userAPI.createUser(payload)), {
+			successMessage: isEdit ? 'User account updated successfully' : 'User account created successfully',
+			errorMessage: 'Failed to save user account. Please check your permissions.',
+			onSuccess: () => navigate('/user'),
+			onError: (err) => setFormError(err?.response?.data?.message || err?.message),
+		});
 	};
 
 	if (isEdit && error && (error.includes('Forbidden') || error.includes('403'))) {
@@ -133,7 +130,7 @@ export default function UserFormPage() {
 				requiredMark="optional"
 			>
 				<UserProfileCard />
-				<UserSecurityCard isEdit={isEdit} />
+				{!isEdit && <UserSecurityCard isEdit={isEdit} />}
 				<UserPermissionsCard form={form} permissionType={permissionType} rolesCatalog={rolesCatalog} />
 			</Form>
 		</div>

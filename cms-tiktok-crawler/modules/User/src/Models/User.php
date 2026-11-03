@@ -44,6 +44,7 @@ class User extends Authenticatable
             'is_admin' => 'boolean',
             'permission_type' => 'string',
             'google2fa_enabled' => 'boolean',
+            'google2fa_secret' => 'encrypted',
         ];
     }
 
