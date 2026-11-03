@@ -8,6 +8,10 @@ use Modules\Core\Repositories\BaseRepository;
 use Modules\TiktokAccount\Models\TiktokAccount;
 use Modules\TiktokAccount\Repositories\Interfaces\TiktokAccountRepositoryInterface;
 
+/**
+ * @extends BaseRepository<TiktokAccount>
+ * @implements TiktokAccountRepositoryInterface
+ */
 class TiktokAccountRepository extends BaseRepository implements TiktokAccountRepositoryInterface
 {
 	protected function getModel(): Model

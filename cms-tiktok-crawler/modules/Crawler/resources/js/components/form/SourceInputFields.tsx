@@ -1,11 +1,7 @@
 import React from 'react';
-import { Button, Flex, Form, Input, InputNumber, Space, Tag, Typography } from 'antd';
-import { BulbOutlined, ClearOutlined, InfoCircleOutlined } from '@ant-design/icons';
-import { formatNumber } from '@core/utils/formatNumber';
-import { COUNT_PRESETS } from '../../configs/crawlerOptions';
 import TiktokAccountSelect from '../TiktokAccountSelect';
-
-const { Text } = Typography;
+import TextListSourceInput from './TextListSourceInput';
+import CountSourceInput from './CountSourceInput';
 
 interface SourceInputFieldsProps {
 	sourceType: string;
@@ -38,105 +34,48 @@ export default function SourceInputFields({
 }: SourceInputFieldsProps) {
 	if (sourceType === 'usernames') {
 		return (
-			<div>
-				<Flex justify="space-between" align="center" style={{ marginBottom: 8 }} wrap="wrap" gap={8}>
-					<Space size={8}>
-						<Text strong>TikTok Usernames List:</Text>
-						<Tag color={parsedUsernamesCount > 0 ? 'processing' : 'default'}>
-							Detected: {formatNumber(parsedUsernamesCount)} usernames
-						</Tag>
-					</Space>
-
-					{!isReadOnly && (
-						<Space size={6}>
-							<Button size="small" type="dashed" icon={<BulbOutlined />} onClick={onInsertSample}>
-								Paste Sample
-							</Button>
-							{usernamesRaw && (
-								<Button size="small" type="text" danger icon={<ClearOutlined />} onClick={onClearInput}>
-									Clear
-								</Button>
-							)}
-						</Space>
-					)}
-				</Flex>
-
-				<Form.Item
-					preserve={false}
-					name="usernames"
-					rules={[{ required: true, message: 'Please enter at least one TikTok username' }]}
-					style={{ marginBottom: 8 }}
-				>
-					<Input.TextArea
-						rows={6}
-						disabled={isReadOnly}
-						placeholder={`khaby.lame\nmrbeast\nzachking\n(One username per line, automatically strips @ and TikTok URLs)`}
-						style={{ fontFamily: 'monospace', fontSize: 13 }}
-					/>
-				</Form.Item>
-
-				<Text type="secondary" style={{ fontSize: 12 }}>
-					<InfoCircleOutlined style={{ marginRight: 4 }} />
-					Enter one username per line or comma-separated. The system automatically removes <code>@</code> characters and removes duplicate entries.
-				</Text>
-			</div>
+			<TextListSourceInput
+				name="usernames"
+				label="TikTok Usernames List:"
+				countLabel="usernames"
+				count={parsedUsernamesCount}
+				rawText={usernamesRaw}
+				placeholder={`khaby.lame\nmrbeast\nzachking\n(One username per line, automatically strips @ and TikTok URLs)`}
+				sampleButtonText="Paste Sample"
+				helpText="Enter one username per line or comma-separated. The system automatically removes @ characters and removes duplicate entries."
+				requiredMessage="Please enter at least one TikTok username"
+				isReadOnly={isReadOnly}
+				onInsertSample={onInsertSample}
+				onClearInput={onClearInput}
+			/>
 		);
 	}
 
 	if (sourceType === 'urls') {
+		const isVideoOnly = crawlMode === 'video_only';
 		return (
-			<div>
-				<Flex justify="space-between" align="center" style={{ marginBottom: 8 }} wrap="wrap" gap={8}>
-					<Space size={8}>
-						<Text strong>
-							{crawlMode === 'video_only'
-								? 'TikTok Video URLs List:'
-								: 'TikTok Channel URLs List:'}
-						</Text>
-						<Tag color={parsedUrlsCount > 0 ? 'processing' : 'default'}>
-							Detected: {formatNumber(parsedUrlsCount)} URLs
-						</Tag>
-					</Space>
-
-					{!isReadOnly && (
-						<Space size={6}>
-							<Button size="small" type="dashed" icon={<BulbOutlined />} onClick={onInsertSample}>
-								Paste Sample URLs
-							</Button>
-							{urlsRaw && (
-								<Button size="small" type="text" danger icon={<ClearOutlined />} onClick={onClearInput}>
-									Clear
-								</Button>
-							)}
-						</Space>
-					)}
-				</Flex>
-
-				<Form.Item
-					preserve={false}
-					name="urls"
-					rules={[{ required: true, message: 'Please enter at least one TikTok URL' }]}
-					style={{ marginBottom: 8 }}
-				>
-					<Input.TextArea
-						rows={6}
-						disabled={isReadOnly}
-						placeholder={
-							crawlMode === 'video_only'
-								? `https://www.tiktok.com/@khaby.lame/video/735000111222333444\nhttps://www.tiktok.com/@mrbeast/video/736000111222333444`
-								: `https://www.tiktok.com/@khaby.lame\nhttps://www.tiktok.com/@mrbeast`
-						}
-						style={{ fontFamily: 'monospace', fontSize: 13 }}
-					/>
-				</Form.Item>
-
-				<Text type="secondary" style={{ fontSize: 12 }}>
-					<InfoCircleOutlined style={{ marginRight: 4 }} />
-					{crawlMode === 'video_only'
+			<TextListSourceInput
+				name="urls"
+				label={isVideoOnly ? 'TikTok Video URLs List:' : 'TikTok Channel URLs List:'}
+				countLabel="URLs"
+				count={parsedUrlsCount}
+				rawText={urlsRaw}
+				placeholder={
+					isVideoOnly
+						? `https://www.tiktok.com/@khaby.lame/video/735000111222333444\nhttps://www.tiktok.com/@mrbeast/video/736000111222333444`
+						: `https://www.tiktok.com/@khaby.lame\nhttps://www.tiktok.com/@mrbeast`
+				}
+				sampleButtonText="Paste Sample URLs"
+				helpText={
+					isVideoOnly
 						? 'One valid TikTok video link per line (format: https://www.tiktok.com/@user/video/id).'
-						: 'One valid TikTok profile link per line. The system automatically resolves usernames.'}
-				</Text>
-			</div>
+						: 'One valid TikTok profile link per line. The system automatically resolves usernames.'
+				}
+				requiredMessage="Please enter at least one TikTok URL"
+				isReadOnly={isReadOnly}
+				onInsertSample={onInsertSample}
+				onClearInput={onClearInput}
+			/>
 		);
 	}
 
@@ -151,45 +90,11 @@ export default function SourceInputFields({
 
 	if (sourceType === 'count') {
 		return (
-			<div>
-				<Flex justify="space-between" align="center" style={{ marginBottom: 8 }}>
-					<Text strong>Number of accounts to sample:</Text>
-					{!isReadOnly && (
-						<Space size={4}>
-							{COUNT_PRESETS.map((preset) => (
-								<Button
-									key={preset}
-									size="small"
-									type={totalAccounts === preset ? 'primary' : 'dashed'}
-									onClick={() => onSelectCountPreset(preset)}
-								>
-									{preset}
-								</Button>
-							))}
-						</Space>
-					)}
-				</Flex>
-
-				<Form.Item
-					name="total_accounts"
-					rules={[{ required: true, message: 'Please enter sample count' }]}
-					style={{ marginBottom: 8 }}
-				>
-					<InputNumber
-						min={1}
-						max={10000}
-						precision={0}
-						style={{ width: '100%' }}
-						placeholder="Enter number of accounts to sample from database"
-						disabled={isReadOnly}
-					/>
-				</Form.Item>
-
-				<Text type="secondary" style={{ fontSize: 12 }}>
-					<InfoCircleOutlined style={{ marginRight: 4 }} />
-					The system will automatically select N accounts with the oldest crawl timestamps in the database for re-crawling.
-				</Text>
-			</div>
+			<CountSourceInput
+				totalAccounts={totalAccounts}
+				isReadOnly={isReadOnly}
+				onSelectPreset={onSelectCountPreset}
+			/>
 		);
 	}
 

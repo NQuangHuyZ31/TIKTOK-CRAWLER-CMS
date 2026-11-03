@@ -16,6 +16,10 @@ class CrawlerResultController extends BaseController
     ) {
     }
 
+    /**
+     * Webhook endpoint to receive and process crawler execution events.
+     * Route: POST /admin/api/public/crawler/crawl-jobs/{jobId}/events
+     */
     public function saveResult(
         CrawlerResultStoreRequest $request,
         int $jobId
@@ -33,6 +37,10 @@ class CrawlerResultController extends BaseController
         return response()->json($result['body'], $result['status_code']);
     }
 
+    /**
+     * Endpoint to retrieve unfinished ('running', 'queued') jobs for worker crash recovery.
+     * Route: GET /admin/api/public/crawler/jobs/unfinished
+     */
     public function unfinishedJobs(): JsonResponse
     {
         return $this->respondSuccess(

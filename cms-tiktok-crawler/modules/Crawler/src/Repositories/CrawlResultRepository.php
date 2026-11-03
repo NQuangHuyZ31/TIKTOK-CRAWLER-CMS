@@ -9,6 +9,9 @@ use Modules\Core\Repositories\BaseRepository;
 use Modules\Crawler\Models\CrawlResult;
 use Modules\Crawler\Repositories\Interfaces\CrawlResultRepositoryInterface;
 
+/**
+ * @extends BaseRepository<CrawlResult>
+ */
 class CrawlResultRepository extends BaseRepository implements CrawlResultRepositoryInterface
 {
     protected array $searchableColumns = ['username', 'profile_url', 'error_message'];

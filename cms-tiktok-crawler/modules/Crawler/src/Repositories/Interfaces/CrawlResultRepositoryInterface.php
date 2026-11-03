@@ -4,7 +4,11 @@ namespace Modules\Crawler\Repositories\Interfaces;
 
 use Illuminate\Pagination\LengthAwarePaginator;
 use Modules\Core\Repositories\Interfaces\BaseRepositoryInterface;
+use Modules\Crawler\Models\CrawlResult;
 
+/**
+ * @extends BaseRepositoryInterface<CrawlResult>
+ */
 interface CrawlResultRepositoryInterface extends BaseRepositoryInterface
 {
     /**

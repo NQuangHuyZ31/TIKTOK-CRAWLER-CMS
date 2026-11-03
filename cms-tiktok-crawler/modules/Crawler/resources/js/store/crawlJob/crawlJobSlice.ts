@@ -6,105 +6,14 @@ import {
 	fetchJobVideoResults,
 	fetchStatisticsSummary,
 } from "./crawlJobThunks";
+import {
+	CrawlJobState,
+	initialCrawlJobState,
+	extractPaginatedData,
+} from "./crawlJobSliceTypes";
 
-export interface CrawlJobState {
-	// Job listing
-	data: any[];
-	loading: boolean;
-	error: string | null;
-	statistics: any;
-	statisticsLoading: boolean;
-	statisticsError: string | null;
-	pagination: {
-		page: number;
-		per_page: number;
-		total: number;
-	};
-	params: {
-		page: number;
-		per_page: number;
-		[key: string]: any;
-	};
-
-	// Job detail
-	currentJob: any | null;
-	currentJobLoading: boolean;
-	currentJobError: string | null;
-
-	// Account results
-	jobResults: any[];
-	jobResultsLoading: boolean;
-	jobResultsPagination: {
-		page: number;
-		per_page: number;
-		total: number;
-	};
-	jobResultsParams: {
-		page: number;
-		per_page: number;
-		[key: string]: any;
-	};
-
-	// Video results
-	jobVideoResults: any[];
-	jobVideoResultsLoading: boolean;
-	jobVideoResultsPagination: {
-		page: number;
-		per_page: number;
-		total: number;
-	};
-	jobVideoResultsParams: {
-		page: number;
-		per_page: number;
-		[key: string]: any;
-	};
-}
-
-const initialState: CrawlJobState = {
-	data: [],
-	loading: false,
-	error: null,
-	statistics: null,
-	statisticsLoading: false,
-	statisticsError: null,
-	pagination: {
-		page: 1,
-		per_page: 10,
-		total: 0,
-	},
-	params: {
-		page: 1,
-		per_page: 10,
-	},
-
-	currentJob: null,
-	currentJobLoading: false,
-	currentJobError: null,
-
-	jobResults: [],
-	jobResultsLoading: false,
-	jobResultsPagination: {
-		page: 1,
-		per_page: 10,
-		total: 0,
-	},
-	jobResultsParams: {
-		page: 1,
-		per_page: 10,
-	},
-
-	jobVideoResults: [],
-	jobVideoResultsLoading: false,
-	jobVideoResultsPagination: {
-		page: 1,
-		per_page: 10,
-		total: 0,
-	},
-	jobVideoResultsParams: {
-		page: 1,
-		per_page: 10,
-	},
-};
+export type { CrawlJobState };
+const initialState = initialCrawlJobState;
 
 const crawlJobSlice = createSlice({
 	name: 'crawlJob',
@@ -114,28 +23,19 @@ const crawlJobSlice = createSlice({
 			state.params = { ...state.params, ...action.payload };
 		},
 		resetParams: (state) => {
-			state.params = {
-				page: 1,
-				per_page: 10,
-			};
+			state.params = { page: 1, per_page: 10 };
 		},
 		setJobResultsParams: (state, action: PayloadAction<Record<string, any>>) => {
 			state.jobResultsParams = { ...state.jobResultsParams, ...action.payload };
 		},
 		resetJobResultsParams: (state) => {
-			state.jobResultsParams = {
-				page: 1,
-				per_page: 10,
-			};
+			state.jobResultsParams = { page: 1, per_page: 10 };
 		},
 		setJobVideoResultsParams: (state, action: PayloadAction<Record<string, any>>) => {
 			state.jobVideoResultsParams = { ...state.jobVideoResultsParams, ...action.payload };
 		},
 		resetJobVideoResultsParams: (state) => {
-			state.jobVideoResultsParams = {
-				page: 1,
-				per_page: 10,
-			};
+			state.jobVideoResultsParams = { page: 1, per_page: 10 };
 		},
 		clearCurrentJobDetail: (state) => {
 			state.currentJob = null;
@@ -151,20 +51,14 @@ const crawlJobSlice = createSlice({
 		// 1. Fetch all crawl jobs
 		builder
 			.addCase(fetchCrawlJobs.pending, (state, action) => {
-				if (!action.meta.arg?.silent) {
-					state.loading = true;
-				}
+				if (!action.meta.arg?.silent) state.loading = true;
 				state.error = null;
 			})
 			.addCase(fetchCrawlJobs.fulfilled, (state, action) => {
 				state.loading = false;
-				const res = action.payload;
-				state.data = Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []);
-				state.pagination = {
-					page: res?.meta?.current_page ?? res?.current_page ?? 1,
-					per_page: res?.meta?.per_page ?? res?.per_page ?? 10,
-					total: res?.meta?.total ?? res?.total ?? state.data.length,
-				};
+				const { items, pagination } = extractPaginatedData(action.payload);
+				state.data = items;
+				state.pagination = pagination;
 			})
 			.addCase(fetchCrawlJobs.rejected, (state, action) => {
 				state.loading = false;
@@ -189,9 +83,7 @@ const crawlJobSlice = createSlice({
 		// 3. Fetch crawl job detail
 		builder
 			.addCase(fetchCrawlJobDetail.pending, (state, action) => {
-				if (!action.meta.arg?.silent) {
-					state.currentJobLoading = true;
-				}
+				if (!action.meta.arg?.silent) state.currentJobLoading = true;
 				state.currentJobError = null;
 			})
 			.addCase(fetchCrawlJobDetail.fulfilled, (state, action) => {
@@ -206,20 +98,13 @@ const crawlJobSlice = createSlice({
 		// 4. Fetch job account results
 		builder
 			.addCase(fetchJobResults.pending, (state, action) => {
-				if (!action.meta.arg?.silent) {
-					state.jobResultsLoading = true;
-				}
+				if (!action.meta.arg?.silent) state.jobResultsLoading = true;
 			})
 			.addCase(fetchJobResults.fulfilled, (state, action) => {
 				state.jobResultsLoading = false;
-				const res = action.payload;
-				const items = Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []);
+				const { items, pagination } = extractPaginatedData(action.payload);
 				state.jobResults = items;
-				state.jobResultsPagination = {
-					page: res?.meta?.current_page ?? res?.current_page ?? 1,
-					per_page: res?.meta?.per_page ?? res?.per_page ?? 10,
-					total: res?.meta?.total ?? res?.total ?? items.length,
-				};
+				state.jobResultsPagination = pagination;
 			})
 			.addCase(fetchJobResults.rejected, (state) => {
 				state.jobResultsLoading = false;
@@ -228,20 +113,13 @@ const crawlJobSlice = createSlice({
 		// 5. Fetch job video results
 		builder
 			.addCase(fetchJobVideoResults.pending, (state, action) => {
-				if (!action.meta.arg?.silent) {
-					state.jobVideoResultsLoading = true;
-				}
+				if (!action.meta.arg?.silent) state.jobVideoResultsLoading = true;
 			})
 			.addCase(fetchJobVideoResults.fulfilled, (state, action) => {
 				state.jobVideoResultsLoading = false;
-				const res = action.payload;
-				const items = Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []);
+				const { items, pagination } = extractPaginatedData(action.payload);
 				state.jobVideoResults = items;
-				state.jobVideoResultsPagination = {
-					page: res?.meta?.current_page ?? res?.current_page ?? 1,
-					per_page: res?.meta?.per_page ?? res?.per_page ?? 10,
-					total: res?.meta?.total ?? res?.total ?? items.length,
-				};
+				state.jobVideoResultsPagination = pagination;
 			})
 			.addCase(fetchJobVideoResults.rejected, (state) => {
 				state.jobVideoResultsLoading = false;

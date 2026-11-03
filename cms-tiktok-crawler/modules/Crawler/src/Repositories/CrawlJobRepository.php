@@ -10,6 +10,9 @@ use Modules\Crawler\Models\CrawlJob;
 use Modules\Crawler\Models\CrawlResult;
 use Modules\Crawler\Repositories\Interfaces\CrawlJobRepositoryInterface;
 
+/**
+ * @extends BaseRepository<CrawlJob>
+ */
 class CrawlJobRepository extends BaseRepository implements CrawlJobRepositoryInterface
 {
     protected function getModel(): Model

@@ -5,7 +5,11 @@ namespace Modules\Crawler\Repositories\Interfaces;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Modules\Core\Repositories\Interfaces\BaseRepositoryInterface;
+use Modules\Crawler\Models\CrawlVideoResult;
 
+/**
+ * @extends BaseRepositoryInterface<CrawlVideoResult>
+ */
 interface CrawlVideoResultRepositoryInterface extends BaseRepositoryInterface
 {
     public function getByJobId(int $jobId, int $perPage = 10, array $params = []): LengthAwarePaginator;
