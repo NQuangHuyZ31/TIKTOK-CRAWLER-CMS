@@ -13,17 +13,14 @@ class CrawlerResultController extends BaseController
     public function __construct(
         private readonly CrawlResultService $crawlResultService,
         private readonly CrawlJobService $crawlJobService
-    ) {
-    }
+    ) {}
 
     /**
      * Webhook endpoint to receive and process crawler execution events.
      * Route: POST /admin/api/public/crawler/crawl-jobs/{jobId}/events
      */
-    public function saveResult(
-        CrawlerResultStoreRequest $request,
-        int $jobId
-    ): JsonResponse {
+    public function saveResult(CrawlerResultStoreRequest $request, int $jobId): JsonResponse
+    {
         $data = $request->validated();
 
         if ((int) $data['job_id'] !== $jobId) {

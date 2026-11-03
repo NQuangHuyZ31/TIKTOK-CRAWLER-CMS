@@ -1,7 +1,7 @@
 # Backend Engineering Rules (Laravel 13 + PHP 8.3+)
 
 Scope: `cms-tiktok-crawler/modules/*/src/`, `database/`, and backend controllers. Read when editing backend code.
-Detailed Architecture: [`docs/backend/architecture.md`](file:///E:/Urekamedia/TIKTOK-CRAWLER/docs/backend/architecture.md) | API Contracts: [`docs/api/routing-and-contracts.md`](file:///E:/Urekamedia/TIKTOK-CRAWLER/docs/api/routing-and-contracts.md)
+Detailed Architecture: [`docs/backend/architecture.md`](file:///E:/Urekamedia/TIKTOK-CRAWLER/docs/backend/architecture.md) | SOLID Principles: [`docs/development/solid-principles.md`](file:///E:/Urekamedia/TIKTOK-CRAWLER/docs/development/solid-principles.md) | API Contracts: [`docs/api/routing-and-contracts.md`](file:///E:/Urekamedia/TIKTOK-CRAWLER/docs/api/routing-and-contracts.md)
 
 ## 1. Strict 3-Layer Architecture (Controller -> Service -> Repository)
 1. **Controller Layer** (`src/Http/Controllers/`):
@@ -34,3 +34,8 @@ Detailed Architecture: [`docs/backend/architecture.md`](file:///E:/Urekamedia/TI
 - Queue jobs (`src/Jobs/`) must be idempotent and safe to retry.
 - Wrap multi-table database mutations in `DB::transaction()` inside the Service layer.
 - External HTTP integrations must specify timeouts and retry backoffs.
+
+## 5. SOLID & God Class Prevention
+- **SRP & DIP**: Controllers handle HTTP only; Services orchestrate business logic and depend strictly on Repository Interfaces; Repositories handle database queries.
+- **God Class Threshold**: Split Controllers or Services exceeding ~300 lines or >7 dependencies into focused domain sub-services (e.g. `CrawlJobDispatcherService`, `CrawlJobResultService`).
+- **No Overengineering**: Rely on Laravel & Core base classes (`BaseController`, `BaseRepository`). Never introduce speculative abstract factories or wrappers for simple tasks. See [`docs/development/solid-principles.md`](file:///E:/Urekamedia/TIKTOK-CRAWLER/docs/development/solid-principles.md).

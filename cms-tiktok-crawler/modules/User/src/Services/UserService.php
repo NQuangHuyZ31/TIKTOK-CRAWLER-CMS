@@ -5,6 +5,7 @@ namespace Modules\User\Services;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Str;
 use InvalidArgumentException;
 use Modules\Auth\Jobs\PasswordResetNotification;
 use Modules\Permission\Repositories\Interfaces\PermissionRepositoryInterface;
@@ -23,8 +24,6 @@ class UserService
 
     /**
      * Create a new user with role and permission assignments via injected repositories.
-     *
-     * @param array<string, mixed> $data
      */
     public function createUser(array $data): User
     {
@@ -41,7 +40,7 @@ class UserService
             $userData = [
                 'name' => $data['name'],
                 'email' => $data['email'],
-                'password' => Hash::make($data['password']),
+                'password' => !empty($data['password']) ? Hash::make($data['password']) : Hash::make(Str::random(10)),
                 'phone' => $data['phone'] ?? null,
                 'avatar' => $data['avatar'] ?? null,
                 'status' => $data['status'] ?? 'active',
@@ -411,5 +410,35 @@ class UserService
     public function getStatisticsSummary(): array
     {
         return $this->userRepository->getStatisticsSummary();
+    }
+
+    public function resetAuthentication(string $email, User $currentUser) {
+        $user = $this->userRepository->findByEmail($email);
+
+        if (!$user) throw new InvalidArgumentException('User not found');
+
+        if ($currentUser->email === $email) throw new InvalidArgumentException('Not allow reset authencation for self');
+
+        try {
+            Audit::track(
+                action: "RESET_AUTHENCATION",
+                target: $user->email,
+                execute: function () use ($user) {
+                     DB::transaction(function () use ($user) {
+                        $user->forceFill([
+                            'google2fa_secret' => null
+                        ])->save();
+                    });
+                },
+                metadata: [
+                    'target_email' => $user->email,
+                    'trigger_by' => $currentUser->email,
+                ]
+            );
+
+            return $user->fresh();
+        }catch (\Throwable $th) {
+            throw new InvalidArgumentException($th->getMessage(), previous: $th);
+        }
     }
 }

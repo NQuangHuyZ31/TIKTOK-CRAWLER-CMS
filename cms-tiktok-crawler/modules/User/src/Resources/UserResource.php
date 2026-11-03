@@ -30,6 +30,7 @@ class UserResource extends JsonResource
             'avatar_url' => $avatarUrl,
             'status' => $this->status ?? 'active',
             'email_verified_at' => $this->email_verified_at?->toIso8601String(),
+            'google2fa_enabled' => $this->google2fa_enabled ?? false,
             'is_admin' => (bool) ($this->is_admin ?? false) || $this->hasRole('admin'),
             'permission_type' => $this->getPermissionType(),
             'roles' => $this->whenLoaded('roles', function () {

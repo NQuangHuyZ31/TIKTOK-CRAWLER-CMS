@@ -54,7 +54,6 @@ class TiktokAccountController extends BaseController
 
     /**
      * Create a new TikTok account with validation and optional avatar handling.
-     * api: POST /tiktok-account/tiktok-account
      */
     public function store(Request $request): JsonResponse
     {
@@ -72,8 +71,6 @@ class TiktokAccountController extends BaseController
 
     /**
      * Update existing account profile with avatar handling.
-     * api: PUT /tiktok-account/tiktok-account/{id}
-     * api: POST /tiktok-account/tiktok-account/{id}
      */
     public function update(Request $request, int|string $id): JsonResponse
     {
@@ -91,8 +88,6 @@ class TiktokAccountController extends BaseController
 
     /**
      * Update account status (active/inactive/banned).
-     * api: PATCH /tiktok-account/tiktok-account/{id}/status
-     * api: POST /tiktok-account/tiktok-account/{id}/status
      */
     public function status(Request $request, int|string $id): JsonResponse
     {
@@ -116,7 +111,6 @@ class TiktokAccountController extends BaseController
 
     /**
      * Retrieve paginated crawl history results for an account.
-     * api: GET /tiktok-account/tiktok-account/{id}/results
      */
     public function results(int|string $id, Request $request): JsonResponse
     {
@@ -127,12 +121,11 @@ class TiktokAccountController extends BaseController
             return $this->respondError('Invalid account ID or account does not exist.', 404);
         }
 
-        return $this->respondPaginated($this->transform($results), 'Crawl results retrieved successfully.');
+        return $this->respondPaginated($results, 'Crawl results retrieved successfully.');
     }
 
     /**
      * Retrieve paginated TikTok videos for an account.
-     * api: GET /tiktok-account/tiktok-account/{id}/videos
      */
     public function videos(int|string $id, Request $request): JsonResponse
     {
@@ -142,14 +135,11 @@ class TiktokAccountController extends BaseController
             return $this->respondError('Invalid account ID or account does not exist.', 404);
         }
 
-        $videos->through(fn($item) => new TiktokVideoResource($item));
-
-        return $this->respondPaginated($videos, 'Account videos retrieved successfully.');
+        return $this->respondPaginated($videos->through(fn($item) => new TiktokVideoResource($item)), 'Account videos retrieved successfully.');
     }
 
     /**
      * Aggregate statistics summary for TikTok account metrics.
-     * api: GET /tiktok-account/tiktok-account/statistic-summary
      */
     public function statisticSummary(): JsonResponse
     {

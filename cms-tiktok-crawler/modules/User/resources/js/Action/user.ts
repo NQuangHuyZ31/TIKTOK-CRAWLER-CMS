@@ -28,6 +28,7 @@ export interface UserItem {
     avatar_url?: string;
     status: 'active' | 'inactive' | 'blocked';
     email_verified_at?: string;
+    google2fa_enabled: boolean;
     is_admin: boolean;
     permission_type?: 'role' | 'user';
     roles: UserRole[];
@@ -113,6 +114,11 @@ export const getStatisticsSummary = () =>
 export const getRolesAndPermissions = () =>
     api(`${baseURL}/roles-and-permissions`);
 
+/** Reset authencation for google login */
+export const resetAuthencation2FA = (email: string) => {
+    api(`${baseURL}/reset-authentication`, { method: "PUT", data: { email } })
+}
+
 const userAPI = {
     getUsers,
     getUserById,
@@ -121,6 +127,7 @@ const userAPI = {
     deleteUser,
     updateUserStatus,
     resetPassword,
+    resetAuthencation2FA,
     getStatisticsSummary,
     getRolesAndPermissions,
 };
