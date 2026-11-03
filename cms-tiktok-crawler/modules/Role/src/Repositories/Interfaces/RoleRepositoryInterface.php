@@ -1,11 +1,14 @@
 <?php
 
-namespace Modules\Role\Repositories;
+namespace Modules\Role\Repositories\Interfaces;
 
 use Illuminate\Database\Eloquent\Collection;
 use Modules\Core\Repositories\Interfaces\BaseRepositoryInterface;
 use Modules\Role\Models\Role;
 
+/**
+ * @extends BaseRepositoryInterface<Role>
+ */
 interface RoleRepositoryInterface extends BaseRepositoryInterface
 {
     public function findBySlug(string $slug): ?Role;

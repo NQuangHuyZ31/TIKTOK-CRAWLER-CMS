@@ -6,7 +6,12 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Modules\Core\Repositories\BaseRepository;
 use Modules\Role\Models\Role;
+use Modules\Role\Repositories\Interfaces\RoleRepositoryInterface;
 
+/**
+ * @extends BaseRepository<Role>
+ * @implements RoleRepositoryInterface
+ */
 class RoleRepository extends BaseRepository implements RoleRepositoryInterface
 {
     protected function getModel(): Model

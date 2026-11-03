@@ -6,7 +6,6 @@ use Modules\User\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Validation\ValidationException;
-use Modules\Auth\Repositories\Interfaces\AuthRepositoryInterface;
 use Modules\System\Facades\Audit;
 use Modules\System\Services\LoginLogService;
 use Modules\User\Repositories\Interfaces\UserRepositoryInterface;
@@ -14,7 +13,6 @@ use Modules\User\Repositories\Interfaces\UserRepositoryInterface;
 class AuthService
 {
     public function __construct(
-        protected AuthRepositoryInterface $authRepository,
         protected UserRepositoryInterface $userRepository,
         protected LoginLogService $loginLogService
     ) {}

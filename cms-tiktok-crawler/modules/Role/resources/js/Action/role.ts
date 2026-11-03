@@ -17,11 +17,11 @@ export interface RoleItem {
     updated_at?: string;
 }
 
-const baseURL = '/user/role';
+const baseURL = '/role/role';
 
 /**
  * Fetch paginated list of roles with optional search query.
- * API: GET /user/role
+ * API: GET /role/role
  * Example: getRoles({ page: 1, per_page: 10, search: 'admin' })
  */
 export const getRoles = (params: Record<string, any> = {}) =>
@@ -29,7 +29,7 @@ export const getRoles = (params: Record<string, any> = {}) =>
 
 /**
  * Fetch single role detail by ID with associated permissions.
- * API: GET /user/role/{id}
+ * API: GET /role/role/{id}
  * Example: getRoleById(1)
  */
 export const getRoleById = (id: string | number) =>
@@ -37,7 +37,7 @@ export const getRoleById = (id: string | number) =>
 
 /**
  * Create a new system role.
- * API: POST /user/role
+ * API: POST /role/role
  * Example: createRole({ name: 'Editor', slug: 'editor', permissions: [1, 2] })
  */
 export const createRole = (data: { name: string; slug?: string; description?: string; permissions?: (number | string)[] }) =>
@@ -45,7 +45,7 @@ export const createRole = (data: { name: string; slug?: string; description?: st
 
 /**
  * Update an existing system role.
- * API: PUT /user/role/{id}
+ * API: PUT /role/role/{id}
  * Example: updateRole(1, { name: 'Super Admin', permissions: [1, 2, 3] })
  */
 export const updateRole = (id: string | number, data: { name: string; slug?: string; description?: string; permissions?: (number | string)[] }) =>
@@ -53,7 +53,7 @@ export const updateRole = (id: string | number, data: { name: string; slug?: str
 
 /**
  * Delete a role by ID.
- * API: DELETE /user/role/{id}
+ * API: DELETE /role/role/{id}
  * Example: deleteRole(2)
  */
 export const deleteRole = (id: string | number) =>
@@ -61,7 +61,7 @@ export const deleteRole = (id: string | number) =>
 
 /**
  * Fetch available system permissions grouped by module.
- * API: GET /user/role/permissions
+ * API: GET /role/role/permissions
  * Example: getAvailablePermissions()
  */
 export const getAvailablePermissions = () =>

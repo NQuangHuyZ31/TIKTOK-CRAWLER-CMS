@@ -6,7 +6,7 @@ use Modules\User\Models\User;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Modules\Permission\Models\Permission;
-use Modules\Permission\Repositories\PermissionRepositoryInterface;
+use Modules\Permission\Repositories\Interfaces\PermissionRepositoryInterface;
 use Modules\Permission\Services\PermissionService;
 use Tests\TestCase;
 

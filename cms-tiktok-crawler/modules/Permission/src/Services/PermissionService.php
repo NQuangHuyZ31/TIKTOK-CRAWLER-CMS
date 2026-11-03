@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
 use Modules\Permission\Models\Permission;
-use Modules\Permission\Repositories\PermissionRepositoryInterface;
+use Modules\Permission\Repositories\Interfaces\PermissionRepositoryInterface;
 
 class PermissionService
 {
@@ -16,6 +16,8 @@ class PermissionService
 
     /**
      * Retrieve all permissions grouped by module.
+     *
+     * @return array<string, array<int, Permission>>
      */
     public function getGroupedPermissions(): array
     {
@@ -24,6 +26,8 @@ class PermissionService
 
     /**
      * Retrieve all permissions collection.
+     *
+     * @return Collection<int, Permission>
      */
     public function getAllPermissions(): Collection
     {
@@ -32,6 +36,8 @@ class PermissionService
 
     /**
      * Retrieve unique module names.
+     *
+     * @return array<string>
      */
     public function getModules(): array
     {
@@ -40,6 +46,8 @@ class PermissionService
 
     /**
      * Create a single permission.
+     *
+     * @param array<string, mixed> $data
      */
     public function createPermission(array $data): Permission
     {
@@ -53,7 +61,6 @@ class PermissionService
         }
 
         $name = !empty($data['name']) ? trim($data['name']) : Str::headline($action) . ' ' . Str::headline($module);
-
         $description = !empty($data['description']) ? trim($data['description']) : "Can " . strtolower($action) . " " . Str::headline($module);
 
         return $this->permissionRepository->create([
@@ -67,6 +74,9 @@ class PermissionService
 
     /**
      * Create standard basic permissions for a module.
+     *
+     * @param array<int, string> $actions
+     * @return array<int, Permission>
      */
     public function createModulePermissions(string $module, array $actions, ?string $moduleLabel = null, ?string $description = null): array
     {
@@ -112,6 +122,9 @@ class PermissionService
 
     /**
      * Resolve mixed permission identifiers (slug strings or integer IDs) to unique database IDs.
+     *
+     * @param array<int|string> $permissions
+     * @return array<int>
      */
     public function resolvePermissionIds(array $permissions): array
     {

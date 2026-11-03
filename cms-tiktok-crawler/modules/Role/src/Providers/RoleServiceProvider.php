@@ -3,9 +3,9 @@
 namespace Modules\Role\Providers;
 
 use Modules\Core\Providers\ModuleServiceProvider;
-use Modules\Permission\Repositories\PermissionRepositoryInterface;
+use Modules\Permission\Repositories\Interfaces\PermissionRepositoryInterface;
+use Modules\Role\Repositories\Interfaces\RoleRepositoryInterface;
 use Modules\Role\Repositories\RoleRepository;
-use Modules\Role\Repositories\RoleRepositoryInterface;
 use Modules\Role\Services\RoleService;
 
 class RoleServiceProvider extends ModuleServiceProvider

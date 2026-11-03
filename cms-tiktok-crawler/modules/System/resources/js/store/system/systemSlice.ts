@@ -1,8 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import type { LoginLogItem } from '../../Action/loginLog';
-import type { ActivityLogItem, ActivityStatistics } from '../../Action/activityLog';
-import type { SystemInfoData } from '../../Action/systemDiagnostic';
-import type { WorkerSettings, CleanupHistoryItem } from '../../Action/systemSetting';
+import type { ActivityLogItem } from '../../Action/activityLog';
 import {
 	fetchLoginLogs,
 	fetchActivityLogs,
@@ -13,103 +10,14 @@ import {
 	triggerManualCleanup,
 	fetchCleanupHistory,
 } from './systemThunks';
+import { initialSystemState, type SystemState } from './systemSliceTypes';
 
-export interface SystemState {
-	// Login Logs
-	loginLogs: LoginLogItem[];
-	loginPagination: {
-		current_page: number;
-		per_page: number;
-		total: number;
-	};
-	loginLoading: boolean;
-	loginParams: {
-		page: number;
-		per_page: number;
-		search?: string;
-		status?: string;
-		device?: string;
-	};
-
-	// Activity Logs
-	activityLogs: ActivityLogItem[];
-	activityPagination: {
-		current_page: number;
-		per_page: number;
-		total: number;
-	};
-	activityLoading: boolean;
-	activityParams: {
-		page: number;
-		per_page: number;
-		search?: string;
-		action?: string;
-		module?: string;
-		status?: string;
-	};
-	activityStats: ActivityStatistics | null;
-	selectedActivity: ActivityLogItem | null;
-	detailModalOpen: boolean;
-
-	// System Diagnostic
-	diagnostic: SystemInfoData | null;
-	diagnosticLoading: boolean;
-
-	// Worker & Maintenance Settings
-	workerSettings: WorkerSettings | null;
-	settingsLoading: boolean;
-	settingsSaving: boolean;
-	cleanupRunning: boolean;
-	cleanupHistory: CleanupHistoryItem[];
-
-	error: string | null;
-}
-
-const initialState: SystemState = {
-	loginLogs: [],
-	loginPagination: {
-		current_page: 1,
-		per_page: 10,
-		total: 0,
-	},
-	loginLoading: false,
-	loginParams: {
-		page: 1,
-		per_page: 10,
-		search: '',
-	},
-
-	activityLogs: [],
-	activityPagination: {
-		current_page: 1,
-		per_page: 10,
-		total: 0,
-	},
-	activityLoading: false,
-	activityParams: {
-		page: 1,
-		per_page: 10,
-		search: '',
-	},
-	activityStats: null,
-	selectedActivity: null,
-	detailModalOpen: false,
-
-	diagnostic: null,
-	diagnosticLoading: false,
-
-	workerSettings: null,
-	settingsLoading: false,
-	settingsSaving: false,
-	cleanupRunning: false,
-	cleanupHistory: [],
-
-	error: null,
-};
+export type { SystemState };
 
 const systemSlice = createSlice({
 	name: 'system',
-	initialState,
+	initialState: initialSystemState,
+
 	reducers: {
 		setLoginParams: (state, action: PayloadAction<Record<string, any>>) => {
 			state.loginParams = { ...state.loginParams, ...action.payload };
@@ -117,136 +25,115 @@ const systemSlice = createSlice({
 		resetLoginParams: (state) => {
 			state.loginParams = { page: 1, per_page: 10, search: '' };
 		},
-
 		setActivityParams: (state, action: PayloadAction<Record<string, any>>) => {
 			state.activityParams = { ...state.activityParams, ...action.payload };
 		},
 		resetActivityParams: (state) => {
 			state.activityParams = { page: 1, per_page: 10, search: '' };
 		},
-
 		setSelectedActivity: (state, action: PayloadAction<ActivityLogItem | null>) => {
 			state.selectedActivity = action.payload;
+			state.detailModalOpen = action.payload !== null;
 		},
 		setDetailModalOpen: (state, action: PayloadAction<boolean>) => {
 			state.detailModalOpen = action.payload;
+			if (!action.payload) state.selectedActivity = null;
 		},
 	},
+
 	extraReducers: (builder) => {
-		// Login Logs
 		builder
+			// fetchLoginLogs
 			.addCase(fetchLoginLogs.pending, (state) => {
 				state.loginLoading = true;
 				state.error = null;
 			})
 			.addCase(fetchLoginLogs.fulfilled, (state, action) => {
 				state.loginLoading = false;
-				state.loginLogs = action.payload?.data ?? [];
-				if (action.payload?.meta) {
-					state.loginPagination = {
-						current_page: action.payload.meta.current_page,
-						per_page: action.payload.meta.per_page,
-						total: action.payload.meta.total,
-					};
-				}
+				const payload = action.payload as any;
+				state.loginLogs = payload?.data ?? [];
+				const meta = payload?.meta ?? {};
+				state.loginPagination = {
+					current_page: meta.current_page ?? state.loginParams.page,
+					per_page: meta.per_page ?? state.loginParams.per_page,
+					total: meta.total ?? (payload?.data?.length || 0),
+				};
 			})
 			.addCase(fetchLoginLogs.rejected, (state, action) => {
 				state.loginLoading = false;
-				state.error = action.payload as string;
-			});
-
-		// Activity Logs
-		builder
+				state.error = (action.payload as string) ?? 'Failed to load login logs';
+			})
+			// fetchActivityLogs
 			.addCase(fetchActivityLogs.pending, (state) => {
 				state.activityLoading = true;
 				state.error = null;
 			})
 			.addCase(fetchActivityLogs.fulfilled, (state, action) => {
 				state.activityLoading = false;
-				state.activityLogs = action.payload?.data ?? [];
-				if (action.payload?.meta) {
-					state.activityPagination = {
-						current_page: action.payload.meta.current_page,
-						per_page: action.payload.meta.per_page,
-						total: action.payload.meta.total,
-					};
-				}
+				const payload = action.payload as any;
+				state.activityLogs = payload?.data ?? [];
+				const meta = payload?.meta ?? {};
+				state.activityPagination = {
+					current_page: meta.current_page ?? state.activityParams.page,
+					per_page: meta.per_page ?? state.activityParams.per_page,
+					total: meta.total ?? (payload?.data?.length || 0),
+				};
 			})
 			.addCase(fetchActivityLogs.rejected, (state, action) => {
 				state.activityLoading = false;
-				state.error = action.payload as string;
-			});
-
-		// Activity Statistics
-		builder.addCase(fetchActivityStatistics.fulfilled, (state, action) => {
-			state.activityStats = action.payload ?? null;
-		});
-
-		// System Diagnostic
-		builder
+				state.error = (action.payload as string) ?? 'Failed to load activity logs';
+			})
+			// fetchActivityStatistics
+			.addCase(fetchActivityStatistics.fulfilled, (state, action) => {
+				state.activityStats = (action.payload as any)?.data ?? null;
+			})
+			// fetchSystemDiagnostic
 			.addCase(fetchSystemDiagnostic.pending, (state) => {
 				state.diagnosticLoading = true;
-				state.error = null;
 			})
 			.addCase(fetchSystemDiagnostic.fulfilled, (state, action) => {
 				state.diagnosticLoading = false;
-				state.diagnostic = action.payload ?? null;
+				state.diagnostic = (action.payload as any)?.data ?? null;
 			})
-			.addCase(fetchSystemDiagnostic.rejected, (state, action) => {
+			.addCase(fetchSystemDiagnostic.rejected, (state) => {
 				state.diagnosticLoading = false;
-				state.error = action.payload as string;
-			});
-
-		// Worker Settings
-		builder
+			})
+			// fetchWorkerSettings
 			.addCase(fetchWorkerSettings.pending, (state) => {
 				state.settingsLoading = true;
-				state.error = null;
 			})
 			.addCase(fetchWorkerSettings.fulfilled, (state, action) => {
 				state.settingsLoading = false;
-				state.workerSettings = action.payload ?? null;
-				if (action.payload?.last_cleanup_history) {
-					state.cleanupHistory = action.payload.last_cleanup_history;
-				}
+				state.workerSettings = (action.payload as any)?.data ?? null;
 			})
-			.addCase(fetchWorkerSettings.rejected, (state, action) => {
+			.addCase(fetchWorkerSettings.rejected, (state) => {
 				state.settingsLoading = false;
-				state.error = action.payload as string;
-			});
-
-		// Save Worker Settings
-		builder
+			})
+			// saveWorkerSettings
 			.addCase(saveWorkerSettings.pending, (state) => {
 				state.settingsSaving = true;
-				state.error = null;
 			})
 			.addCase(saveWorkerSettings.fulfilled, (state, action) => {
 				state.settingsSaving = false;
-				state.workerSettings = action.payload ?? null;
+				state.workerSettings = (action.payload as any)?.data ?? state.workerSettings;
 			})
-			.addCase(saveWorkerSettings.rejected, (state, action) => {
+			.addCase(saveWorkerSettings.rejected, (state) => {
 				state.settingsSaving = false;
-				state.error = action.payload as string;
-			});
-
-		// Manual Cleanup
-		builder
+			})
+			// triggerManualCleanup
 			.addCase(triggerManualCleanup.pending, (state) => {
 				state.cleanupRunning = true;
 			})
 			.addCase(triggerManualCleanup.fulfilled, (state) => {
 				state.cleanupRunning = false;
 			})
-			.addCase(triggerManualCleanup.rejected, (state, action) => {
+			.addCase(triggerManualCleanup.rejected, (state) => {
 				state.cleanupRunning = false;
-				state.error = action.payload as string;
+			})
+			// fetchCleanupHistory
+			.addCase(fetchCleanupHistory.fulfilled, (state, action) => {
+				state.cleanupHistory = (action.payload as any)?.data ?? [];
 			});
-
-		// Cleanup History
-		builder.addCase(fetchCleanupHistory.fulfilled, (state, action) => {
-			state.cleanupHistory = action.payload ?? [];
-		});
 	},
 });
 
