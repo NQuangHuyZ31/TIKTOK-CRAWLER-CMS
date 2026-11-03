@@ -1,7 +1,7 @@
 # Frontend Engineering Rules (React 19 + TypeScript + Ant Design 6)
 
 Scope: `cms-tiktok-crawler/modules/*/resources/js/`. Read when editing frontend code.
-Detailed Architecture: [`docs/frontend/architecture.md`](file:///E:/Urekamedia/TIKTOK-CRAWLER/docs/frontend/architecture.md) | Component Catalog: [`docs/frontend/core-components.md`](file:///E:/Urekamedia/TIKTOK-CRAWLER/docs/frontend/core-components.md)
+Detailed Architecture: [`docs/frontend/architecture.md`](file:///E:/Urekamedia/TIKTOK-CRAWLER/docs/frontend/architecture.md) | SOLID Principles: [`docs/development/solid-principles.md`](file:///E:/Urekamedia/TIKTOK-CRAWLER/docs/development/solid-principles.md) | Component Catalog: [`docs/frontend/core-components.md`](file:///E:/Urekamedia/TIKTOK-CRAWLER/docs/frontend/core-components.md)
 
 ## 1. Component Placement & Architecture
 - **Layers**: `pages/` (orchestration, route params, layout) -> feature `components/` (decomposed UI) -> `@core/components/` (generic, 2+ modules).
@@ -30,3 +30,9 @@ Detailed Architecture: [`docs/frontend/architecture.md`](file:///E:/Urekamedia/T
 ## 5. Imports & Configs
 - **Path Aliases**: Use `@core/...` and `@modules/<Module>/...`. Sibling relative imports (`./`, `../`) are allowed. NEW imports MUST NOT use `../../` or deeper.
 - **Static Configs**: Move column definitions, presets, and select options to `configs/` (e.g. `configs/tableConfig.ts`). Do not inline in TSX.
+
+## 6. SOLID & God Component Prevention
+- **SRP & God Components**: Decompose components exceeding ~150-200 lines into sub-components (`<Toolbar />`, `<FormDrawer />`). Separate view rendering from stateful logic (custom hooks).
+- **ISP (Prop Segregation)**: Components must accept only the exact props they require. Never pass monolithic entity objects when only 2-3 fields are rendered.
+- **DIP**: Rely on abstracted HTTP clients (`@core/Action/api`) and custom hooks. Never make direct fetch calls from presentation components.
+- **OCP & LSP**: Extend containers via composition (`children`) and optional props. Custom UI wrappers must honor standard AntD component contracts. See [`docs/development/solid-principles.md`](file:///E:/Urekamedia/TIKTOK-CRAWLER/docs/development/solid-principles.md).

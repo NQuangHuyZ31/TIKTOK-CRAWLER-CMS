@@ -49,3 +49,17 @@ All code artifacts MUST be written in **English**:
 - **Custom Hooks**: `camelCase.ts` prefixed with `use` (e.g. `useAction.ts`, `usePermission.ts`).
 - **Static Configs**: `camelCase.ts` (e.g. `tableConfig.ts`, `options.ts`).
 - **Redux Files**: `<domain>Slice.ts`, `<domain>Thunks.ts`.
+
+---
+
+## 4. Architectural Standards & SOLID Principles
+
+All PHP and TypeScript code must strictly adhere to **SOLID principles**:
+- **Single Responsibility Principle (SRP)**: Controllers handle HTTP; Services handle domain business logic and transactions; Repositories handle database queries. React components render UI; hooks manage behavior; configs hold static data.
+- **Open/Closed Principle (OCP)**: Extend behavior via composition, strategy patterns, and optional configuration rather than editing tested core classes.
+- **Liskov Substitution Principle (LSP)**: Implementations must fulfill interface contracts and base class conventions without unexpected side-effects.
+- **Interface Segregation Principle (ISP)**: Build lean, focused interfaces and prop contracts. Avoid monolithic 40-property objects.
+- **Dependency Inversion Principle (DIP)**: Services depend on Repository Interfaces, never directly on Eloquent models. React views depend on abstracted HTTP clients (`@core/Action/api`) and hooks.
+- **Anti-Pattern Prevention**: Split God Classes (>300 lines) and God Components (>150-200 lines). Avoid unnecessary abstractions and overengineering.
+
+For comprehensive architectural specifications, examples, and review checklists, see [SOLID Principles & Architectural Standards](file:///E:/Urekamedia/TIKTOK-CRAWLER/docs/development/solid-principles.md).

@@ -28,6 +28,7 @@ This directory contains architectural specifications, developer guides, database
 - [Crawler Service Architecture](file:///E:/Urekamedia/TIKTOK-CRAWLER/docs/crawler/architecture.md) — Asynchronous crawler engine, SQLite WAL queue, 5-worker pool, and anti-blocking defenses.
 
 ### Development Standards & Quality Assurance
+- [SOLID Principles & Architecture](file:///E:/Urekamedia/TIKTOK-CRAWLER/docs/development/solid-principles.md) — Mandatory SOLID coding rules, God Class/Component prevention, and review checklist.
 - [Coding Standards](file:///E:/Urekamedia/TIKTOK-CRAWLER/docs/development/coding-standards.md) — Naming conventions, PSR-12, TypeScript standards, and English-only requirement.
 - [Automated Testing Guide](file:///E:/Urekamedia/TIKTOK-CRAWLER/docs/development/testing-guide.md) — Pest feature test templates, unit tests, and type checking commands.
 - [Git Workflow & Release Management](file:///E:/Urekamedia/TIKTOK-CRAWLER/docs/development/git-workflow.md) — Branch strategies (single-workspace & worktree slots), Conventional Commits, and Human Deploy Gate.
@@ -50,7 +51,7 @@ When completing tasks in this repository, follow this progressive loading path:
 
 | Task Domain | Mandatory Rules | Relevant Skills | Deep Architecture Docs |
 | :--- | :--- | :--- | :--- |
-| **Frontend UI / Pages** | `.agents/rules/frontend.md` | `core-reusability-promoter` | `docs/frontend/architecture.md`<br>`docs/frontend/core-components.md` |
-| **Backend API / Service**| `.agents/rules/backend.md`<br>`.agents/rules/database.md` | `ureka-module-scaffolder` | `docs/backend/architecture.md`<br>`docs/api/routing-and-contracts.md` |
+| **Frontend UI / Pages** | `.agents/rules/frontend.md` | `core-reusability-promoter` | `docs/frontend/architecture.md`<br>`docs/frontend/core-components.md`<br>`docs/development/solid-principles.md` |
+| **Backend API / Service**| `.agents/rules/backend.md`<br>`.agents/rules/database.md` | `ureka-module-scaffolder` | `docs/backend/architecture.md`<br>`docs/api/routing-and-contracts.md`<br>`docs/development/solid-principles.md` |
 | **Database Migration** | `.agents/rules/database.md` | `ureka-module-scaffolder` | `docs/database/schema-and-migrations.md` |
 | **Git / Commits / PRs** | `.agents/rules/git-workflow.md` | `git-workflow` | `docs/development/git-workflow.md` |

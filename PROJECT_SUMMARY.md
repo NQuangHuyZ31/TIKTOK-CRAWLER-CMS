@@ -23,6 +23,7 @@ All in-depth technical runbooks and architecture specifications reside in [`docs
 - **Database Schema & Migrations**: [`docs/database/schema-and-migrations.md`](file:///E:/Urekamedia/TIKTOK-CRAWLER/docs/database/schema-and-migrations.md)
 - **Crawler Microservice**: [`docs/crawler/architecture.md`](file:///E:/Urekamedia/TIKTOK-CRAWLER/docs/crawler/architecture.md)
 - **Coding Conventions**: [`docs/development/coding-standards.md`](file:///E:/Urekamedia/TIKTOK-CRAWLER/docs/development/coding-standards.md)
+- **SOLID Principles**: [`docs/development/solid-principles.md`](file:///E:/Urekamedia/TIKTOK-CRAWLER/docs/development/solid-principles.md)
 - **Testing Standards**: [`docs/development/testing-guide.md`](file:///E:/Urekamedia/TIKTOK-CRAWLER/docs/development/testing-guide.md)
 - **Git & Release Protocol**: [`docs/development/git-workflow.md`](file:///E:/Urekamedia/TIKTOK-CRAWLER/docs/development/git-workflow.md)
 - **CI/CD & Deployments**: [`docs/deployment/ci-cd-architecture.md`](file:///E:/Urekamedia/TIKTOK-CRAWLER/docs/deployment/ci-cd-architecture.md)
@@ -64,3 +65,7 @@ powershell scripts/verify-workflow.ps1 # Workflow and release gate verification
   - **Foundation Modules**: Permission, Role, User, Auth, System standardized with strict 3-layer architecture (`Controller -> Service -> RepositoryInterface -> Repository`). Resolved legacy Model direct queries.
   - **Business Modules**: TiktokAccount, Crawler, API refactored with component decomposition, shared `@core/components/TiktokVideoTable` reusability, and resolved circular dependencies.
   - **Cross-Module Integration**: Verified inter-module route registry, automated menu tree building with RBAC gating, container service bindings across all 9 modules, and added comprehensive end-to-end integration test (`CrossModuleIntegrationTest.php` - 166 tests passing).
+
+### Milestone: Enforce SOLID Principles Across Monorepo & AI Agent Instructions
+- **Date**: 2026-11-03 | **Branch**: `feature`
+- **Scope**: Formulated comprehensive SOLID architectural standards in `docs/development/solid-principles.md` covering SRP, OCP, LSP, ISP, DIP, God Class/Component avoidance thresholds, pragmatism (KISS/YAGNI), code reusability framework (REUSE > EXTEND > CREATE), mandatory AI agent workflow, and review checklist. Integrated discoverable references into root `AGENTS.md`, `.agents/rules/backend.md`, `.agents/rules/frontend.md`, and `docs/development/coding-standards.md`.
