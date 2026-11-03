@@ -36,6 +36,9 @@ Hierarchy: 1. Code & runtime > 2. Manifests > 3. Tests & CI > 4. Docs (`docs/`) 
   - **Repository**: Extends `BaseRepository`, implements `<Model>RepositoryInterface`. Handles Eloquent queries. Bound in ServiceProvider.
 - **Database & Safety**: Migrations MUST be additive (never edit merged migrations). Models declare explicit `$fillable`. Real/production data MUST NEVER be mutated or deleted. Rule: `.agents/rules/database.md`.
 - **Git & Safety**: Work on category branch (`fix`, `feature`, etc.) or worktree slot (`scripts/agent-worktree.ps1`). NEVER push to `main`. Stage explicit files (no `git add .`, no build manifests). Conventional Commits in English. **Human Deploy Gate**: Merging to `main` creates Draft Release only; production deploy requires human publication. Rule: `.agents/rules/git-workflow.md`.
+- **Library-First Development (Mandatory)**:
+  - **REUSE EXISTING LIBRARIES > INSTALL APPROVED LIBRARIES > WRITE CUSTOM CODE**.
+  - MUST prioritize existing project libraries, framework features, and internal reusable code before writing custom implementations. Install new dependencies only when existing solutions are insufficient; verify compatibility, maintenance, security, and licensing first. Avoid duplicate packages and unnecessary dependencies. Custom code MUST be justified when no suitable existing solution exists.
 
 ## 5. Quality Gates
 Run from `cms-tiktok-crawler/` before committing:
