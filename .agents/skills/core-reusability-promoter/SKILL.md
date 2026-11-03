@@ -3,97 +3,45 @@ name: core-reusability-promoter
 description: Enforces code reusability workflow, codebase analysis, REUSE/EXTEND/CREATE strategy, and Core promotion.
 ---
 
-# Code Reusability and Architecture Rules
+# Code Reusability & Anti-Duplication Skill
 
-## 1. General Principles
+Use this skill before creating or modifying UI components, hooks, services, or endpoints.
 
-- Always prioritize reusing existing code over creating new implementations.
-- Follow the existing project architecture and coding patterns.
-- Do not duplicate components, hooks, services, API calls, or business logic.
-- Apply DRY and Single Responsibility principles.
-- Prefer extending existing components through props or configuration rather than creating similar components.
-- Do not introduce unnecessary abstractions or over-engineer solutions.
+Component Catalog: [`docs/frontend/core-components.md`](file:///E:/Urekamedia/TIKTOK-CRAWLER/docs/frontend/core-components.md) | Frontend Rules: [`.agents/rules/frontend.md`](file:///E:/Urekamedia/TIKTOK-CRAWLER/.agents/rules/frontend.md)
 
-## 2. Mandatory Codebase Analysis
+---
 
-Before implementing any feature:
+## 1. Step-by-Step Analysis Workflow
 
-1. Analyze the existing project structure.
-2. Identify related pages, components, hooks, services, and API endpoints.
-3. Search for existing implementations with similar functionality.
-4. Check whether other modules or pages already implement the same feature.
-5. Compare their UI structure, business logic, data requirements, and API behavior.
+1. **Search Codebase**: Before writing any new UI widget or logic, search across all modules (`Select-String` / `rg`) for existing tables, filter bars, status tags, API actions, and services.
+2. **Compare Implementations**: Check if sibling modules already implemented similar behavior.
+3. **Select Strategy**:
+   - **REUSE**: Existing component satisfies requirements with current configuration.
+   - **EXTEND**: Existing component covers need with optional props/configs (must verify all existing consumers).
+   - **CREATE**: Novel requirement only. Document why reuse/extend was rejected.
+4. **Core Promotion**: Promote to `@core` only if the component is generic and used (or about to be used) by 2+ modules.
 
-Do not create a new component before completing this analysis.
+---
 
-## 3. Component Reusability
+## 2. Shared Component Invariants
 
-When multiple pages share similar functionality:
+- Clearly defined, single responsibility.
+- Configurable via props; no hardcoded page-specific values.
+- Clean TypeScript types; no `any`.
+- Zero domain business logic inside `@core`.
 
-- Identify common UI and business logic.
-- Extract shared functionality into reusable components when appropriate.
-- Use props, configuration objects, or composition to support page-specific requirements.
-- Keep page-specific business logic outside shared components.
-- Avoid duplicating filter forms, tables, pagination, sorting, and data-fetching logic.
+---
 
-### Decision Rules
+## 3. Pre-Completion Verification & Reporting
 
-Choose one of the following strategies:
+Before completing the task, verify:
+- No unnecessary duplicates were introduced.
+- Existing consumers still function without regressions.
+- Types and API contracts remain consistent.
 
-A. **REUSE**
-- Existing component already satisfies the requirements.
-- Use the existing component without unnecessary modifications.
-
-B. **EXTEND**
-- Existing component covers most requirements.
-- Add optional props, configuration, or composition.
-- Ensure existing consumers remain backward compatible.
-
-C. **CREATE**
-- No suitable reusable component exists.
-- Requirements have significantly different UI or business logic.
-- Reusing the existing component would introduce excessive complexity.
-
-When creating a new component that overlaps with an existing one, explain why reuse or extension is not appropriate.
-
-## 4. Shared Component Design
-
-Shared components should:
-
-- Have clearly defined responsibilities.
-- Accept configurable props instead of hardcoding page-specific values.
-- Avoid dependencies on a specific page or business module.
-- Keep data fetching and business logic separated where appropriate.
-- Support optional features without affecting existing consumers.
-- Have explicit and well-defined TypeScript types.
-- Avoid excessive boolean props and deeply nested conditions.
-
-## 5. Refactoring Existing Code
-
-When encountering duplicated implementations:
-
-- Identify the common functionality.
-- Determine whether extraction into a shared component is beneficial.
-- Refactor duplicated code when it is within the scope of the task.
-- Preserve existing behavior and public interfaces.
-- Do not perform unrelated large-scale refactoring.
-
-## 6. Before Completing a Task
-
-Verify that:
-
-- No unnecessary duplicate components were introduced.
-- Existing reusable components were considered.
-- Shared components do not contain page-specific logic.
-- Existing pages still work after shared component changes.
-- API contracts and TypeScript types remain consistent.
-
-## 7. Agent Reporting
-
-At the end of implementation, report:
-
-- Existing components and implementations discovered.
-- Components reused or extended.
-- New components created and the reasons.
-- Duplicated code identified or refactored.
-- Pages and modules affected by the changes.
+Conclude with the mandatory **Agent Report**:
+1. **Discovered**: Existing implementations found (with paths).
+2. **Reused / Extended**: Components and services reused or extended.
+3. **Created + Rationale**: New components created and why reuse was unsuitable.
+4. **Refactored**: Duplicates consolidated.
+5. **Affected Scope**: Verified pages, modules, and endpoints.
