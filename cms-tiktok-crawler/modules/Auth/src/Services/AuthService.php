@@ -6,6 +6,8 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Validation\ValidationException;
+use InvalidArgumentException;
+use Modules\Auth\Jobs\PasswordResetNotification;
 use Modules\Auth\Services\Interfaces\EmailOtpServiceInterface;
 use Modules\Auth\Services\Interfaces\TwoFactorServiceInterface;
 use Modules\System\Facades\Audit;
@@ -181,24 +183,27 @@ class AuthService
     /**
      * Generate password reset token.
      */
-    public function forgotPassword(string $email): string
+    public function forgotPassword(string $email)
     {
-        $user = $this->userRepository->findByEmail($email);
-        if (!$user) {
-            throw ValidationException::withMessages(['email' => [__('passwords.user')]]);
+        try {
+            $user = $this->userRepository->findByEmail($email);
+            
+            Audit::track(
+                action: 'REQUEST_RESET_PASSWORD',
+                target: $user,
+                execute: function () use ($user) {
+                    $token = Password::createToken($user);
+                    $resetUrl = config('app.url') . '/admin/auth/login?reset-password=1&token=' . $token . '&email=' . $user->email;
+                    PasswordResetNotification::dispatch($user->email, $resetUrl, $user->name);
+                },
+                metadata: [
+                    'target_email' => $user->email,
+                    'trigger_by' => 'user',
+                ]
+            );
+        } catch (\Throwable $th) {
+            throw new InvalidArgumentException('Failed to send reset password email.', previous: $th);
         }
-
-        $token = Password::createToken($user);
-        Audit::record(
-            action: 'REQUEST_RESET_PASSWORD',
-            target: $user,
-            metadata: ['email' => $email, 'method' => 'forgot_password'],
-            status: 'SUCCESS',
-            module: 'AUTH',
-            user: $user
-        );
-
-        return $token;
     }
 
     /**

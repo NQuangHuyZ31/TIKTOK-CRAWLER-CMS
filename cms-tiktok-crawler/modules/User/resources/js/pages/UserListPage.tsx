@@ -3,11 +3,7 @@ import { useDispatch, useSelector } from '@core/store';
 import ListLayout from '@core/components/ListLayout';
 import StatusDropdown from '@core/components/StatusDropdown';
 import { formatDateTime } from '@core/utils/formatDate';
-import {
-	USER_STATUS_FILTER_OPTIONS,
-	USER_ROLE_FILTER_OPTIONS,
-	USER_STATUS_CHANGE_OPTIONS,
-} from '../configs/userConstants';
+import { USER_STATUS_FILTER_OPTIONS, USER_ROLE_FILTER_OPTIONS, USER_STATUS_CHANGE_OPTIONS } from '../configs/userConstants';
 import { fetchAllUsers, fetchUserStatistics } from '../store/user/userThunks';
 import { setParams, resetParams } from '../store/user/userSlice';
 import userAPI from '../Action/user';
@@ -93,13 +89,7 @@ export default function UserListPage() {
 					name: (_, record: UserItem) => <UserColumn id={record.id} name={record.name} email={record.email} avatarUrl={record.avatar_url} />,
 					roles: (_, record: UserItem) => <UserRoleTags roles={record.roles} permissionType={record.permission_type} />,
 					status: (status: string, record: UserItem) => (
-						<StatusDropdown
-							status={status}
-							module="user"
-							onChange={(newStatus) => handleStatusChange(record.id, newStatus)}
-							options={USER_STATUS_CHANGE_OPTIONS}
-							disabled={user?.id === record.id}
-						/>
+						<StatusDropdown status={status} module="user" onChange={(newStatus) => handleStatusChange(record.id, newStatus)} options={USER_STATUS_CHANGE_OPTIONS} disabled={user?.id === record.id} />
 					),
 					phone: (phone: string) => phone || <span style={{ color: '#bfbfbf' }}>—</span>,
 					created_at: (val: string) => <span style={{ fontSize: 13, color: '#595959' }}>{formatDateTime(val)}</span>,
@@ -109,6 +99,7 @@ export default function UserListPage() {
 							currentUserId={user?.id}
 							onDelete={handleDelete}
 							onResetPassword={handleResetPassword}
+							onResetAuthencation2FA={(email: string) => act(() => userAPI.resetAuthencation2FA(email), 'Reset authencation 2FA successfully')}
 						/>
 					),
 				}}

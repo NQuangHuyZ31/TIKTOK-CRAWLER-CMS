@@ -3,28 +3,28 @@
     "name": "Core",
     "route_prefix": "admin",
     "js": [
-      "/modules/Core/vendor.js?id=be7911c80444c74993b5b8a89b84a39d",
-      "/modules/Core/index.js?id=d7e4a65a0a49f72b82a1b30d825ff2b2"
+      "/modules/Core/vendor.js",
+      "/modules/Core/index.js"
     ],
     "css": [
-      "/modules/Core/app.css?id=2763f897bb157d70d9a6aed8be8e2dd0"
+      "/modules/Core/app.css"
     ]
   },
   "Auth": {
     "name": "Auth",
     "route_prefix": "admin/auth",
     "js": [
-      "/modules/Auth/index.js?id=27bd9e0d21a777204fdec929d720a8eb"
+      "/modules/Auth/index.js"
     ],
     "css": [
-      "/modules/Core/app.css?id=2763f897bb157d70d9a6aed8be8e2dd0"
+      "/modules/Core/app.css"
     ]
   },
   "Crawler": {
     "name": "Crawler",
     "route_prefix": "admin/crawler",
     "js": [
-      "/modules/Crawler/index.js?id=6436e95bbb38bd85f4d5c9a0c4066edf"
+      "/modules/Crawler/index.js"
     ],
     "css": []
   },
@@ -32,7 +32,7 @@
     "name": "Permission",
     "route_prefix": "admin/permission",
     "js": [
-      "/modules/Permission/index.js?id=538728cb79e95650bc2232e9f65385a4"
+      "/modules/Permission/index.js"
     ],
     "css": []
   },
@@ -40,7 +40,7 @@
     "name": "Role",
     "route_prefix": "admin/role",
     "js": [
-      "/modules/Role/index.js?id=42153e05000af3b7c0a7a39101905dba"
+      "/modules/Role/index.js"
     ],
     "css": []
   },
@@ -48,7 +48,7 @@
     "name": "System",
     "route_prefix": "admin/system",
     "js": [
-      "/modules/System/index.js?id=a83b463b6b48dfedaa8b18af0f9551dd"
+      "/modules/System/index.js"
     ],
     "css": []
   },
@@ -56,7 +56,7 @@
     "name": "TiktokAccount",
     "route_prefix": "admin/tiktok-account",
     "js": [
-      "/modules/TiktokAccount/index.js?id=4df249418553418703e1aa9e0d34cf71"
+      "/modules/TiktokAccount/index.js"
     ],
     "css": []
   },
@@ -64,7 +64,7 @@
     "name": "User",
     "route_prefix": "admin/user",
     "js": [
-      "/modules/User/index.js?id=48717bbfdc3b80562dc1872afcb80c2c"
+      "/modules/User/index.js"
     ],
     "css": []
   }

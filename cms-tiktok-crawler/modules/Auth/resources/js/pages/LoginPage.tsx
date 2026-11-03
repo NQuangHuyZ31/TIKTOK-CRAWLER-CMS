@@ -53,6 +53,8 @@ export default function LoginPage() {
 
 	// Handle backend responses (?step=2fa&temp_token=..., ?token=..., ?error=...)
 	useEffect(() => {
+		if (searchParams.get('reset-password') === '1') return;
+
 		if (handledOAuthRef.current) return;
 
 		const step = searchParams.get('step');

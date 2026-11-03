@@ -411,4 +411,34 @@ class UserService
     {
         return $this->userRepository->getStatisticsSummary();
     }
+
+    public function resetAuthentication(string $email, User $currentUser) {
+        $user = $this->userRepository->findByEmail($email);
+
+        if (!$user) throw new InvalidArgumentException('User not found');
+
+        if ($currentUser->email === $email) throw new InvalidArgumentException('Not allow reset authencation for self');
+
+        try {
+            Audit::track(
+                action: "RESET_AUTHENCATION",
+                target: $user->email,
+                execute: function () use ($user) {
+                     DB::transaction(function () use ($user) {
+                        $user->forceFill([
+                            'google2fa_secret' => null
+                        ])->save();
+                    });
+                },
+                metadata: [
+                    'target_email' => $user->email,
+                    'trigger_by' => $currentUser->email,
+                ]
+            );
+
+            return $user->fresh();
+        }catch (\Throwable $th) {
+            throw new InvalidArgumentException($th->getMessage(), previous: $th);
+        }
+    }
 }

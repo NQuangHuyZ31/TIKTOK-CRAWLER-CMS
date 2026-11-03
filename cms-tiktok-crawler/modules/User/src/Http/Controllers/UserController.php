@@ -35,8 +35,6 @@ class UserController extends BaseController
 
     /**
      * Retrieve details of a specific user account by ID.
-     * Includes assigned roles, direct permissions, and module permissions matrix.
-     * api: GET /{module}/user/users/{id}
      */
     public function show(int|string $id): JsonResponse
     {
@@ -50,7 +48,6 @@ class UserController extends BaseController
 
     /**
      * Create a new user account with roles and optional direct permissions.
-     * api: POST /{module}/user/users
      */
     public function store(Request $request): JsonResponse
     {
@@ -66,8 +63,6 @@ class UserController extends BaseController
 
     /**
      * Update an existing user account, roles, and direct permissions.
-     * api: PUT /{module}/user/users/{id}
-     * api: PATCH /{module}/user/users/{id}
      */
     public function update(Request $request, int|string $id): JsonResponse
     {
@@ -86,7 +81,6 @@ class UserController extends BaseController
 
     /**
      * Delete a user account (with protection against self-deletion and last admin deletion).
-     * api: DELETE /{module}/user/users/{id}
      */
     public function destroy(int|string $id): JsonResponse
     {
@@ -104,8 +98,6 @@ class UserController extends BaseController
 
     /**
      * Quick status toggle (active, inactive, blocked).
-     * api: PATCH /{module}/user/users/{id}/status
-     * api: POST /{module}/user/users/{id}/status
      */
     public function updateStatus(Request $request, int|string $id): JsonResponse
     {
@@ -128,7 +120,6 @@ class UserController extends BaseController
 
     /**
      * Retrieve aggregate KPI dashboard statistics for user accounts.
-     * api: GET /{module}/user/users/statistics-summary
      */
     public function statisticsSummary(Request $request = null)
     {
@@ -138,7 +129,6 @@ class UserController extends BaseController
 
     /**
      * Retrieve all system roles and permissions catalog for assignment UI.
-     * api: GET /{module}/user/users/roles-and-permissions
      */
     public function rolesAndPermissions(Request $request = null)
     {
@@ -148,13 +138,21 @@ class UserController extends BaseController
 
     /**
      * Change password for the authenticated user.
-     * api: POST /{module}/user/{id}/reset-password
      */
     public function resetPassword(int|string $id)
     {
         try {
             $this->userService->sendMailResetPassword($id);
             return $this->respondSuccess(null, 'Reset password email sent successfully.');
+        } catch (\Throwable $e) {
+            return $this->respondError($e->getMessage(), 400);
+        }
+    }
+
+    public function resetAuthentication(Request $request) {
+        try {
+            $currentUser = $this->resolveRequestUser($request);
+            return $this->respondSuccess($this->userService->resetAuthentication($request->input('email'), $currentUser), 'Reset Authencation success');
         } catch (\Throwable $e) {
             return $this->respondError($e->getMessage(), 400);
         }

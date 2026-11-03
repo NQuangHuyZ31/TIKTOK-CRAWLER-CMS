@@ -1,12 +1,12 @@
 {
-    "/modules/Core/index.js": "/modules/Core/index.js?id=d7e4a65a0a49f72b82a1b30d825ff2b2",
-    "/modules/Core/vendor.js": "/modules/Core/vendor.js?id=be7911c80444c74993b5b8a89b84a39d",
-    "/modules/Core/app.css": "/modules/Core/app.css?id=2763f897bb157d70d9a6aed8be8e2dd0",
-    "/modules/Auth/index.js": "/modules/Auth/index.js?id=27bd9e0d21a777204fdec929d720a8eb",
-    "/modules/Crawler/index.js": "/modules/Crawler/index.js?id=6436e95bbb38bd85f4d5c9a0c4066edf",
-    "/modules/Permission/index.js": "/modules/Permission/index.js?id=538728cb79e95650bc2232e9f65385a4",
-    "/modules/Role/index.js": "/modules/Role/index.js?id=42153e05000af3b7c0a7a39101905dba",
-    "/modules/System/index.js": "/modules/System/index.js?id=a83b463b6b48dfedaa8b18af0f9551dd",
-    "/modules/TiktokAccount/index.js": "/modules/TiktokAccount/index.js?id=4df249418553418703e1aa9e0d34cf71",
-    "/modules/User/index.js": "/modules/User/index.js?id=48717bbfdc3b80562dc1872afcb80c2c"
+    "/modules/Core/index.js": "/modules/Core/index.js",
+    "/modules/Core/vendor.js": "/modules/Core/vendor.js",
+    "/modules/Core/app.css": "/modules/Core/app.css",
+    "/modules/Auth/index.js": "/modules/Auth/index.js",
+    "/modules/Crawler/index.js": "/modules/Crawler/index.js",
+    "/modules/Permission/index.js": "/modules/Permission/index.js",
+    "/modules/Role/index.js": "/modules/Role/index.js",
+    "/modules/System/index.js": "/modules/System/index.js",
+    "/modules/TiktokAccount/index.js": "/modules/TiktokAccount/index.js",
+    "/modules/User/index.js": "/modules/User/index.js"
 }
