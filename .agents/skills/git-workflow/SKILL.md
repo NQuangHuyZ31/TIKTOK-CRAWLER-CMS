@@ -1,68 +1,61 @@
 ---
 name: git-workflow
-description: Direct branch protocol, Conventional Commits, and pre-commit checks.
+description: Branch management, Conventional Commits, worktree slot allocation, and pre-commit checks.
 ---
 
-# Git Workflow Standards
+# Git Workflow Skill
 
-## 1. Direct Branch Protocol
+Use this skill when staging changes, committing, switching branches, or managing worktrees.
 
-Work directly in the root workspace on dedicated task branches. Worktree isolation is disabled.
+Rules: [`.agents/rules/git-workflow.md`](file:///E:/Urekamedia/TIKTOK-CRAWLER/.agents/rules/git-workflow.md) | Documentation: [`docs/development/git-workflow.md`](file:///E:/Urekamedia/TIKTOK-CRAWLER/docs/development/git-workflow.md)
 
-> [!IMPORTANT]
-> **Single Branch Policy (No Description Sub-branches)**:
-> When working on bug fixes or features, do NOT create branches with descriptions such as `fix/<description>` or `fix/TIK-...`.
-> Always use the direct branch name (`fix`, `feature`, `refactor`, `hotfix`, `test`, `chore`) directly to avoid branch proliferation.
+---
+
+## 1. Workflow A: Single-Workspace Base Branch (Sequential Tasks)
 
 ```powershell
-# 1. Fetch latest and switch/create task branch (e.g. 'fix')
-git checkout main
-git pull origin main
-git checkout -B fix origin/main
-# or: git checkout -B feature origin/main
+# 1. Inspect state; STOP and ask human if uncommitted unrelated work exists
+git status --short
+git branch --show-current
+git fetch origin
 
-# 2. Develop and run validation checks
-npm.cmd run check-types
-php artisan test
+# 2. Switch to base category branch (fix, feature, refactor, hotfix, test, chore)
+git checkout fix            # or: git checkout -b fix origin/main
+# NEVER use git checkout -B, reset --hard, clean -fd, or force-push
 
-# 3. Commit with Conventional Commits
-git add .
-git commit -m "fix(crawler): your descriptive commit message"
+# 3. Develop & run validation
+npm.cmd --prefix cms-tiktok-crawler run check-types
+php cms-tiktok-crawler/artisan test --filter <TargetTest>
 
-# 4. Push branch to remote origin
+# 4. Commit (stage explicit files only; no build manifests or .env)
+git add <explicit files only>
+git commit -m "fix(scope): clear description in english"
+
+# 5. Push to category branch and open PR targeting main
 git push -u origin fix
 ```
 
 ---
 
-## 2. Commit Message Convention
+## 2. Workflow B: Parallel Git Worktree Slots (Concurrent Tasks)
 
-Follow **Conventional Commits v1.0.0**:
+```powershell
+# List all active slots and their assigned roles:
+powershell -ExecutionPolicy Bypass -File scripts/agent-worktree.ps1 -Action List
 
-- `feat(scope): <description>`: Introduces a new user-facing feature.
-- `fix(scope): <description>`: Fixes a bug.
-- `chore(scope): <description>`: Maintenance, package updates, configuration adjustments.
-- `docs(scope): <description>`: Documentation changes only.
-- `test(scope): <description>`: Adding or refactoring tests.
-- `refactor(scope): <description>`: Code change that neither fixes a bug nor adds a feature.
-- `ci(scope): <description>`: CI/CD configuration and workflow updates.
+# Create worktree for a slot (1: feature/*, 2: fix/*, 3: hotfix/*, 4: refactor/*, 5: release/*):
+powershell -ExecutionPolicy Bypass -File scripts/agent-worktree.ps1 -Action Create -WorktreeIndex 1 -Branch "feature/proxy-pool"
 
----
-
-## 3. Pre-Commit Security Checklist
-
-Before staging or committing:
-
-1. **`git status` check**: Ensure no `.env`, `.env.local`, credentials, or temporary logs are staged.
-2. Ensure **`npm.cmd run check-types`** passes cleanly (0 compilation errors).
-3. Ensure **`php artisan test`** passes cleanly (100% passed).
-4. Keep commit messages descriptive and strictly in **English**.
-5. Never force-push (`git push --force`) to `main` or shared branches.
+# Remove worktree after merge:
+powershell -ExecutionPolicy Bypass -File scripts/agent-worktree.ps1 -Action Remove -WorktreeIndex 1
+```
 
 ---
 
-## 4. Pull Request & Deployment Gate
+## 3. Pre-Commit Verification Checklist
 
-- Push the task branch and create a Pull Request targeting `main`.
-- Merging into `main` creates an automated **Draft Release** (`draft: true`).
-- Production deployment to Render triggers **ONLY** when the human user clicks **"Publish release"** on GitHub.
+1. `git status`: Ensure no `.env`, tokens, or build manifests (`entrypoints.json`, `mix-manifest.json`) are staged.
+2. `npm.cmd run check-types` in `cms-tiktok-crawler/`: 0 errors.
+3. `php artisan test`: 100% pass.
+4. `powershell scripts/verify-workflow.ps1`: 35/35 pass.
+5. Push to category branch only; never push directly to `main`.

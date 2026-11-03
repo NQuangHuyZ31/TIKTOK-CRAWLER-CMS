@@ -6,6 +6,9 @@ use Illuminate\Pagination\LengthAwarePaginator;
 use Modules\Core\Repositories\Interfaces\BaseRepositoryInterface;
 use Modules\TiktokAccount\Models\TiktokAccount;
 
+/**
+ * @extends BaseRepositoryInterface<TiktokAccount>
+ */
 interface TiktokAccountRepositoryInterface extends BaseRepositoryInterface
 {
     public function getStatisticSummary(): array;
@@ -20,4 +23,3 @@ interface TiktokAccountRepositoryInterface extends BaseRepositoryInterface
 
     public function updateOrCreateAccount(array $attributes, array $values): TiktokAccount;
 }
-

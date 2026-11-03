@@ -9,6 +9,10 @@ use Modules\Core\Repositories\BaseRepository;
 use Modules\TiktokAccount\Models\TiktokVideo;
 use Modules\TiktokAccount\Repositories\Interfaces\TiktokVideoRepositoryInterface;
 
+/**
+ * @extends BaseRepository<TiktokVideo>
+ * @implements TiktokVideoRepositoryInterface
+ */
 class TiktokVideoRepository extends BaseRepository implements TiktokVideoRepositoryInterface
 {
     protected array $searchableColumns = ['video_id', 'username', 'description', 'music_title'];

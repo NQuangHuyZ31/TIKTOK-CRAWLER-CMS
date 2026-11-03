@@ -1,31 +1,56 @@
 <?php
+
 namespace Modules\Core\Utils;
 
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Http\UploadedFile;
 
 class CheckFileUpload
 {
-	private static $allowedImageExtensions = ['jpeg', 'png', 'jpg', 'gif'];
-	private static $allowedFileExtensions = ['csv', 'xlsx'];
-	private static $maxImageSize = 2048; // in KB
+    /**
+     * Allowed image extensions, including modern webp.
+     */
+    private static array $allowedImageExtensions = ['jpeg', 'png', 'jpg', 'gif', 'webp'];
 
-	public static function checkImageFile($file)
-	{
-		if (!isset($file) || $file->getError() !== UPLOAD_ERR_OK) {
-			return false;
-		}
+    /**
+     * Allowed file extensions.
+     */
+    private static array $allowedFileExtensions = ['csv', 'xlsx'];
 
-		$extension = strtolower($file->getClientOriginalExtension());
-		$size = $file->getSize() / 1024; // Convert to KB
+    /**
+     * Maximum image size in kilobytes (2048 KB = 2 MB).
+     */
+    private static int $maxImageSize = 2048;
 
-		if (!in_array($extension, self::$allowedImageExtensions)) {
-			return false;
-		}
+    /**
+     * Validate whether an uploaded file is a valid image within size and format constraints.
+     */
+    public static function checkImageFile(mixed $file): bool
+    {
+        if (!$file instanceof UploadedFile || !$file->isValid()) {
+            return false;
+        }
 
-		if ($size > self::$maxImageSize) {
-			return false;
-		}
+        $extension = strtolower($file->getClientOriginalExtension());
+        $sizeInKb = $file->getSize() / 1024;
 
-		return true;
-	}
+        if (!in_array($extension, self::$allowedImageExtensions, true)) {
+            return false;
+        }
+
+        if ($sizeInKb > self::$maxImageSize) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Get allowed image extensions list.
+     *
+     * @return array<string>
+     */
+    public static function getAllowedImageExtensions(): array
+    {
+        return self::$allowedImageExtensions;
+    }
 }

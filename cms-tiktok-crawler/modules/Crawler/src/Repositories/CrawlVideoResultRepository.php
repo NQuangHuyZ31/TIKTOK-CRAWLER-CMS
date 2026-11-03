@@ -9,6 +9,9 @@ use Modules\Core\Repositories\BaseRepository;
 use Modules\Crawler\Models\CrawlVideoResult;
 use Modules\Crawler\Repositories\Interfaces\CrawlVideoResultRepositoryInterface;
 
+/**
+ * @extends BaseRepository<CrawlVideoResult>
+ */
 class CrawlVideoResultRepository extends BaseRepository implements CrawlVideoResultRepositoryInterface
 {
     protected array $searchableColumns = ['video_id', 'username', 'description', 'error_message'];
@@ -88,5 +91,10 @@ class CrawlVideoResultRepository extends BaseRepository implements CrawlVideoRes
             ->whereIn('video_id', $videoIds)
             ->get()
             ->keyBy('video_id');
+    }
+
+    public function deleteByJobId(int $jobId): int
+    {
+        return $this->model->where('crawl_job_id', $jobId)->delete();
     }
 }

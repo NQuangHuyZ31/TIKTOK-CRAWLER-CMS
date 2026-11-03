@@ -1,18 +1,47 @@
 ---
 name: core-reusability-promoter
-description: Reuses and promotes shared logic into modules/Core/.
+description: Enforces code reusability workflow, codebase analysis, REUSE/EXTEND/CREATE strategy, and Core promotion.
 ---
 
-# Core Reusability & Promotion
+# Code Reusability & Anti-Duplication Skill
 
-## 1. Core-First Protocol
-Before implementing new UI components, utilities, or queries, check existing assets:
-- **Backend**: `modules/Core/src/` (`BaseController`, `BaseRepository`, `Traits/`, `Utils/FetchApi.php`).
-- **Frontend**: `modules/Core/resources/js/components/` (`ListLayout`, `Table`, `useAction`, `CustomModal`, `CardKPI`).
+Use this skill before creating or modifying UI components, hooks, services, or endpoints.
 
-## 2. Rules
-1. **Zero Redundant Overrides**: Never re-implement `BaseRepository` methods (`all`, `paginate`, `findById`, `create`, `update`, `delete`).
-2. **Promote Reusable Components to Core**: If a UI component, form control, preset selector, or widget is domain-agnostic or has potential reusability across >= 2 views/modules, place it in `modules/Core/resources/js/components/` (`@core`).
-3. **Config Externalization**: Presets, constants, dictionaries, and options must always live in `configs/`, never hardcoded inline.
-4. **Component Decomposition**: Never build monolithic TSX files (>150-200 lines). Decompose into focused subcomponents.
-5. **Verification**: Run `npm.cmd run check-types` and `php artisan test` after changes.
+Component Catalog: [`docs/frontend/core-components.md`](file:///E:/Urekamedia/TIKTOK-CRAWLER/docs/frontend/core-components.md) | Frontend Rules: [`.agents/rules/frontend.md`](file:///E:/Urekamedia/TIKTOK-CRAWLER/.agents/rules/frontend.md)
+
+---
+
+## 1. Step-by-Step Analysis Workflow
+
+1. **Search Codebase**: Before writing any new UI widget or logic, search across all modules (`Select-String` / `rg`) for existing tables, filter bars, status tags, API actions, and services.
+2. **Compare Implementations**: Check if sibling modules already implemented similar behavior.
+3. **Select Strategy**:
+   - **REUSE**: Existing component satisfies requirements with current configuration.
+   - **EXTEND**: Existing component covers need with optional props/configs (must verify all existing consumers).
+   - **CREATE**: Novel requirement only. Document why reuse/extend was rejected.
+4. **Core Promotion**: Promote to `@core` only if the component is generic and used (or about to be used) by 2+ modules.
+
+---
+
+## 2. Shared Component Invariants
+
+- Clearly defined, single responsibility.
+- Configurable via props; no hardcoded page-specific values.
+- Clean TypeScript types; no `any`.
+- Zero domain business logic inside `@core`.
+
+---
+
+## 3. Pre-Completion Verification & Reporting
+
+Before completing the task, verify:
+- No unnecessary duplicates were introduced.
+- Existing consumers still function without regressions.
+- Types and API contracts remain consistent.
+
+Conclude with the mandatory **Agent Report**:
+1. **Discovered**: Existing implementations found (with paths).
+2. **Reused / Extended**: Components and services reused or extended.
+3. **Created + Rationale**: New components created and why reuse was unsuitable.
+4. **Refactored**: Duplicates consolidated.
+5. **Affected Scope**: Verified pages, modules, and endpoints.

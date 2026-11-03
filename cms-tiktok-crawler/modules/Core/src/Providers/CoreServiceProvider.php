@@ -5,6 +5,7 @@ namespace Modules\Core\Providers;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
+use Modules\Core\Services\StorageService;
 use Modules\Core\Support\ModuleRegistry;
 
 class CoreServiceProvider extends ServiceProvider
@@ -14,6 +15,10 @@ class CoreServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        $this->app->singleton(StorageService::class, function () {
+            return new StorageService();
+        });
+
         $this->app->scoped(ModuleRegistry::class, function () {
             return new ModuleRegistry(config('modules.path'), config('modules.disabled', []));
         });

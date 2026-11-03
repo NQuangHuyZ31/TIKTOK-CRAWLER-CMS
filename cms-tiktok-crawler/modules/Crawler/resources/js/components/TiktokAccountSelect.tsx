@@ -45,9 +45,9 @@ const TiktokAccountSelect: React.FC<TiktokAccountSelectProps> = ({ onChange, dis
 		<div style={{ marginBottom: 16 }}>
 			<Flex justify="space-between" align="center" style={{ marginBottom: 8 }} wrap="wrap" gap={8}>
 				<Space orientation="horizontal" size={8}>
-					<Text strong>Chọn tài khoản đã lưu</Text>
+					<Text strong>Select Saved Accounts</Text>
 					<Tag color={selectedIds.length > 0 ? 'blue' : 'default'}>
-						Đã chọn: {selectedIds.length} / {accounts?.length || 0}
+						Selected: {selectedIds.length} / {accounts?.length || 0}
 					</Tag>
 				</Space>
 
@@ -55,15 +55,15 @@ const TiktokAccountSelect: React.FC<TiktokAccountSelectProps> = ({ onChange, dis
 					<Space orientation="horizontal" size={6} wrap>
 						{accounts.length > 10 && (
 							<Button size="small" type="dashed" onClick={() => handleSelectTop(10)}>
-								Chọn 10 đầu
+								Select Top 10
 							</Button>
 						)}
 						<Button size="small" type="dashed" icon={<CheckOutlined />} onClick={handleSelectAll}>
-							Chọn tất cả
+							Select All
 						</Button>
 						{selectedIds.length > 0 && (
 							<Button size="small" danger type="text" icon={<ClearOutlined />} onClick={handleClear}>
-								Bỏ chọn
+								Clear
 							</Button>
 						)}
 					</Space>
@@ -73,7 +73,7 @@ const TiktokAccountSelect: React.FC<TiktokAccountSelectProps> = ({ onChange, dis
 			<Form.Item
 				preserve={false}
 				name="account_ids"
-				rules={[{ required: true, message: 'Vui lòng chọn ít nhất 1 tài khoản từ danh sách' }]}
+				rules={[{ required: true, message: 'Please select at least one account from the list' }]}
 				style={{ marginBottom: 0 }}
 			>
 				<Select
@@ -83,8 +83,8 @@ const TiktokAccountSelect: React.FC<TiktokAccountSelectProps> = ({ onChange, dis
 					loading={loading}
 					placeholder={
 						accounts?.length
-							? 'Tìm kiếm và chọn tài khoản theo tên hoặc username...'
-							: 'Không có tài khoản nào trong hệ thống'
+							? 'Search and select accounts by nickname or username...'
+							: 'No accounts found in system'
 					}
 					filterOption={(input, option) => {
 						const search = input.toLowerCase();
@@ -126,7 +126,7 @@ const TiktokAccountSelect: React.FC<TiktokAccountSelectProps> = ({ onChange, dis
 						);
 					}}
 					notFoundContent={
-						error ? <span style={{ color: 'red' }}>{error}</span> : 'Không tìm thấy tài khoản phù hợp'
+						error ? <span style={{ color: 'red' }}>{error}</span> : 'No matching accounts found'
 					}
 				/>
 			</Form.Item>

@@ -25,11 +25,11 @@ export interface CreateModulePermissionsPayload {
     description?: string;
 }
 
-const baseURL = '/user/permission';
+const baseURL = '/permission/permission';
 
 /**
  * Fetch all permissions list with pagination, search, and filtering.
- * API: GET /user/permission
+ * API: GET /permission/permission
  * Example: getPermissions({ module: 'crawler', page: 1, per_page: 15 })
  */
 export const getPermissions = (params: Record<string, any> = {}) =>
@@ -37,7 +37,7 @@ export const getPermissions = (params: Record<string, any> = {}) =>
 
 /**
  * Fetch permissions grouped by module.
- * API: GET /user/permission/modules
+ * API: GET /permission/permission/modules
  * Example: getGroupedPermissions()
  */
 export const getGroupedPermissions = () =>
@@ -45,7 +45,7 @@ export const getGroupedPermissions = () =>
 
 /**
  * Fetch unique module names.
- * API: GET /user/permission/distinct-modules
+ * API: GET /permission/permission/distinct-modules
  * Example: getDistinctModules()
  */
 export const getDistinctModules = () =>
@@ -53,7 +53,7 @@ export const getDistinctModules = () =>
 
 /**
  * Create a single permission.
- * API: POST /user/permission
+ * API: POST /permission/permission
  * Example: createPermission({ module: 'crawler', action: 'export', name: 'Export Crawl Data' })
  */
 export const createPermission = (data: CreatePermissionPayload) =>
@@ -61,7 +61,7 @@ export const createPermission = (data: CreatePermissionPayload) =>
 
 /**
  * Create standard basic permissions for a module (view, create, edit, delete).
- * API: POST /user/permission/create-module
+ * API: POST /permission/permission/create-module
  * Example: createModulePermissions({ module: 'report', name: 'Reports', actions: ['view', 'create', 'edit', 'delete'] })
  */
 export const createModulePermissions = (data: CreateModulePermissionsPayload) =>
@@ -69,7 +69,7 @@ export const createModulePermissions = (data: CreateModulePermissionsPayload) =>
 
 /**
  * Delete a permission by ID.
- * API: DELETE /user/permission/{id}
+ * API: DELETE /permission/permission/{id}
  * Example: deletePermission(5)
  */
 export const deletePermission = (id: number | string) =>

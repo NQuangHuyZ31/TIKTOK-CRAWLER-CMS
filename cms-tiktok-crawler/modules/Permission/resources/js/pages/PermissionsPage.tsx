@@ -10,19 +10,7 @@ import { fetchPermissions, fetchDistinctModules } from '../store/permission/perm
 import CreateModuleModal from '../components/CreateModuleModal';
 import CreatePermissionModal from '../components/CreatePermissionModal';
 import PermissionTableList from '../components/PermissionTableList';
-
-const ACTION_OPTIONS = [
-	{ value: '', label: 'All Actions' },
-	{ value: 'view', label: 'View (view)' },
-	{ value: 'create', label: 'Create (create)' },
-	{ value: 'edit', label: 'Edit (edit)' },
-	{ value: 'delete', label: 'Delete (delete)' },
-	{ value: 'export', label: 'Export (export)' },
-	{ value: 'import', label: 'Import (import)' },
-	{ value: 'approve', label: 'Approve (approve)' },
-	{ value: 'assign', label: 'Assign (assign)' },
-	{ value: 'manage', label: 'Manage (manage)' },
-];
+import { COMMON_PERMISSION_ACTIONS } from '../configs/permissionOptions';
 
 export default function PermissionsPage() {
 	const dispatch = useDispatch();
@@ -73,7 +61,7 @@ export default function PermissionsPage() {
 			{
 				key: 'action',
 				placeholder: 'Filter by Action',
-				options: ACTION_OPTIONS,
+				options: COMMON_PERMISSION_ACTIONS,
 				showSearch: true,
 				allowClear: true,
 				initialValue: params.action,

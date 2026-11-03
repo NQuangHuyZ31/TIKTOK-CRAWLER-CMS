@@ -2,6 +2,25 @@ import { api } from '@core/Action/api';
 
 const baseURL = '/tiktok-account/tiktok-account';
 
+export interface TiktokAccountItem {
+	id: number;
+	username: string;
+	nickname?: string;
+	avatar_path?: string;
+	bio?: string;
+	profile_url?: string;
+	status: string;
+	followers_count?: number;
+	following_count?: number;
+	likes_count?: number;
+	video_count?: number;
+	is_verified?: boolean;
+	crawled_at?: string;
+	created_at?: string;
+	updated_at?: string;
+	[key: string]: any;
+}
+
 /**
  * Fetch all TikTok accounts with optional pagination and filters.
  * API: GET /tiktok-account/tiktok-account
@@ -59,6 +78,13 @@ export const getResults = (id: string | number, params: Record<string, any> = {}
 	api(`${baseURL}/${id}/results`, { params });
 
 /**
+ * Fetch paginated TikTok videos of a specific TikTok account.
+ * API: GET /tiktok-account/tiktok-account/{id}/videos
+ */
+export const getVideos = (id: string | number, params: Record<string, any> = {}) =>
+	api(`${baseURL}/${id}/videos`, { params });
+
+/**
  * Fetch aggregate TikTok account statistics summary for KPI dashboard cards.
  * API: GET /tiktok-account/tiktok-account/statistic-summary
  */
@@ -74,4 +100,5 @@ export default {
 	updateTiktokAccount,
 	getStatisticSummary,
 	getResults,
+	getVideos,
 };

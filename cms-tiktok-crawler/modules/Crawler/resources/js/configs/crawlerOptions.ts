@@ -59,10 +59,10 @@ export interface VideoLimitPreset {
 }
 
 export const VIDEO_LIMIT_PRESETS: VideoLimitPreset[] = [
-	{ label: '10 Video', value: 10, desc: 'Nhanh - Thử nghiệm' },
-	{ label: '20 Video', value: 20, desc: 'Tiêu chuẩn (Mặc định)' },
-	{ label: '50 Video', value: 50, desc: 'Phân tích sâu' },
-	{ label: '100 Video', value: 100, desc: 'Tối đa' },
+	{ label: '10 Videos', value: 10, desc: 'Fast - Testing' },
+	{ label: '20 Videos', value: 20, desc: 'Standard (Default)' },
+	{ label: '50 Videos', value: 50, desc: 'Deep Analysis' },
+	{ label: '100 Videos', value: 100, desc: 'Maximum' },
 ];
 
 export const COUNT_PRESETS = [10, 25, 50, 100, 200];

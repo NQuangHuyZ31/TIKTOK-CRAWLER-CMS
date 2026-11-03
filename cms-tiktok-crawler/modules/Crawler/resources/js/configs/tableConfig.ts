@@ -130,71 +130,10 @@ export const crawlResultColumnConfig: TableColumn[] = [
 	},
 ];
 
-export const crawlVideoResultColumnConfig: TableColumn[] = [
-	{
-		title: 'Cover',
-		dataIndex: 'cover_url',
-		key: 'cover_url',
-		width: 80,
-	},
-	{
-		title: 'Video ID',
-		dataIndex: 'video_id',
-		key: 'video_id',
-		width: 165,
-	},
-	{
-		title: 'Username',
-		dataIndex: 'username',
-		key: 'username',
-		width: 140,
-	},
-	{
-		title: 'Description',
-		dataIndex: 'description',
-		key: 'description',
-		width: 240,
-	},
-	{
-		title: 'Views',
-		dataIndex: 'play_count',
-		key: 'play_count',
-		sorter: (a: any, b: any) => (a.play_count ?? 0) - (b.play_count ?? 0),
-	},
-	{
-		title: 'Likes',
-		dataIndex: 'digg_count',
-		key: 'digg_count',
-		sorter: (a: any, b: any) => (a.digg_count ?? 0) - (b.digg_count ?? 0),
-	},
-	{
-		title: 'Comments',
-		dataIndex: 'comment_count',
-		key: 'comment_count',
-		sorter: (a: any, b: any) => (a.comment_count ?? 0) - (b.comment_count ?? 0),
-	},
-	{
-		title: 'Shares',
-		dataIndex: 'share_count',
-		key: 'share_count',
-		sorter: (a: any, b: any) => (a.share_count ?? 0) - (b.share_count ?? 0),
-	},
-	{
-		title: 'Saves',
-		dataIndex: 'collect_count',
-		key: 'collect_count',
-		sorter: (a: any, b: any) => (a.collect_count ?? 0) - (b.collect_count ?? 0),
-	},
-	{
-		title: 'Published At',
-		dataIndex: 'published_at',
-		key: 'published_at',
-		width: 160,
-	},
-	{
-		title: 'Video URL',
-		dataIndex: 'video_url',
-		key: 'video_url',
-		width: 180,
-	},
-];
+export { createVideoTableColumns } from '@core/configs/videoTableConfig';
+import { createVideoTableColumns } from '@core/configs/videoTableConfig';
+
+export const crawlVideoResultColumnConfig: TableColumn[] = createVideoTableColumns({
+	showAccount: true,
+	showVideoId: true,
+});

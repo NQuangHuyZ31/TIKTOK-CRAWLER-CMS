@@ -4,6 +4,7 @@ import { CaretDownOutlined, CaretUpOutlined } from '@ant-design/icons';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { formatCompactNumber, formatNumber, formatPercent } from '../utils/formatNumber';
 import type { GrowthTrendData } from '../pages/ui/types';
+import GrowthChartTooltip from './growthChart/GrowthChartTooltip';
 
 const { Text, Title } = Typography;
 
@@ -20,10 +21,6 @@ export interface GrowthChartProps {
 	periodOptions?: Array<{ label: string; value: number }>;
 }
 
-/**
- * Concise, high-performance Growth Chart powered by Recharts
- * Displays smooth area & line trajectories with interactive tooltips and period selection.
- */
 export default function GrowthChart({
 	title,
 	subtitle,
@@ -42,7 +39,6 @@ export default function GrowthChart({
 }: GrowthChartProps) {
 	const gradientId = useId().replace(/:/g, '_');
 	const points = data?.points || [];
-
 	const growthRate = data?.growth_rate ?? 0;
 	const isPositiveGrowth = growthRate >= 0;
 	const netChange = data?.net_change ?? 0;
@@ -58,7 +54,6 @@ export default function GrowthChart({
 			}}
 			styles={{ body: { padding: '20px 24px 16px' } }}
 		>
-			{/* Top Bar: Title, Icon, Badge & Period Selector */}
 			<Flex justify="space-between" align="center" wrap="wrap" gap={12} style={{ marginBottom: 12 }}>
 				<Space align="center" size={10}>
 					{icon && <span style={{ fontSize: 20, color }}>{icon}</span>}
@@ -85,7 +80,6 @@ export default function GrowthChart({
 				{onPeriodChange && <Segmented size="small" value={selectedPeriod} options={periodOptions} onChange={(val) => onPeriodChange(Number(val))} />}
 			</Flex>
 
-			{/* Headline Metrics Display */}
 			<Flex justify="space-between" align="baseline" style={{ marginBottom: 14 }}>
 				<div>
 					<Title level={3} style={{ margin: 0, fontWeight: 700, color: '#1f1f1f', letterSpacing: '-0.02em' }}>
@@ -98,7 +92,6 @@ export default function GrowthChart({
 				</div>
 			</Flex>
 
-			{/* Chart Area */}
 			<div style={{ width: '100%', height }}>
 				{loading ? (
 					<div style={{ padding: '24px 0' }}>
@@ -120,30 +113,7 @@ export default function GrowthChart({
 							<CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f2f5" />
 							<XAxis dataKey="label" stroke="#8c8c8c" fontSize={11} tickLine={false} axisLine={false} />
 							<YAxis stroke="#8c8c8c" fontSize={11} tickLine={false} axisLine={false} tickFormatter={formatCompactNumber} />
-							<Tooltip
-								content={({ active, payload }) => {
-									if (!active || !payload?.length) return null;
-									const point = payload[0].payload;
-									return (
-										<div
-											style={{
-												backgroundColor: '#1f1f1f',
-												color: '#ffffff',
-												padding: '6px 12px',
-												borderRadius: 8,
-												boxShadow: '0 6px 16px rgba(0, 0, 0, 0.25)',
-												fontSize: 12,
-											}}
-										>
-											<div style={{ color: '#bfbfbf', fontSize: 11, marginBottom: 2 }}>{point.date}</div>
-											<div style={{ fontWeight: 600, fontSize: 13 }}>
-												{formatNumber(point.value)} {title.split(' ')[0]}
-											</div>
-											<div style={{ fontSize: 11, color: point.change >= 0 ? '#52c41a' : '#ff4d4f' }}>{point.change >= 0 ? `+${formatNumber(point.change)}` : formatNumber(point.change)} daily</div>
-										</div>
-									);
-								}}
-							/>
+							<Tooltip content={(props) => <GrowthChartTooltip {...props} title={title} />} />
 							<Area type="monotone" dataKey="value" stroke={color} strokeWidth={2.5} fillOpacity={1} fill={`url(#gradient_${gradientId})`} />
 						</AreaChart>
 					</ResponsiveContainer>

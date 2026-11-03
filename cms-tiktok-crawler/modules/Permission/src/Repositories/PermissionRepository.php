@@ -6,7 +6,12 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Modules\Core\Repositories\BaseRepository;
 use Modules\Permission\Models\Permission;
+use Modules\Permission\Repositories\Interfaces\PermissionRepositoryInterface;
 
+/**
+ * @extends BaseRepository<Permission>
+ * @implements PermissionRepositoryInterface
+ */
 class PermissionRepository extends BaseRepository implements PermissionRepositoryInterface
 {
     protected function getModel(): Model
@@ -21,6 +26,8 @@ class PermissionRepository extends BaseRepository implements PermissionRepositor
 
     /**
      * Get all permissions grouped by module.
+     *
+     * @return array<string, array<int, Permission>>
      */
     public function getGroupedByModule(): array
     {

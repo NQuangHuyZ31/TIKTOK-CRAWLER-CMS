@@ -9,6 +9,9 @@ use Modules\Core\Repositories\BaseRepository;
 use Modules\Crawler\Models\CrawlResult;
 use Modules\Crawler\Repositories\Interfaces\CrawlResultRepositoryInterface;
 
+/**
+ * @extends BaseRepository<CrawlResult>
+ */
 class CrawlResultRepository extends BaseRepository implements CrawlResultRepositoryInterface
 {
     protected array $searchableColumns = ['username', 'profile_url', 'error_message'];
@@ -73,5 +76,13 @@ class CrawlResultRepository extends BaseRepository implements CrawlResultReposit
             ->whereNotNull('username')
             ->pluck('username')
             ->toArray();
+    }
+
+    /**
+     * Delete all crawl results belonging to a specific job.
+     */
+    public function deleteByJobId(int $jobId): int
+    {
+        return $this->model->where('crawl_job_id', $jobId)->delete();
     }
 }

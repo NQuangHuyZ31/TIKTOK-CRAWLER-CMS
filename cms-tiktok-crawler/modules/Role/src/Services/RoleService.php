@@ -3,9 +3,9 @@
 namespace Modules\Role\Services;
 
 use Illuminate\Support\Str;
-use Modules\Permission\Repositories\PermissionRepositoryInterface;
+use Modules\Permission\Repositories\Interfaces\PermissionRepositoryInterface;
 use Modules\Role\Models\Role;
-use Modules\Role\Repositories\RoleRepositoryInterface;
+use Modules\Role\Repositories\Interfaces\RoleRepositoryInterface;
 
 class RoleService
 {

@@ -3,8 +3,8 @@
 namespace Modules\User\Providers;
 
 use Modules\Core\Providers\ModuleServiceProvider;
-use Modules\Permission\Repositories\PermissionRepositoryInterface;
-use Modules\Role\Repositories\RoleRepositoryInterface;
+use Modules\Permission\Repositories\Interfaces\PermissionRepositoryInterface;
+use Modules\Role\Repositories\Interfaces\RoleRepositoryInterface;
 use Modules\User\Repositories\Interfaces\UserRepositoryInterface;
 use Modules\User\Repositories\UserRepository;
 use Modules\User\Services\UserService;

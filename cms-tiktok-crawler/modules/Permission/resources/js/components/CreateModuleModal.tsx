@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, Button, Checkbox, Form, Input, Modal, Space, Typography } from 'antd';
-import { AppstoreAddOutlined, CheckOutlined } from '@ant-design/icons';
+import { Alert, Form, Input, Modal, Space, Typography } from 'antd';
+import { AppstoreAddOutlined } from '@ant-design/icons';
 import useAction from '@core/hooks/useAction';
 import { BASIC_PERMISSION_ACTIONS } from '../configs/permissionOptions';
 import { createModulePermissions } from '../Action/permission';
+import ModulePermissionsPreview from './createModule/ModulePermissionsPreview';
+import ModulePermissionsSelect from './createModule/ModulePermissionsSelect';
 
 const { Text } = Typography;
 const { TextArea } = Input;
@@ -109,80 +111,13 @@ export default function CreateModuleModal({ open, onClose, onSuccess }: CreateMo
 					<Input placeholder="e.g. Reports & Analytics, Audit Logs" />
 				</Form.Item>
 
-				<Form.Item
-					name="actions"
-					label={
-						<Space style={{ width: '100%', justifyContent: 'space-between' }}>
-							<span>Basic Permissions</span>
-							<Space size="small">
-								<Button type="link" size="small" onClick={handleSelectAll} style={{ padding: 0 }}>
-									Select All
-								</Button>
-								<Text type="secondary">|</Text>
-								<Button type="link" size="small" onClick={handleDeselectAll} style={{ padding: 0 }}>
-									Deselect All
-								</Button>
-							</Space>
-						</Space>
-					}
-					rules={[{ required: true, message: 'Please select at least one permission action' }]}
-				>
-					<Checkbox.Group style={{ width: '100%' }}>
-						<Space orientation="vertical" style={{ width: '100%' }}>
-							{BASIC_PERMISSION_ACTIONS.map((item) => (
-								<Checkbox key={item.value} value={item.value}>
-									<Space direction="vertical" size={0}>
-										<Text strong>{item.label}</Text>
-										<Text type="secondary" style={{ fontSize: 12 }}>
-											{item.desc}
-										</Text>
-									</Space>
-								</Checkbox>
-							))}
-						</Space>
-					</Checkbox.Group>
-				</Form.Item>
+				<ModulePermissionsSelect onSelectAll={handleSelectAll} onDeselectAll={handleDeselectAll} />
 
 				<Form.Item name="description" label="Description">
 					<TextArea rows={2} placeholder="Optional notes about this module's responsibilities" />
 				</Form.Item>
 
-				{watchedModule && watchedActions.length > 0 && (
-					<div
-						style={{
-							background: '#fafafa',
-							padding: '12px 16px',
-							borderRadius: 6,
-							border: '1px solid #f0f0f0',
-						}}
-					>
-						<Text type="secondary" style={{ fontSize: 12 }}>
-							Permissions to be created:
-						</Text>
-						<div style={{ marginTop: 6, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-							{watchedActions.map((act: string) => (
-								<span
-									key={act}
-									style={{
-										background: '#e6f4ff',
-										color: '#0958d9',
-										padding: '2px 8px',
-										borderRadius: 4,
-										fontFamily: 'monospace',
-										fontSize: 12,
-									}}
-								>
-									<CheckOutlined style={{ marginRight: 4, fontSize: 10 }} />
-									{watchedModule
-										.trim()
-										.toLowerCase()
-										.replace(/[^a-z0-9_]+/g, '_')}
-									.{act}
-								</span>
-							))}
-						</div>
-					</div>
-				)}
+				<ModulePermissionsPreview watchedModule={watchedModule} watchedActions={watchedActions} />
 			</Form>
 		</Modal>
 	);

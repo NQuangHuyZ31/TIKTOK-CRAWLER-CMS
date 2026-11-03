@@ -4,7 +4,11 @@ namespace Modules\Crawler\Repositories\Interfaces;
 
 use Illuminate\Pagination\LengthAwarePaginator;
 use Modules\Core\Repositories\Interfaces\BaseRepositoryInterface;
+use Modules\Crawler\Models\CrawlResult;
 
+/**
+ * @extends BaseRepositoryInterface<CrawlResult>
+ */
 interface CrawlResultRepositoryInterface extends BaseRepositoryInterface
 {
     /**
@@ -21,4 +25,9 @@ interface CrawlResultRepositoryInterface extends BaseRepositoryInterface
      * Get completed/failed usernames for a crawl job.
      */
     public function getDoneUsernames(int $jobId): array;
+
+    /**
+     * Delete all crawl results belonging to a specific job.
+     */
+    public function deleteByJobId(int $jobId): int;
 }

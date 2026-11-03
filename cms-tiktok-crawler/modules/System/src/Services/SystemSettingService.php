@@ -7,8 +7,8 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Modules\System\Facades\Audit;
-use Modules\System\Models\ActivityLog;
-use Modules\System\Models\LoginLog;
+use Modules\System\Repositories\Interfaces\ActivityLogRepositoryInterface;
+use Modules\System\Repositories\Interfaces\LoginLogRepositoryInterface;
 use Modules\System\Repositories\Interfaces\SystemSettingRepositoryInterface;
 
 class SystemSettingService
@@ -17,7 +17,9 @@ class SystemSettingService
     private const CACHE_GROUP_PREFIX = 'system_settings_group_';
 
     public function __construct(
-        protected SystemSettingRepositoryInterface $settingRepository
+        protected SystemSettingRepositoryInterface $settingRepository,
+        protected ActivityLogRepositoryInterface $activityLogRepository,
+        protected LoginLogRepositoryInterface $loginLogRepository
     ) {}
 
     /**
@@ -130,15 +132,13 @@ class SystemSettingService
             : (int) $this->getSetting('cleanup_sleep_between_batches_ms', 100);
 
         try {
-            $purgedActivity = $this->pruneTableChunked(
-                ActivityLog::class,
+            $purgedActivity = $this->activityLogRepository->pruneBefore(
                 now()->subDays($actDays),
                 $chunkSize,
                 $sleepMs
             );
 
-            $purgedLogin = $this->pruneTableChunked(
-                LoginLog::class,
+            $purgedLogin = $this->loginLogRepository->pruneBefore(
                 now()->subDays($loginDays),
                 $chunkSize,
                 $sleepMs
@@ -161,32 +161,6 @@ class SystemSettingService
             $this->recordCleanupExecutionFailure($e->getMessage(), $overrideOptions['trigger'] ?? 'scheduled');
             throw $e;
         }
-    }
-
-    /**
-     * Chunked deletion implementation yielding CPU/IO via micro-sleep.
-     */
-    protected function pruneTableChunked(string $modelClass, Carbon $cutoffDate, int $chunkSize, int $sleepMs): int
-    {
-        $totalDeleted = 0;
-
-        do {
-            $ids = $modelClass::where('created_at', '<', $cutoffDate)
-                ->limit($chunkSize)
-                ->pluck('id');
-
-            $count = $ids->count();
-            if ($count > 0) {
-                $modelClass::whereIn('id', $ids)->delete();
-                $totalDeleted += $count;
-
-                if ($sleepMs > 0) {
-                    usleep($sleepMs * 1000);
-                }
-            }
-        } while ($count === $chunkSize);
-
-        return $totalDeleted;
     }
 
     /**

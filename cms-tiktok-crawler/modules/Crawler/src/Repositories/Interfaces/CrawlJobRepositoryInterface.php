@@ -5,7 +5,11 @@ namespace Modules\Crawler\Repositories\Interfaces;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Modules\Core\Repositories\Interfaces\BaseRepositoryInterface;
+use Modules\Crawler\Models\CrawlJob;
 
+/**
+ * @extends BaseRepositoryInterface<CrawlJob>
+ */
 interface CrawlJobRepositoryInterface extends BaseRepositoryInterface
 {
     /** Get lasted Created Job */
