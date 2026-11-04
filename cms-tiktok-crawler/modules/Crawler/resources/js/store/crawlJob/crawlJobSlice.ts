@@ -48,7 +48,7 @@ const crawlJobSlice = createSlice({
 		},
 	},
 	extraReducers: (builder) => {
-		// 1. Fetch all crawl jobs
+		// Fetch all crawl jobs
 		builder
 			.addCase(fetchCrawlJobs.pending, (state, action) => {
 				if (!action.meta.arg?.silent) state.loading = true;
@@ -65,7 +65,7 @@ const crawlJobSlice = createSlice({
 				state.error = action.payload as string;
 			});
 
-		// 2. Fetch statistics summary
+		// Fetch statistics summary
 		builder
 			.addCase(fetchStatisticsSummary.pending, (state) => {
 				state.statisticsLoading = true;
@@ -80,7 +80,7 @@ const crawlJobSlice = createSlice({
 				state.statisticsError = action.payload as string;
 			});
 
-		// 3. Fetch crawl job detail
+		// Fetch crawl job detail
 		builder
 			.addCase(fetchCrawlJobDetail.pending, (state, action) => {
 				if (!action.meta.arg?.silent) state.currentJobLoading = true;
@@ -95,7 +95,7 @@ const crawlJobSlice = createSlice({
 				state.currentJobError = action.payload as string;
 			});
 
-		// 4. Fetch job account results
+		// Fetch job account results
 		builder
 			.addCase(fetchJobResults.pending, (state, action) => {
 				if (!action.meta.arg?.silent) state.jobResultsLoading = true;
@@ -110,7 +110,7 @@ const crawlJobSlice = createSlice({
 				state.jobResultsLoading = false;
 			});
 
-		// 5. Fetch job video results
+		// Fetch job video results
 		builder
 			.addCase(fetchJobVideoResults.pending, (state, action) => {
 				if (!action.meta.arg?.silent) state.jobVideoResultsLoading = true;

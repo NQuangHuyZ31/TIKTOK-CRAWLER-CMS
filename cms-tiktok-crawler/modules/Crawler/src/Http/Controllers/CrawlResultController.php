@@ -2,6 +2,7 @@
 
 namespace Modules\Crawler\Http\Controllers;
 
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Modules\Core\Http\Controllers\BaseController;
 use Modules\Crawler\Models\CrawlResult;
@@ -22,10 +23,9 @@ class CrawlResultController extends BaseController
     }
 
     /**
-     * REST sub-action: Retrieve paginated crawl results for a specific job.
-     * Delegated to CrawlResultService.
+     * Retrieve paginated crawl results for a specific job.
      */
-    public function byJob(int $jobId, Request $request)
+    public function byJob(int $jobId, Request $request): JsonResponse
     {
         $perPage = (int) $request->input('per_page', 10);
         $results = $this->crawlResultService->getByJobId($jobId, $perPage, $request->all());

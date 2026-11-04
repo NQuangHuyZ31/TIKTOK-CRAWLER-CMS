@@ -3,7 +3,6 @@
 namespace Modules\Crawler\Repositories\Interfaces;
 
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Pagination\LengthAwarePaginator;
 use Modules\Core\Repositories\Interfaces\BaseRepositoryInterface;
 use Modules\Crawler\Models\CrawlJob;
 
@@ -21,21 +20,6 @@ interface CrawlJobRepositoryInterface extends BaseRepositoryInterface
     public function getStatisticsSummary(): array;
 
     /**
-     * Retrieve paginated crawl results for a specific job with filtering.
-     */
-    public function getResults(int $jobId, int $perPage = 10, array $params = []): LengthAwarePaginator;
-
-    /**
-     * Check if another crawl job is currently running.
-     */
-    public function hasRunningJob(int $excludeId = 0): bool;
-
-    /**
-     * Retrieve crawl jobs matching a specific status.
-     */
-    public function findByStatus(string $status): Collection;
-
-    /**
      * Retrieve unfinished ('running' and 'queued') crawl jobs ordered by Recovery Priority + FIFO.
      */
     public function getUnfinishedJobs(): Collection;
@@ -44,4 +28,24 @@ interface CrawlJobRepositoryInterface extends BaseRepositoryInterface
      * Retrieve active crawl job by ID if running or queued.
      */
     public function getActiveJobById(int $jobId): Collection;
+
+    /**
+     * Atomically claim a failed crawl job for retry.
+     */
+    public function claimForRetry(int $id): bool;
+
+    /**
+     * Conditionally reset retry-related fields inside the cleanup transaction while the job remains queued.
+     */
+    public function resetForRetry(int $id, array $attributes): bool;
+
+    /**
+     * Conditionally restore a queued claim back to failed upon dispatch or cleanup failure.
+     */
+    public function restoreFailedClaim(int $id, string $errorMessage): bool;
+
+    /**
+     * Atomically synchronize dynamically resolved targets when the job is still queued or running.
+     */
+    public function syncDynamicTargets(int $id, array $targets): bool;
 }

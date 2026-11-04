@@ -4,10 +4,8 @@ namespace Modules\Crawler\Repositories;
 
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Pagination\LengthAwarePaginator;
 use Modules\Core\Repositories\BaseRepository;
 use Modules\Crawler\Models\CrawlJob;
-use Modules\Crawler\Models\CrawlResult;
 use Modules\Crawler\Repositories\Interfaces\CrawlJobRepositoryInterface;
 
 /**
@@ -32,8 +30,10 @@ class CrawlJobRepository extends BaseRepository implements CrawlJobRepositoryInt
         return $model->load(['creator', 'starter']);
     }
 
-    /** Get Lastest Created Job */
-    public function getLastestJob(int $limit = 10, array $columns = ['*']) : Collection
+    /**
+     * Retrieve latest created jobs for dashboard overview.
+     */
+    public function getLastestJob(int $limit = 10, array $columns = ['*']): Collection
     {
         return $this->model->orderBy('id', 'desc')->limit($limit)->get($columns);
     }
@@ -51,46 +51,6 @@ class CrawlJobRepository extends BaseRepository implements CrawlJobRepositoryInt
             'total_completed_jobs' => $this->model->where('status', 'completed')->count(),
             'total_failed_jobs' => $this->model->where('status', 'failed')->count(),
         ];
-    }
-
-    /**
-     * Retrieve paginated crawl results for a specific job with optional filtering.
-     */
-    public function getResults(int $jobId, int $perPage = 10, array $params = []): LengthAwarePaginator
-    {
-        $job = $this->findById($jobId);
-        $query = $job ? $job->results() : CrawlResult::where('crawl_job_id', $jobId);
-
-        if (!empty($params['username'])) {
-            $query->where('username', 'like', '%' . $params['username'] . '%');
-        }
-
-        if (!empty($params['status'])) {
-            $query->where('status', $params['status']);
-        }
-
-        return $query->paginate($perPage);
-    }
-
-    /**
-     * Check if another crawl job is currently running.
-     */
-    public function hasRunningJob(int $excludeId = 0): bool
-    {
-        $query = $this->model->where('status', 'running');
-        if ($excludeId > 0) {
-            $query->where('id', '!=', $excludeId);
-        }
-
-        return $query->exists();
-    }
-
-    /**
-     * Retrieve crawl jobs matching a specific status.
-     */
-    public function findByStatus(string $status): Collection
-    {
-        return $this->model->where('status', $status)->get();
     }
 
     /**
@@ -115,5 +75,69 @@ class CrawlJobRepository extends BaseRepository implements CrawlJobRepositoryInt
             ->where('id', $jobId)
             ->whereIn('status', ['running', 'queued'])
             ->get();
+    }
+
+    /**
+     * Atomically claim a failed crawl job for retry.
+     */
+    public function claimForRetry(int $id): bool
+    {
+        return (bool) $this->model
+            ->where('id', $id)
+            ->where('status', 'failed')
+            ->update([
+                'status' => 'queued',
+                'queued_at' => now(),
+                'error_message' => null,
+                'updated_at' => now(),
+            ]);
+    }
+
+    /**
+     * Conditionally reset retry-related fields inside the cleanup transaction while the job remains queued.
+     */
+    public function resetForRetry(int $id, array $attributes): bool
+    {
+        $job = $this->model
+            ->where('id', $id)
+            ->where('status', 'queued')
+            ->lockForUpdate()
+            ->first();
+
+        if (!$job) {
+            return false;
+        }
+
+        return (bool) $job->update($attributes);
+    }
+
+    /**
+     * Conditionally restore a queued claim back to failed upon dispatch or cleanup failure.
+     */
+    public function restoreFailedClaim(int $id, string $errorMessage): bool
+    {
+        return (bool) $this->model
+            ->where('id', $id)
+            ->where('status', 'queued')
+            ->update([
+                'status' => 'failed',
+                'error_message' => $errorMessage,
+                'updated_at' => now(),
+            ]);
+    }
+
+    /**
+     * Atomically synchronize dynamically resolved targets when the job is still queued or running.
+     */
+    public function syncDynamicTargets(int $id, array $targets): bool
+    {
+        return (bool) $this->model
+            ->where('id', $id)
+            ->whereIn('status', ['queued', 'running'])
+            ->update([
+                'data_crawls' => json_encode(array_values($targets)),
+                'total_accounts' => count($targets),
+                'updated_at' => now(),
+            ]);
     }
 }

@@ -11,10 +11,15 @@ use Modules\Crawler\Http\Controllers\CrawlJobController;
 use Modules\Crawler\Http\Controllers\CrawlResultController;
 use Modules\Crawler\Models\CrawlJob;
 use Modules\Crawler\Models\CrawlResult;
+use Modules\Crawler\Repositories\CrawlJobRepository;
 use Modules\Crawler\Repositories\Interfaces\CrawlJobRepositoryInterface;
 use Modules\Crawler\Repositories\Interfaces\CrawlResultRepositoryInterface;
+use Modules\Crawler\Repositories\Interfaces\CrawlVideoResultRepositoryInterface;
 use Modules\Crawler\Services\CrawlJobService;
 use Modules\Crawler\Services\CrawlResultService;
+use Modules\Crawler\Services\CrawlVideoResultService;
+use Modules\TiktokAccount\Repositories\Interfaces\TiktokVideoRepositoryInterface;
+use ReflectionClass;
 use Tests\TestCase;
 
 class CrawlerArchitectureTest extends TestCase
@@ -98,6 +103,243 @@ class CrawlerArchitectureTest extends TestCase
         ]);
         $updateFail->assertStatus(422);
         $updateFail->assertJsonFragment(['status' => 'error']);
+
+        // Verify running job was NOT modified in the database
+        $freshRunning = $runningJob->fresh();
+        $this->assertSame('running', $freshRunning->status);
+        $this->assertSame(['running_user'], json_decode($freshRunning->data_crawls, true));
+    }
+
+    public function test_crawl_job_update_http_validation_rules(): void
+    {
+        $job = CrawlJob::create([
+            'source_type' => 'usernames',
+            'data_crawls' => json_encode(['initial_user']),
+            'total_accounts' => 1,
+            'status' => 'pending',
+            'max_videos_per_account' => 20,
+        ]);
+
+        // 1. Invalid source_type
+        $res = $this->actingAs($this->adminUser)->putJson($this->apiUri("crawler/crawl-job/{$job->id}"), [
+            'source_type' => 'invalid_source',
+        ]);
+        $res->assertStatus(422);
+
+        // 2. Invalid crawl_mode
+        $res = $this->actingAs($this->adminUser)->putJson($this->apiUri("crawler/crawl-job/{$job->id}"), [
+            'crawl_mode' => 'invalid_mode',
+        ]);
+        $res->assertStatus(422);
+
+        // 3. max_videos_per_account below 0
+        $res = $this->actingAs($this->adminUser)->putJson($this->apiUri("crawler/crawl-job/{$job->id}"), [
+            'max_videos_per_account' => -1,
+        ]);
+        $res->assertStatus(422);
+
+        // 4. max_videos_per_account above 100
+        $res = $this->actingAs($this->adminUser)->putJson($this->apiUri("crawler/crawl-job/{$job->id}"), [
+            'max_videos_per_account' => 101,
+        ]);
+        $res->assertStatus(422);
+
+        // 5. Non-array data_crawl
+        $res = $this->actingAs($this->adminUser)->putJson($this->apiUri("crawler/crawl-job/{$job->id}"), [
+            'data_crawl' => 'not_an_array',
+        ]);
+        $res->assertStatus(422);
+
+        // 6. Empty array data_crawl
+        $res = $this->actingAs($this->adminUser)->putJson($this->apiUri("crawler/crawl-job/{$job->id}"), [
+            'data_crawl' => [],
+        ]);
+        $res->assertStatus(422);
+
+        // 7. Unvalidated fields are stripped and cannot overwrite protected fields
+        $res = $this->actingAs($this->adminUser)->putJson($this->apiUri("crawler/crawl-job/{$job->id}"), [
+            'max_videos_per_account' => 35,
+            'status' => 'completed',
+            'total_accounts' => 9999,
+        ]);
+        $res->assertStatus(200);
+
+        $fresh = $job->fresh();
+        $this->assertSame(35, $fresh->max_videos_per_account);
+        $this->assertSame('pending', $fresh->status);
+        $this->assertSame(1, $fresh->total_accounts);
+    }
+
+    public function test_crawl_job_update_domain_data_contracts(): void
+    {
+        $job = CrawlJob::create([
+            'source_type' => 'usernames',
+            'data_crawls' => json_encode(['initial_user']),
+            'total_accounts' => 1,
+            'status' => 'pending',
+        ]);
+
+        // usernames: integer element rejected
+        $res = $this->actingAs($this->adminUser)->putJson($this->apiUri("crawler/crawl-job/{$job->id}"), [
+            'data_crawl' => [123],
+        ]);
+        $res->assertStatus(422);
+
+        // usernames: numeric-only string accepted
+        $res = $this->actingAs($this->adminUser)->putJson($this->apiUri("crawler/crawl-job/{$job->id}"), [
+            'data_crawl' => ['12345'],
+        ]);
+        $res->assertStatus(200);
+        $this->assertSame(['12345'], json_decode($job->fresh()->data_crawls, true));
+
+        // urls: invalid string or integer rejected
+        $res = $this->actingAs($this->adminUser)->putJson($this->apiUri("crawler/crawl-job/{$job->id}"), [
+            'source_type' => 'urls',
+            'data_crawl' => ['not_a_valid_url'],
+        ]);
+        $res->assertStatus(422);
+
+        // urls: valid HTTP/HTTPS URLs accepted
+        $res = $this->actingAs($this->adminUser)->putJson($this->apiUri("crawler/crawl-job/{$job->id}"), [
+            'source_type' => 'urls',
+            'data_crawl' => ['https://www.tiktok.com/@user/video/1234567890'],
+        ]);
+        $res->assertStatus(200);
+        $this->assertSame('urls', $job->fresh()->source_type);
+
+        // database: invalid non-numeric ID rejected
+        $res = $this->actingAs($this->adminUser)->putJson($this->apiUri("crawler/crawl-job/{$job->id}"), [
+            'source_type' => 'database',
+            'data_crawl' => ['abc'],
+        ]);
+        $res->assertStatus(422);
+
+        // database: negative or zero ID rejected
+        $res = $this->actingAs($this->adminUser)->putJson($this->apiUri("crawler/crawl-job/{$job->id}"), [
+            'source_type' => 'database',
+            'data_crawl' => [0],
+        ]);
+        $res->assertStatus(422);
+
+        // database: valid seeded account ID accepted
+        $account = \Modules\TiktokAccount\Models\TiktokAccount::firstOrCreate(
+            ['username' => 'test_contract_acc'],
+            ['nickname' => 'Test', 'status' => 'active']
+        );
+        $res = $this->actingAs($this->adminUser)->putJson($this->apiUri("crawler/crawl-job/{$job->id}"), [
+            'source_type' => 'database',
+            'data_crawl' => [$account->id],
+        ]);
+        $res->assertStatus(200);
+        $this->assertSame('database', $job->fresh()->source_type);
+        $this->assertSame([$account->id], json_decode($job->fresh()->data_crawls, true));
+
+        // count: multiple elements rejected
+        $res = $this->actingAs($this->adminUser)->putJson($this->apiUri("crawler/crawl-job/{$job->id}"), [
+            'source_type' => 'count',
+            'data_crawl' => [10, 20],
+        ]);
+        $res->assertStatus(422);
+
+        // count: non-positive "0", decimal "1.5", and scientific "1e3" rejected
+        foreach (['0', '1.5', '1e3'] as $invalidVal) {
+            $res = $this->actingAs($this->adminUser)->putJson($this->apiUri("crawler/crawl-job/{$job->id}"), [
+                'source_type' => 'count',
+                'data_crawl' => [$invalidVal],
+            ]);
+            $res->assertStatus(422);
+        }
+
+        // count: oversized integer string rejected (integer overflow protection)
+        $res = $this->actingAs($this->adminUser)->putJson($this->apiUri("crawler/crawl-job/{$job->id}"), [
+            'source_type' => 'count',
+            'data_crawl' => ['999999999999999999999999999999999999'],
+        ]);
+        $res->assertStatus(422);
+
+        // count: positive integer strings with leading zeros "001" and "07" accepted
+        $res = $this->actingAs($this->adminUser)->putJson($this->apiUri("crawler/crawl-job/{$job->id}"), [
+            'source_type' => 'count',
+            'data_crawl' => ['001'],
+        ]);
+        $res->assertStatus(200);
+        $this->assertSame(1, $job->fresh()->total_accounts);
+
+        $res = $this->actingAs($this->adminUser)->putJson($this->apiUri("crawler/crawl-job/{$job->id}"), [
+            'source_type' => 'count',
+            'data_crawl' => ['07'],
+        ]);
+        $res->assertStatus(200);
+        $this->assertSame(7, $job->fresh()->total_accounts);
+
+        // count: associative array payload rejected
+        $res = $this->actingAs($this->adminUser)->putJson($this->apiUri("crawler/crawl-job/{$job->id}"), [
+            'source_type' => 'count',
+            'data_crawl' => ['count' => 50],
+        ]);
+        $res->assertStatus(422);
+
+        // count: valid single integer updates total_accounts correctly
+        $res = $this->actingAs($this->adminUser)->putJson($this->apiUri("crawler/crawl-job/{$job->id}"), [
+            'source_type' => 'count',
+            'data_crawl' => [42],
+        ]);
+        $res->assertStatus(200);
+        $this->assertSame('count', $job->fresh()->source_type);
+        $this->assertSame(42, $job->fresh()->total_accounts);
+    }
+
+    public function test_crawl_job_update_partial_and_transition_behavior(): void
+    {
+        $job = CrawlJob::create([
+            'source_type' => 'usernames',
+            'data_crawls' => json_encode(['user_a']),
+            'total_accounts' => 1,
+            'max_videos_per_account' => 15,
+            'status' => 'pending',
+        ]);
+
+        // 1. Partial update of data_crawl only validates against existing source_type (usernames)
+        $res = $this->actingAs($this->adminUser)->putJson($this->apiUri("crawler/crawl-job/{$job->id}"), [
+            'data_crawl' => ['user_b', 'user_c'],
+        ]);
+        $res->assertStatus(200);
+        $this->assertSame(2, $job->fresh()->total_accounts);
+        $this->assertSame('usernames', $job->fresh()->source_type);
+
+        // 2. Both source_type and data_crawl updated together
+        $res = $this->actingAs($this->adminUser)->putJson($this->apiUri("crawler/crawl-job/{$job->id}"), [
+            'source_type' => 'count',
+            'data_crawl' => [88],
+        ]);
+        $res->assertStatus(200);
+        $this->assertSame('count', $job->fresh()->source_type);
+        $this->assertSame(88, $job->fresh()->total_accounts);
+
+        // 3. Changing source_type without providing new data_crawl is rejected
+        $res = $this->actingAs($this->adminUser)->putJson($this->apiUri("crawler/crawl-job/{$job->id}"), [
+            'source_type' => 'urls',
+        ]);
+        $res->assertStatus(422);
+        $this->assertStringContainsString('Changing source_type requires providing matching data_crawl', $res->json('message'));
+
+        // 4. Keeping identical source_type without data_crawl is allowed
+        $res = $this->actingAs($this->adminUser)->putJson($this->apiUri("crawler/crawl-job/{$job->id}"), [
+            'source_type' => 'count',
+            'max_videos_per_account' => 50,
+        ]);
+        $res->assertStatus(200);
+        $this->assertSame(50, $job->fresh()->max_videos_per_account);
+        $this->assertSame(88, $job->fresh()->total_accounts);
+
+        // 5. Updating settings preserves source_type and data_crawls
+        $res = $this->actingAs($this->adminUser)->putJson($this->apiUri("crawler/crawl-job/{$job->id}"), [
+            'max_videos_per_account' => 75,
+        ]);
+        $res->assertStatus(200);
+        $this->assertSame(75, $job->fresh()->max_videos_per_account);
+        $this->assertSame('count', $job->fresh()->source_type);
+        $this->assertSame(88, $job->fresh()->total_accounts);
     }
 
     public function test_crawl_job_controller_destroy_prevents_deleting_running_job(): void
@@ -576,5 +818,115 @@ class CrawlerArchitectureTest extends TestCase
             'play_count_delta' => 16000,
             'digg_count_delta' => 800,
         ]);
+    }
+
+    public function test_crawl_video_result_service_decomposition(): void
+    {
+        // 1. Container resolves singleton
+        $videoService1 = app(CrawlVideoResultService::class);
+        $videoService2 = app(CrawlVideoResultService::class);
+        $this->assertInstanceOf(CrawlVideoResultService::class, $videoService1);
+        $this->assertSame($videoService1, $videoService2);
+
+        // 2. CrawlResultService constructor has exactly 5 dependencies
+        $refResultService = new ReflectionClass(CrawlResultService::class);
+        $constructorParams = $refResultService->getConstructor()->getParameters();
+        $this->assertCount(5, $constructorParams);
+
+        $paramTypes = array_map(fn($p) => (string) $p->getType(), $constructorParams);
+        $this->assertContains(CrawlVideoResultService::class, $paramTypes);
+        $this->assertNotContains(CrawlVideoResultRepositoryInterface::class, $paramTypes);
+        $this->assertNotContains(TiktokVideoRepositoryInterface::class, $paramTypes);
+
+        // 3. CrawlVideoResultService constructor has both video repositories
+        $refVideoService = new ReflectionClass(CrawlVideoResultService::class);
+        $videoParams = $refVideoService->getConstructor()->getParameters();
+        $this->assertCount(2, $videoParams);
+        $videoParamTypes = array_map(fn($p) => (string) $p->getType(), $videoParams);
+        $this->assertContains(CrawlVideoResultRepositoryInterface::class, $videoParamTypes);
+        $this->assertContains(TiktokVideoRepositoryInterface::class, $videoParamTypes);
+
+        // 4. Test forwarding proxy preserves behavior
+        $job = CrawlJob::create([
+            'source_type' => 'usernames',
+            'data_crawls' => json_encode(['creator_forward_proxy']),
+            'total_accounts' => 1,
+            'status' => 'running',
+        ]);
+        $result = CrawlResult::create([
+            'crawl_job_id' => $job->id,
+            'username' => 'creator_forward_proxy',
+            'status' => 'success',
+        ]);
+
+        $resultService = app(CrawlResultService::class);
+        $videosPayload = [
+            [
+                'video_id' => '998877665544',
+                'desc' => 'Test proxy video',
+                'views' => 1200,
+                'likes' => 300,
+            ],
+        ];
+
+        // Call proxy on CrawlResultService
+        $storedCount = $resultService->storeVideoResults($job->id, $result->id, null, 'creator_forward_proxy', $videosPayload);
+        $this->assertSame(1, $storedCount);
+
+        $this->assertDatabaseHas('tiktok_videos', [
+            'video_id' => '998877665544',
+            'play_count' => 1200,
+            'digg_count' => 300,
+        ]);
+
+        $this->assertDatabaseHas('crawl_video_results', [
+            'crawl_job_id' => $job->id,
+            'video_id' => '998877665544',
+            'play_count' => 1200,
+            'digg_count' => 300,
+        ]);
+
+        // 5. Test countByStatus via CrawlVideoResultService
+        $this->assertSame(1, $videoService1->countByStatus($job->id, 'success'));
+        $this->assertSame(0, $videoService1->countByStatus($job->id, 'failed'));
+    }
+
+    public function test_crawl_job_repository_dead_code_cleanup_and_interface_contracts(): void
+    {
+        // 1. Verify AvatarStorageService file and class are completely removed
+        $this->assertFileDoesNotExist(
+            base_path('modules/Crawler/src/Services/AvatarStorageService.php'),
+            'AvatarStorageService.php file must be deleted.'
+        );
+        $this->assertFalse(
+            class_exists('Modules\Crawler\Services\AvatarStorageService'),
+            'AvatarStorageService must be deleted.'
+        );
+
+        // 2. Reflection on CrawlJobRepositoryInterface
+        $interfaceRef = new ReflectionClass(CrawlJobRepositoryInterface::class);
+
+        // Assert removed methods no longer exist
+        $this->assertFalse($interfaceRef->hasMethod('getResults'), 'CrawlJobRepositoryInterface must not declare getResults().');
+        $this->assertFalse($interfaceRef->hasMethod('hasRunningJob'), 'CrawlJobRepositoryInterface must not declare hasRunningJob().');
+        $this->assertFalse($interfaceRef->hasMethod('findByStatus'), 'CrawlJobRepositoryInterface must not declare findByStatus().');
+
+        // Assert required methods are preserved
+        $this->assertTrue($interfaceRef->hasMethod('getLastestJob'), 'CrawlJobRepositoryInterface must preserve getLastestJob() for DashboardService.');
+        $this->assertTrue($interfaceRef->hasMethod('getStatisticsSummary'), 'CrawlJobRepositoryInterface must preserve getStatisticsSummary().');
+        $this->assertTrue($interfaceRef->hasMethod('getUnfinishedJobs'), 'CrawlJobRepositoryInterface must preserve getUnfinishedJobs().');
+        $this->assertTrue($interfaceRef->hasMethod('getActiveJobById'), 'CrawlJobRepositoryInterface must preserve getActiveJobById().');
+
+        // 3. Reflection on CrawlJobRepository implementation
+        $repoRef = new ReflectionClass(CrawlJobRepository::class);
+
+        $this->assertFalse($repoRef->hasMethod('getResults'), 'CrawlJobRepository must not define getResults().');
+        $this->assertFalse($repoRef->hasMethod('hasRunningJob'), 'CrawlJobRepository must not define hasRunningJob().');
+        $this->assertFalse($repoRef->hasMethod('findByStatus'), 'CrawlJobRepository must not define findByStatus().');
+
+        $this->assertTrue($repoRef->hasMethod('getLastestJob'), 'CrawlJobRepository must preserve getLastestJob().');
+        $this->assertTrue($repoRef->hasMethod('getStatisticsSummary'), 'CrawlJobRepository must preserve getStatisticsSummary().');
+        $this->assertTrue($repoRef->hasMethod('getUnfinishedJobs'), 'CrawlJobRepository must preserve getUnfinishedJobs().');
+        $this->assertTrue($repoRef->hasMethod('getActiveJobById'), 'CrawlJobRepository must preserve getActiveJobById().');
     }
 }

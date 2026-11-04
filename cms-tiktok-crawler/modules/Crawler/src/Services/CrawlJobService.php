@@ -3,8 +3,8 @@
 namespace Modules\Crawler\Services;
 
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Facades\Http;
-use Modules\Core\Utils\FetchApi;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Modules\Crawler\Models\CrawlJob;
 use Modules\Crawler\Repositories\Interfaces\CrawlJobRepositoryInterface;
 use Modules\Crawler\Repositories\Interfaces\CrawlResultRepositoryInterface;
@@ -21,6 +21,7 @@ class CrawlJobService
         protected TiktokAccountRepositoryInterface $tiktokAccountRepository,
         protected CrawlResultRepositoryInterface $crawlResultRepository,
         protected CrawlVideoResultRepositoryInterface $crawlVideoResultRepository,
+        protected CrawlerEngineClient $engineClient,
     ) {}
 
     /**
@@ -72,6 +73,10 @@ class CrawlJobService
             throw new \DomainException('Only pending crawl jobs can be updated.');
         }
 
+        if (isset($data['source_type']) && !isset($data['data_crawl']) && $data['source_type'] !== $job->source_type) {
+            throw new \DomainException('Changing source_type requires providing matching data_crawl.');
+        }
+
         $updateData = [];
 
         if (isset($data['source_type'])) {
@@ -94,6 +99,8 @@ class CrawlJobService
             }
 
             $sourceType = $data['source_type'] ?? $job->source_type;
+            $this->validateDataCrawlForSourceType($sourceType, $dataCrawl);
+
             $updateData['data_crawls'] = json_encode($dataCrawl);
             $updateData['total_accounts'] = match ($sourceType) {
                 'usernames', 'urls', 'database' => count($dataCrawl),
@@ -112,7 +119,6 @@ class CrawlJobService
 
     /**
      * Domain logic: Delete a crawl job.
-     * Running jobs cannot be deleted; queued jobs are cancelled in Python before deletion.
      */
     public function delete(int $id): bool
     {
@@ -126,7 +132,7 @@ class CrawlJobService
         }
 
         if ($job->status === 'queued') {
-            $this->cancelInCrawlerEngine($id);
+            $this->engineClient->cancelJob($id);
         }
 
         return (bool) $this->crawlJobRepository->delete($id);
@@ -168,7 +174,6 @@ class CrawlJobService
 
     /**
      * Domain logic: Start a crawl job by dispatching it to the Python Crawler Queue.
-     * Supports 200+ concurrent starts without blocking; keeps job 'pending' if service is unavailable.
      */
     public function start(int $id): ?CrawlJob
     {
@@ -184,7 +189,7 @@ class CrawlJobService
 
         $payload = $this->buildCrawlerPayload($id, $crawlJob);
         try {
-            $response = $this->dispatchToCrawlerEngine($payload);
+            $response = $this->engineClient->startJob($payload);
         } catch (\Throwable $e) {
             Audit::record(
                 action: 'CRAWL_FAILED',
@@ -233,10 +238,10 @@ class CrawlJobService
 
     /**
      * Domain logic: Retry a failed crawl job.
-     * Deletes failed results, preserves successful results, and re-enqueues the job.
      */
     public function retry(int $id): ?CrawlJob
     {
+        // Phase 0 – Load, Validate and Build Payload
         $crawlJob = $this->crawlJobRepository->findById($id);
 
         if (!$crawlJob) {
@@ -248,64 +253,135 @@ class CrawlJobService
         }
 
         $payload = $this->buildCrawlerPayload($id, $crawlJob);
+
+        // Phase 1 – Atomic Claim
+        if (!$this->crawlJobRepository->claimForRetry($id)) {
+            throw new \DomainException("Crawl job #{$id} could not be claimed for retry (already claimed or status changed).");
+        }
+
+        // Phase 2 – Cleanup Transaction
         try {
-            $response = $this->dispatchToCrawlerEngine($payload);
-        } catch (\Throwable $e) {
+            DB::transaction(function () use ($id, $crawlJob) {
+                $this->crawlResultRepository->deleteByJobId($id);
+                $this->crawlVideoResultRepository->deleteByJobId($id);
+
+                $resetAttributes = [
+                    'started_at' => null,
+                    'finished_at' => null,
+                    'success_count' => 0,
+                    'failed_count' => 0,
+                    'total_videos_crawled' => 0,
+                    'worker_id' => null,
+                    'error_message' => null,
+                    'started_by' => $this->currentUserId() ?? $crawlJob->started_by,
+                ];
+
+                $reset = $this->crawlJobRepository->resetForRetry($id, $resetAttributes);
+                if (!$reset) {
+                    throw new \RuntimeException("Failed to reset fields for CrawlJob #{$id}: job is no longer queued or record could not be updated.");
+                }
+            });
+        } catch (\Throwable $cleanupError) {
+            try {
+                $this->crawlJobRepository->restoreFailedClaim($id, 'Retry cleanup failed: ' . $cleanupError->getMessage());
+            } catch (\Throwable $restoreError) {
+                try {
+                    Log::error("Failed to restore claim after cleanup error for job #{$id}: " . $restoreError->getMessage());
+                } catch (\Throwable) {}
+            }
+
+            try {
+                Audit::record(
+                    action: 'CRAWL_FAILED',
+                    target: 'job_crawl_' . $id,
+                    metadata: [
+                        'source_type' => $crawlJob->source_type,
+                        'total_accounts' => $crawlJob->total_accounts,
+                        'error' => 'Cleanup failed: ' . $cleanupError->getMessage(),
+                    ],
+                    status: 'FAILED',
+                    module: 'TIKTOK',
+                    recordType: 'CrawlJob'
+                );
+            } catch (\Throwable $auditError) {
+                try {
+                    Log::error("Failed to record failure audit for job #{$id}: " . $auditError->getMessage());
+                } catch (\Throwable) {}
+            }
+
+            throw $cleanupError;
+        }
+
+        // Phase 3 – Python Dispatch (Outside DB Transaction)
+        try {
+            $response = $this->engineClient->startJob($payload);
+        } catch (\Throwable $dispatchError) {
+            try {
+                $this->crawlJobRepository->restoreFailedClaim($id, 'Crawler dispatch failed: ' . $dispatchError->getMessage());
+            } catch (\Throwable $restoreError) {
+                try {
+                    Log::error("Failed to restore claim after dispatch error for job #{$id}: " . $restoreError->getMessage());
+                } catch (\Throwable) {}
+            }
+
+            try {
+                Audit::record(
+                    action: 'CRAWL_FAILED',
+                    target: 'job_crawl_' . $id,
+                    metadata: [
+                        'source_type' => $crawlJob->source_type,
+                        'total_accounts' => $crawlJob->total_accounts,
+                        'error' => $dispatchError->getMessage(),
+                    ],
+                    status: 'FAILED',
+                    module: 'TIKTOK',
+                    recordType: 'CrawlJob'
+                );
+            } catch (\Throwable $auditError) {
+                try {
+                    Log::error("Failed to record failure audit for job #{$id}: " . $auditError->getMessage());
+                } catch (\Throwable) {}
+            }
+
+            throw $dispatchError;
+        }
+
+        // Phase 4 – Dynamic Target Synchronization
+        if (isset($response['targets']) && is_array($response['targets'])) {
+            try {
+                $this->crawlJobRepository->syncDynamicTargets($id, $response['targets']);
+            } catch (\Throwable $syncError) {
+                try {
+                    Log::critical("Failed to synchronize dynamic targets for job #{$id}: " . $syncError->getMessage());
+                } catch (\Throwable) {}
+            }
+        }
+
+        // Phase 5 – Success Audit and Return
+        try {
             Audit::record(
-                action: 'CRAWL_FAILED',
+                action: 'RETRY_CRAWL',
                 target: 'job_crawl_' . $id,
                 metadata: [
+                    'retry_count' => ($crawlJob->resume_count ?? 1),
+                    'trigger_by' => 'manual',
                     'source_type' => $crawlJob->source_type,
-                    'total_accounts' => $crawlJob->total_accounts,
-                    'error' => $e->getMessage(),
                 ],
-                status: 'FAILED',
+                status: 'SUCCESS',
                 module: 'TIKTOK',
                 recordType: 'CrawlJob'
             );
-            throw $e;
+        } catch (\Throwable $auditError) {
+            try {
+                Log::warning("Failed to record RETRY_CRAWL audit for job #{$id}: " . $auditError->getMessage());
+            } catch (\Throwable) {}
         }
-
-        // Remove previous results on manual retry and reset counters via repository
-        $this->crawlResultRepository->deleteByJobId($id);
-        $this->crawlVideoResultRepository->deleteByJobId($id);
-
-        $updateAttributes = [
-            'status' => 'queued',
-            'queued_at' => now(),
-            'error_message' => null,
-            'finished_at' => null,
-            'success_count' => 0,
-            'failed_count' => 0,
-            'started_by' => $this->currentUserId() ?? $crawlJob->started_by,
-        ];
-
-        if (!empty($response['targets']) && is_array($response['targets'])) {
-            $updateAttributes['data_crawls'] = json_encode(array_values($response['targets']));
-            $updateAttributes['total_accounts'] = count($response['targets']);
-        }
-
-        $this->crawlJobRepository->update($id, $updateAttributes);
-
-        Audit::record(
-            action: 'RETRY_CRAWL',
-            target: 'job_crawl_' . $id,
-            metadata: [
-                'retry_count' => ($crawlJob->resume_count ?? 1),
-                'trigger_by' => 'manual',
-                'source_type' => $crawlJob->source_type,
-            ],
-            status: 'SUCCESS',
-            module: 'TIKTOK',
-            recordType: 'CrawlJob'
-        );
 
         return $this->crawlJobRepository->findById($id);
     }
 
     /**
      * Domain logic: Stop/cancel a running or queued crawl job.
-     * Cancels in Python Crawler Engine (if reachable) and marks job as failed/stopped in DB.
      */
     public function stop(int $id, string $reason = 'Job was manually stopped by user.'): ?CrawlJob
     {
@@ -319,7 +395,7 @@ class CrawlJobService
             throw new \DomainException("Crawl job #{$id} is in status '{$crawlJob->status}', only 'running' or 'queued' jobs can be stopped.");
         }
 
-        $this->cancelInCrawlerEngine($id);
+        $this->engineClient->cancelJob($id);
 
         $successCount = $this->crawlResultRepository->countByStatus($id, 'success');
         $failedCount = $this->crawlResultRepository->countByStatus($id, 'failed');
@@ -351,8 +427,6 @@ class CrawlJobService
 
     /**
      * Automatically synchronize 'running' and 'queued' jobs with the Python Crawler Engine.
-     * Preserves 'running'/'queued' status on service shutdown for Crash Recovery, and updates
-     * `error_message` to notify the UI that the service is offline waiting to restart.
      */
     public function syncActiveJobsWithEngine(?int $jobId = null, bool $force = false): void
     {
@@ -368,24 +442,8 @@ class CrawlJobService
             return;
         }
 
-        $headers = [];
-        if ($token = config('services.crawler.token')) {
-            $headers['Authorization'] = "Bearer {$token}";
-        }
-        $baseUrl = rtrim(config('services.crawler.url', 'http://127.0.0.1:8001'), '/');
-
-        try {
-            $queueRes = Http::withHeaders($headers)
-                ->connectTimeout(1)
-                ->timeout(2)
-                ->get("{$baseUrl}/api/queue");
-
-            if (!$queueRes->successful()) {
-                $this->markActiveJobsWaitingForRestart($activeJobs);
-                return;
-            }
-        } catch (\Throwable) {
-            // Python Crawler Service is offline -> keep status running/queued for Crash Recovery & set waiting message
+        $queueOverview = $this->engineClient->getQueueStatus();
+        if ($queueOverview === null) {
             $this->markActiveJobsWaitingForRestart($activeJobs);
             return;
         }
@@ -398,7 +456,7 @@ class CrawlJobService
         }
     }
 
-    protected function markActiveJobsWaitingForRestart($jobs): void
+    protected function markActiveJobsWaitingForRestart(iterable $jobs): void
     {
         foreach ($jobs as $job) {
             if ($job->error_message !== self::SERVICE_SHUTDOWN_MESSAGE) {
@@ -411,7 +469,6 @@ class CrawlJobService
 
     /**
      * Retrieve unfinished ('running' and 'queued') jobs with their frozen targets and done_usernames
-     * for Python fallback recovery when SQLite is wiped.
      */
     public function getUnfinishedJobsForRecovery(): array
     {
@@ -451,53 +508,6 @@ class CrawlJobService
             ?? (request() ? request()->user() : null);
 
         return $user?->id ? (int) $user->id : null;
-    }
-
-    /**
-     * Dispatch payload to external Python Crawler Engine.
-     */
-    protected function dispatchToCrawlerEngine(array $payload): array
-    {
-        $headers = [];
-        if ($token = config('services.crawler.token')) {
-            $headers['Authorization'] = "Bearer {$token}";
-        }
-
-        $url = rtrim(config('services.crawler.url', 'http://127.0.0.1:8001'), '/') . '/api/crawl-jobs/start';
-
-        try {
-            return FetchApi::post($url, $payload, $headers);
-        } catch (\Throwable $exception) {
-            $message = $exception->getMessage();
-            if (str_contains($message, 'status 422')) {
-                throw new \DomainException("Crawler validation failed: {$message}");
-            }
-            $code = str_contains($message, 'status 500') ? 500 : 503;
-            throw new \RuntimeException(
-                'Crawler service is currently unavailable, please try again.',
-                $code,
-                $exception
-            );
-        }
-    }
-
-    /**
-     * Cancel a queued job in Python Crawler Engine.
-     */
-    protected function cancelInCrawlerEngine(int $jobId): void
-    {
-        $headers = [];
-        if ($token = config('services.crawler.token')) {
-            $headers['Authorization'] = "Bearer {$token}";
-        }
-
-        $url = rtrim(config('services.crawler.url', 'http://127.0.0.1:8001'), '/') . "/api/crawl-jobs/{$jobId}";
-
-        try {
-            FetchApi::request($url, 'DELETE', null, $headers, ['throw' => false]);
-        } catch (\Throwable) {
-            // Ignore cancellation network errors if Python is already down or job is gone
-        }
     }
 
     /**
@@ -569,5 +579,87 @@ class CrawlJobService
             ],
             default => throw new \InvalidArgumentException("Unsupported crawl source type: {$crawlJob->source_type}"),
         };
+    }
+
+    /**
+     * Enforce domain contracts for crawl targets based on effective source type.
+     */
+    protected function validateDataCrawlForSourceType(string $sourceType, array $data): void
+    {
+        if (empty($data)) {
+            throw new \DomainException('Crawl targets cannot be empty.');
+        }
+
+        switch ($sourceType) {
+            case 'usernames':
+                if (!array_is_list($data)) {
+                    throw new \DomainException('Targets for usernames must be a list of non-empty strings.');
+                }
+                foreach ($data as $item) {
+                    if (!is_string($item) || trim($item) === '') {
+                        throw new \DomainException('All targets for usernames must be non-empty strings.');
+                    }
+                }
+                break;
+
+            case 'urls':
+                if (!array_is_list($data)) {
+                    throw new \DomainException('Targets for urls must be a list of valid HTTP or HTTPS URLs.');
+                }
+                foreach ($data as $item) {
+                    if (!is_string($item) || !filter_var($item, FILTER_VALIDATE_URL) || (!str_starts_with($item, 'http://') && !str_starts_with($item, 'https://'))) {
+                        throw new \DomainException('All targets for urls must be valid HTTP or HTTPS URLs.');
+                    }
+                }
+                break;
+
+            case 'database':
+                if (!array_is_list($data)) {
+                    throw new \DomainException('Targets for database must be a list of positive integer account IDs.');
+                }
+                foreach ($data as $item) {
+                    if (!$this->isPositiveInteger($item)) {
+                        throw new \DomainException('All targets for database must be positive integer account IDs.');
+                    }
+                }
+                break;
+
+            case 'count':
+                if (!array_is_list($data) || count($data) !== 1 || !array_key_exists(0, $data) || !$this->isPositiveInteger($data[0])) {
+                    throw new \DomainException('Targets for count must contain exactly one positive integer.');
+                }
+                break;
+
+            default:
+                throw new \DomainException("Unsupported crawl source type: {$sourceType}");
+        }
+    }
+
+    /**
+     * Determine if a value is a valid positive integer or positive integer string.
+     */
+    private function isPositiveInteger(mixed $val): bool
+    {
+        if (is_int($val)) {
+            return $val > 0;
+        }
+
+        if (is_string($val) && ctype_digit($val)) {
+            $trimmed = ltrim($val, '0');
+            if ($trimmed === '') {
+                return false;
+            }
+
+            // Reject values exceeding 64-bit signed integer range (PHP_INT_MAX: 19 digits)
+            if (strlen($trimmed) > 19 || (strlen($trimmed) === 19 && strcmp($trimmed, (string) PHP_INT_MAX) > 0)) {
+                return false;
+            }
+
+            $intVal = (int) $trimmed;
+
+            return $intVal > 0 && (string) $intVal === $trimmed;
+        }
+
+        return false;
     }
 }
