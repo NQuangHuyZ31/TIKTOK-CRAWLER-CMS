@@ -43,7 +43,6 @@ const systemSlice = createSlice({
 
 	extraReducers: (builder) => {
 		builder
-			// fetchLoginLogs
 			.addCase(fetchLoginLogs.pending, (state) => {
 				state.loginLoading = true;
 				state.error = null;
@@ -63,7 +62,6 @@ const systemSlice = createSlice({
 				state.loginLoading = false;
 				state.error = (action.payload as string) ?? 'Failed to load login logs';
 			})
-			// fetchActivityLogs
 			.addCase(fetchActivityLogs.pending, (state) => {
 				state.activityLoading = true;
 				state.error = null;
@@ -83,11 +81,9 @@ const systemSlice = createSlice({
 				state.activityLoading = false;
 				state.error = (action.payload as string) ?? 'Failed to load activity logs';
 			})
-			// fetchActivityStatistics
 			.addCase(fetchActivityStatistics.fulfilled, (state, action) => {
 				state.activityStats = (action.payload as any)?.data ?? null;
 			})
-			// fetchSystemDiagnostic
 			.addCase(fetchSystemDiagnostic.pending, (state) => {
 				state.diagnosticLoading = true;
 			})
@@ -98,7 +94,6 @@ const systemSlice = createSlice({
 			.addCase(fetchSystemDiagnostic.rejected, (state) => {
 				state.diagnosticLoading = false;
 			})
-			// fetchWorkerSettings
 			.addCase(fetchWorkerSettings.pending, (state) => {
 				state.settingsLoading = true;
 			})
@@ -109,7 +104,6 @@ const systemSlice = createSlice({
 			.addCase(fetchWorkerSettings.rejected, (state) => {
 				state.settingsLoading = false;
 			})
-			// saveWorkerSettings
 			.addCase(saveWorkerSettings.pending, (state) => {
 				state.settingsSaving = true;
 			})
@@ -120,7 +114,6 @@ const systemSlice = createSlice({
 			.addCase(saveWorkerSettings.rejected, (state) => {
 				state.settingsSaving = false;
 			})
-			// triggerManualCleanup
 			.addCase(triggerManualCleanup.pending, (state) => {
 				state.cleanupRunning = true;
 			})
@@ -130,7 +123,6 @@ const systemSlice = createSlice({
 			.addCase(triggerManualCleanup.rejected, (state) => {
 				state.cleanupRunning = false;
 			})
-			// fetchCleanupHistory
 			.addCase(fetchCleanupHistory.fulfilled, (state, action) => {
 				state.cleanupHistory = (action.payload as any)?.data ?? [];
 			});

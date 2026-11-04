@@ -4,7 +4,6 @@ import type { SystemInfoData } from '../../Action/systemDiagnostic';
 import type { WorkerSettings, CleanupHistoryItem } from '../../Action/systemSetting';
 
 export interface SystemState {
-	// Login Logs
 	loginLogs: LoginLogItem[];
 	loginPagination: {
 		current_page: number;
@@ -20,7 +19,6 @@ export interface SystemState {
 		device?: string;
 	};
 
-	// Activity Logs
 	activityLogs: ActivityLogItem[];
 	activityPagination: {
 		current_page: number;
@@ -40,11 +38,9 @@ export interface SystemState {
 	selectedActivity: ActivityLogItem | null;
 	detailModalOpen: boolean;
 
-	// System Diagnostic
 	diagnostic: SystemInfoData | null;
 	diagnosticLoading: boolean;
 
-	// Worker & Maintenance Settings
 	workerSettings: WorkerSettings | null;
 	settingsLoading: boolean;
 	settingsSaving: boolean;
