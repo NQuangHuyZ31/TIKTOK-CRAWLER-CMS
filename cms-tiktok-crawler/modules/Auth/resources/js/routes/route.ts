@@ -1,6 +1,5 @@
 import type { RouteDef } from '@core/routes/registry';
 import LoginPage from '../pages/LoginPage';
-// import ProfilePage from '../pages/ProfilePage';
 
 const authRoutes: RouteDef[] = [
     {

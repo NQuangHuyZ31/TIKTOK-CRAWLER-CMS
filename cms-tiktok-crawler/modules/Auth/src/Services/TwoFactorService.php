@@ -8,21 +8,16 @@ use Illuminate\Validation\ValidationException;
 use Modules\Auth\Services\Interfaces\TwoFactorServiceInterface;
 use Modules\User\Models\User;
 use Modules\User\Repositories\Interfaces\UserRepositoryInterface;
-use PragmaRX\Google2FA\Google2FA;
 
 class TwoFactorService implements TwoFactorServiceInterface
 {
     public const MAX_OTP_ATTEMPTS = 5;
     public const CHALLENGE_TTL_MINUTES = 5;
 
-    protected Google2FA $google2fa;
-
     public function __construct(
         protected UserRepositoryInterface $userRepository,
-        ?Google2FA $google2fa = null
-    ) {
-        $this->google2fa = $google2fa ?? new Google2FA();
-    }
+        protected Google2FAService $google2faService
+    ) {}
 
     /**
      * Check if 2FA authentication is globally enabled in config / env.
@@ -40,8 +35,7 @@ class TwoFactorService implements TwoFactorServiceInterface
         $tempToken = Str::random(64);
         $isEnrolled = !empty($user->google2fa_secret) && (bool) $user->google2fa_enabled;
 
-        $secret = $isEnrolled ? $user->google2fa_secret : $this->google2fa->generateSecretKey(16);
-        $company = config('app.name', 'TikTok Crawler CMS');
+        $secret = $isEnrolled ? $user->google2fa_secret : $this->google2faService->generateSecretKey(16);
 
         $sessionData = [
             'user_id' => $user->id,
@@ -55,21 +49,7 @@ class TwoFactorService implements TwoFactorServiceInterface
 
         Cache::put("auth_2fa_temp_{$tempToken}", $sessionData, now()->addMinutes(self::CHALLENGE_TTL_MINUTES));
 
-        $response = [
-            'step' => '2fa',
-            'require_2fa' => true,
-            'enrolled' => $isEnrolled,
-            'temp_token' => $tempToken,
-            'email' => $user->email,
-        ];
-
-        // Only provide QR Code and manual secret during initial enrollment
-        if (!$isEnrolled) {
-            $response['qr_code_url'] = $this->google2fa->getQRCodeUrl($company, $user->email, $secret);
-            $response['secret_key'] = $secret;
-        }
-
-        return $response;
+        return $this->buildChallengeResponse($tempToken, $user->email, $secret, $isEnrolled);
     }
 
     /**
@@ -91,7 +71,7 @@ class TwoFactorService implements TwoFactorServiceInterface
         }
 
         $secret = $data['secret'] ?? '';
-        $isValid = (bool) $this->google2fa->verifyKey($secret, trim($code), 1);
+        $isValid = (bool) $this->google2faService->verifyKey($secret, trim($code), 1);
 
         if (!$isValid) {
             $data['attempts'] = $attempts;
@@ -130,19 +110,31 @@ class TwoFactorService implements TwoFactorServiceInterface
             return null;
         }
 
-        $isEnrolled = (bool) ($data['enrolled'] ?? false);
+        return $this->buildChallengeResponse(
+            $tempToken,
+            $user->email,
+            $data['secret'],
+            (bool) ($data['enrolled'] ?? false)
+        );
+    }
+
+    /**
+     * Build standard 2FA challenge response payload.
+     */
+    protected function buildChallengeResponse(string $tempToken, string $email, string $secret, bool $isEnrolled): array
+    {
         $response = [
             'step' => '2fa',
             'require_2fa' => true,
             'enrolled' => $isEnrolled,
             'temp_token' => $tempToken,
-            'email' => $user->email,
+            'email' => $email,
         ];
 
         if (!$isEnrolled) {
             $company = config('app.name', 'TikTok Crawler CMS');
-            $response['qr_code_url'] = $this->google2fa->getQRCodeUrl($company, $user->email, $data['secret']);
-            $response['secret_key'] = $data['secret'];
+            $response['qr_code_url'] = $this->google2faService->getQRCodeUrl($company, $email, $secret);
+            $response['secret_key'] = $secret;
         }
 
         return $response;

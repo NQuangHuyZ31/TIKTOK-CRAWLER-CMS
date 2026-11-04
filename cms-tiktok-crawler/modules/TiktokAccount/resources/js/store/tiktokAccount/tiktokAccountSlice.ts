@@ -72,7 +72,7 @@ const tiktokAccountSlice = createSlice({
 	},
 
 	extraReducers: (builder) => {
-		// 1. Fetch all tiktok accounts
+		// Fetch all tiktok accounts
 		builder
 			.addCase(fetchAllTiktokAccounts.pending, (state) => {
 				state.loading = true;
@@ -94,7 +94,7 @@ const tiktokAccountSlice = createSlice({
 				state.error = (action.payload as string) ?? 'Failed to fetch tiktok accounts';
 			});
 
-		// 2. Fetch statistic summary
+		// Fetch statistic summary
 		builder
 			.addCase(fetchStatisticSummary.pending, (state) => {
 				state.statisticsLoading = true;

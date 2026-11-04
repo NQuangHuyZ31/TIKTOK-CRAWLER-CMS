@@ -121,7 +121,7 @@ class UserController extends BaseController
     /**
      * Retrieve aggregate KPI dashboard statistics for user accounts.
      */
-    public function statisticsSummary(Request $request = null)
+    public function statisticsSummary(?Request $request = null): JsonResponse
     {
         $stats = $this->userService->getStatisticsSummary();
         return $this->respondSuccess($stats, 'User statistics retrieved successfully.');
@@ -130,16 +130,16 @@ class UserController extends BaseController
     /**
      * Retrieve all system roles and permissions catalog for assignment UI.
      */
-    public function rolesAndPermissions(Request $request = null)
+    public function rolesAndPermissions(?Request $request = null): JsonResponse
     {
         $data = $this->userService->getRolesAndPermissionsCatalog();
         return $this->respondSuccess($data, 'Roles and permissions retrieved successfully.');
     }
 
     /**
-     * Change password for the authenticated user.
+     * Send reset password email to the user.
      */
-    public function resetPassword(int|string $id)
+    public function resetPassword(int|string $id): JsonResponse
     {
         try {
             $this->userService->sendMailResetPassword($id);
@@ -149,10 +149,24 @@ class UserController extends BaseController
         }
     }
 
-    public function resetAuthentication(Request $request) {
+    /**
+     * Reset two-factor authentication secret for a user.
+     */
+    public function resetAuthentication(Request $request): JsonResponse
+    {
+        $email = $request->input('email');
+        if (empty($email)) {
+            return $this->respondError('The email field is required.', 422);
+        }
+
+        $currentUser = $this->resolveRequestUser($request);
+        if (!$currentUser) {
+            return $this->respondError('Unauthenticated.', 401);
+        }
+
         try {
-            $currentUser = $this->resolveRequestUser($request);
-            return $this->respondSuccess($this->userService->resetAuthentication($request->input('email'), $currentUser), 'Reset Authencation success');
+            $user = $this->userService->resetAuthentication($email, $currentUser);
+            return $this->respondSuccess($user ? new UserResource($user) : null, 'Reset authentication successfully.');
         } catch (\Throwable $e) {
             return $this->respondError($e->getMessage(), 400);
         }

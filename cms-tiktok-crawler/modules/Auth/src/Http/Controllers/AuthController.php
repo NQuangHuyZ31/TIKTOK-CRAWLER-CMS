@@ -8,7 +8,6 @@ use Illuminate\Validation\ValidationException;
 use Laravel\Socialite\Facades\Socialite;
 use Modules\Auth\Http\Requests\LoginRequest;
 use Modules\Auth\Http\Requests\ResetPasswordRequest;
-use Modules\Auth\Http\Requests\Verify2FARequest;
 use Modules\Auth\Http\Requests\VerifyAuthCodeRequest;
 use Modules\Auth\Services\AuthService;
 use Modules\Core\Http\Controllers\BaseController;
@@ -174,18 +173,16 @@ class AuthController extends BaseController
     }
 
     /**
-     * Generate password reset token.
+     * Request password reset instructions via email.
      */
     public function forgotPassword(Request $request): JsonResponse
     {
         $request->validate(['email' => 'required|email']);
 
-        return $this->executeAuthAction(fn () =>
-            $this->respondSuccess(
-                ['token' => $this->authService->forgotPassword($request->input('email'))],
-                'Password reset token generated successfully.'
-            )
-        );
+        return $this->executeAuthAction(function () use ($request) {
+            $this->authService->forgotPassword($request->input('email'));
+            return $this->respondSuccess(null, 'Password reset instructions have been sent.');
+        });
     }
 
     /**

@@ -1,3 +1,5 @@
+import type { SelectOption } from '@core/configs/systemOptions';
+
 export interface RoleBadgeConfig {
     name: string;
     color: string;
@@ -54,8 +56,6 @@ export const STATUS_CONFIGS: Record<string, { label: string; color: string; badg
         badgeColor: '#ff4d4f',
     },
 };
-
-import type { SelectOption } from '@core/configs/systemOptions';
 
 export const USER_STATUS_FILTER_OPTIONS: SelectOption[] = [
     { label: 'All statuses', value: '' },

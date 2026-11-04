@@ -34,6 +34,11 @@ interface UserRepositoryInterface extends BaseRepositoryInterface
     public function updateStatus(int|string $id, string $status): ?User;
 
     /**
+     * Clear / reset two-factor authentication secret for a user.
+     */
+    public function resetTwoFactorSecret(int|string $userId): bool;
+
+    /**
      * Retrieve aggregate KPI statistics for user management.
      */
     public function getStatisticsSummary(): array;

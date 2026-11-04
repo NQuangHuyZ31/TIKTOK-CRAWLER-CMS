@@ -2,6 +2,7 @@
 
 namespace Modules\User\Providers;
 
+use Modules\Auth\Services\AuthService;
 use Modules\Core\Providers\ModuleServiceProvider;
 use Modules\Permission\Repositories\Interfaces\PermissionRepositoryInterface;
 use Modules\Role\Repositories\Interfaces\RoleRepositoryInterface;
@@ -20,7 +21,8 @@ class UserServiceProvider extends ModuleServiceProvider
             return new UserService(
                 $app->make(UserRepositoryInterface::class),
                 $app->make(RoleRepositoryInterface::class),
-                $app->make(PermissionRepositoryInterface::class)
+                $app->make(PermissionRepositoryInterface::class),
+                $app->make(AuthService::class)
             );
         });
     }

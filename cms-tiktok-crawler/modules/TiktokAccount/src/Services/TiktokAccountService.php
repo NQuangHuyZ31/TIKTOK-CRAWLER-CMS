@@ -16,38 +16,19 @@ class TiktokAccountService
         protected TiktokAccountRepositoryInterface $tiktokAccountRepository,
         protected TiktokVideoRepositoryInterface $tiktokVideoRepository,
         protected StorageService $storageService
-    ) {
-    }
+    ) {}
 
     /**
      * Create a new TikTok account with optional avatar upload and default values.
      */
     public function create(array $data): TiktokAccount
     {
-        if (isset($data['status']) && !in_array($data['status'], self::ACCOUNT_STATUSES, true)) {
-            throw new \InvalidArgumentException('Status must be active, inactive, or banned.');
-        }
-
-        if (empty($data['status'])) {
-            $data['status'] = 'active';
-        }
-
-        if (empty($data['profile_url']) && !empty($data['username'])) {
-            $cleanUsername = ltrim($data['username'], '@');
-            $data['profile_url'] = "https://www.tiktok.com/@{$cleanUsername}";
-        }
+        $this->validateStatus($data['status'] ?? null);
+        $data['status'] = $data['status'] ?? 'active';
+        $this->ensureProfileUrl($data);
 
         if (isset($data['avatar'])) {
-            if (!CheckFileUpload::checkImageFile($data['avatar'])) {
-                throw new \InvalidArgumentException('Invalid avatar file. Please upload a valid image file.');
-            }
-
-            $newAvatarPath = $this->storageService->storeUploadedFile(
-                file: $data['avatar'],
-                destinationDir: 'tiktok-accounts/avatars'
-            );
-
-            $data['avatar_path'] = $newAvatarPath;
+            $data['avatar_path'] = $this->processAvatar($data['avatar']);
             unset($data['avatar']);
         }
 
@@ -61,37 +42,17 @@ class TiktokAccountService
      */
     public function update(int $id, array $data): TiktokAccount
     {
-        if (isset($data['status']) && !in_array($data['status'], self::ACCOUNT_STATUSES, true)) {
-            throw new \InvalidArgumentException('Status must be active, inactive, or banned.');
-        }
+        $this->validateStatus($data['status'] ?? null);
 
         $account = $this->tiktokAccountRepository->findById($id);
         if (!$account) {
             throw new \InvalidArgumentException('TikTok account not found.');
         }
 
-        if (empty($data['profile_url']) && !empty($data['username'])) {
-            $cleanUsername = ltrim($data['username'], '@');
-            $data['profile_url'] = "https://www.tiktok.com/@{$cleanUsername}";
-        }
+        $this->ensureProfileUrl($data);
 
         if (isset($data['avatar'])) {
-            if (!CheckFileUpload::checkImageFile($data['avatar'])) {
-                throw new \InvalidArgumentException('Invalid avatar file. Please upload a valid image file.');
-            }
-
-            $newAvatarPath = $this->storageService->storeUploadedFile(
-                file: $data['avatar'],
-                destinationDir: 'tiktok-accounts/avatars',
-                options: [
-                    'delete_old' => true,
-                    'old_path' => $account->avatar_path,
-                ]
-            );
-
-            $data['avatar_path'] = $newAvatarPath;
-
-            // Do not pass raw UploadedFile to model update
+            $data['avatar_path'] = $this->processAvatar($data['avatar'], $account->avatar_path);
             unset($data['avatar']);
         }
 
@@ -104,9 +65,7 @@ class TiktokAccountService
      */
     public function updateStatus(int $id, string $status): ?TiktokAccount
     {
-        if (!in_array($status, self::ACCOUNT_STATUSES, true)) {
-            throw new \InvalidArgumentException('Status must be active, inactive, or banned.');
-        }
+        $this->validateStatus($status);
 
         return $this->tiktokAccountRepository->updateStatus($id, $status);
     }
@@ -138,5 +97,44 @@ class TiktokAccountService
     public function getStatisticSummary(): array
     {
         return $this->tiktokAccountRepository->getStatisticSummary();
+    }
+
+    /**
+     * Validate account status against allowed enum values.
+     */
+    private function validateStatus(?string $status): void
+    {
+        if ($status !== null && !in_array($status, self::ACCOUNT_STATUSES, true)) {
+            throw new \InvalidArgumentException('Status must be active, inactive, or banned.');
+        }
+    }
+
+    /**
+     * Ensure default TikTok profile URL is constructed if omitted.
+     */
+    private function ensureProfileUrl(array &$data): void
+    {
+        if (empty($data['profile_url']) && !empty($data['username'])) {
+            $cleanUsername = ltrim($data['username'], '@');
+            $data['profile_url'] = "https://www.tiktok.com/@{$cleanUsername}";
+        }
+    }
+
+    /**
+     * Validate and store uploaded avatar image file.
+     */
+    private function processAvatar(mixed $avatar, ?string $oldPath = null): string
+    {
+        if (!CheckFileUpload::checkImageFile($avatar)) {
+            throw new \InvalidArgumentException('Invalid avatar file. Please upload a valid image file.');
+        }
+
+        $options = $oldPath ? ['delete_old' => true, 'old_path' => $oldPath] : [];
+
+        return $this->storageService->storeUploadedFile(
+            file: $avatar,
+            destinationDir: 'tiktok-accounts/avatars',
+            options: $options
+        );
     }
 }

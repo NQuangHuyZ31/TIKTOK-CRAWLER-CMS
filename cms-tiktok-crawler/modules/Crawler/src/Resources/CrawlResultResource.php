@@ -16,26 +16,26 @@ class CrawlResultResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-			'id' => $this->id,
-			'crawl_job_id' => $this->crawl_job_id,
-			'tiktok_account_id' => $this->tiktok_account_id,
-			'username' => $this->username,
-			'followers_count' => $this->followers_count,
-			'following_count' => $this->following_count,
-			'success_count' => $this->success_count,
-			'likes_count' => $this->likes_count,
-			'video_count' => (int) ($this->video_count ?? 0),
-			'videos_crawled_count' => (int) ($this->videos_crawled_count ?? 0),
-			'profile_url' => $this->profile_url,
-			'avatar_url' => $this->avatar_url,
-			'avatar_path' => $this->resolveAvatarUrl(),
-			'status' => $this->status,
-			'error_code' => $this->error_code,
-			'error_message' => $this->error_message,
-			'crawled_at' => $this->crawled_at,
-			'created_at' => $this->created_at,
-			'updated_at' => $this->updated_at,
-		];
+            'id' => $this->id,
+            'crawl_job_id' => $this->crawl_job_id,
+            'tiktok_account_id' => $this->tiktok_account_id,
+            'username' => $this->username,
+            'followers_count' => $this->followers_count,
+            'following_count' => $this->following_count,
+            'success_count' => $this->success_count,
+            'likes_count' => $this->likes_count,
+            'video_count' => (int) ($this->video_count ?? 0),
+            'videos_crawled_count' => (int) ($this->videos_crawled_count ?? 0),
+            'profile_url' => $this->profile_url,
+            'avatar_url' => $this->avatar_url,
+            'avatar_path' => $this->resolveAvatarUrl(),
+            'status' => $this->status,
+            'error_code' => $this->error_code,
+            'error_message' => $this->error_message,
+            'crawled_at' => $this->crawled_at,
+            'created_at' => $this->created_at,
+            'updated_at' => $this->updated_at,
+        ];
     }
 
     private function resolveAvatarUrl(): ?string

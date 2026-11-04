@@ -6,6 +6,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Modules\Core\Http\Controllers\BaseController;
 use Modules\Crawler\Http\Requests\StoreCrawlJobRequest;
+use Modules\Crawler\Http\Requests\UpdateCrawlJobRequest;
 use Modules\Crawler\Models\CrawlJob;
 use Modules\Crawler\Resources\CrawlJobResource;
 use Modules\Crawler\Resources\CrawlResultResource;
@@ -48,8 +49,7 @@ class CrawlJobController extends BaseController
     }
 
     /**
-     * REST Action: store (POST /{module}/crawl-job)
-     * Delegated to CrawlJobService.
+     * Create a new crawl job.
      */
     public function store(Request $request): JsonResponse
     {
@@ -60,13 +60,14 @@ class CrawlJobController extends BaseController
     }
 
     /**
-     * REST Action: update (PUT/PATCH /{module}/crawl-job/{id})
-     * Delegated to CrawlJobService.
+     * Update an existing pending crawl job.
      */
     public function update(Request $request, int|string $id): JsonResponse
     {
+        $validated = app(UpdateCrawlJobRequest::class)->validated();
+
         try {
-            $job = $this->crawlJobService->update((int) $id, $request->all());
+            $job = $this->crawlJobService->update((int) $id, $validated);
             if (!$job) {
                 return $this->respondError('Crawl job not found.', 404);
             }
@@ -78,8 +79,7 @@ class CrawlJobController extends BaseController
     }
 
     /**
-     * REST Action: destroy (DELETE /{module}/crawl-job/{id})
-     * Delegated to CrawlJobService.
+     * Delete a crawl job.
      */
     public function destroy(int|string $id): JsonResponse
     {
@@ -96,10 +96,9 @@ class CrawlJobController extends BaseController
     }
 
     /**
-     * REST Custom Action: start (POST /{module}/crawl-job/{id}/start)
-     * Complex orchestration logic: delegated to CrawlJobService.
+     * Start a pending crawl job.
      */
-    public function start(int $id)
+    public function start(int $id): JsonResponse
     {
         try {
             $result = $this->crawlJobService->start((int) $id);
@@ -119,8 +118,7 @@ class CrawlJobController extends BaseController
     }
 
     /**
-     * REST Custom Action: retry (POST /{module}/crawl-job/{id}/retry)
-     * Complex orchestration logic: delegated to CrawlJobService.
+     * Retry a failed crawl job.
      */
     public function retry(int $id): JsonResponse
     {
@@ -142,7 +140,6 @@ class CrawlJobController extends BaseController
     }
 
     /**
-     * REST Custom Action: stop (POST /{module}/crawl-job/{id}/stop)
      * Stops a running or queued crawl job even if the Python crawler service is offline.
      */
     public function stop(int $id): JsonResponse
@@ -162,8 +159,7 @@ class CrawlJobController extends BaseController
     }
 
     /**
-     * REST Custom Query: statisticsSummary (GET /{module}/crawl-job/statistics-summary)
-     * Delegated to CrawlJobService.
+     * Retrieve aggregate KPI statistics summary.
      */
     public function getStatisticsSummary(): JsonResponse
     {
@@ -174,8 +170,7 @@ class CrawlJobController extends BaseController
     }
 
     /**
-     * REST Sub-resource: results (GET /{module}/crawl-job/{id}/results)
-     * Delegated to CrawlJobService.
+     * Retrieve paginated account crawl results for a specific job.
      */
     public function results(int $id, Request $request): JsonResponse
     {
