@@ -114,10 +114,11 @@ export const getStatisticsSummary = () =>
 export const getRolesAndPermissions = () =>
     api(`${baseURL}/roles-and-permissions`);
 
-/** Reset authencation for google login */
-export const resetAuthencation2FA = (email: string) => {
-    api(`${baseURL}/reset-authentication`, { method: "PUT", data: { email } })
-}
+/**
+ * Reset authentication for 2FA.
+ */
+export const resetAuthencation2FA = (email: string) =>
+    api(`${baseURL}/reset-authentication`, { method: 'PUT', data: { email } });
 
 const userAPI = {
     getUsers,

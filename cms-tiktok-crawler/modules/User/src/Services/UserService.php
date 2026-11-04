@@ -4,10 +4,9 @@ namespace Modules\User\Services;
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
-use Modules\Auth\Jobs\PasswordResetNotification;
+use Modules\Auth\Services\AuthService;
 use Modules\Permission\Repositories\Interfaces\PermissionRepositoryInterface;
 use Modules\Role\Repositories\Interfaces\RoleRepositoryInterface;
 use Modules\System\Facades\Audit;
@@ -19,7 +18,8 @@ class UserService
     public function __construct(
         protected UserRepositoryInterface $userRepository,
         protected RoleRepositoryInterface $roleRepository,
-        protected PermissionRepositoryInterface $permissionRepository
+        protected PermissionRepositoryInterface $permissionRepository,
+        protected AuthService $authService
     ) {}
 
     /**
@@ -377,23 +377,7 @@ class UserService
             throw new InvalidArgumentException('User account not found.');
         }
 
-        try {
-            Audit::track(
-                action: 'REQUEST_RESET_PASSWORD',
-                target: $user,
-                execute: function () use ($user) {
-                    $token = Password::createToken($user);
-                    $resetUrl = config('app.url') . '/admin/auth/login?reset-password=1&token=' . $token . '&email=' . $user->email;
-                    PasswordResetNotification::dispatch($user->email, $resetUrl, $user->name);
-                },
-                metadata: [
-                    'target_email' => $user->email,
-                    'trigger_by' => auth()->user()?->email ?? 'admin',
-                ]
-            );
-        } catch (\Throwable $th) {
-            throw new InvalidArgumentException('Failed to send reset password email.', previous: $th);
-        }
+        $this->authService->sendPasswordResetLink($user, auth()->user()?->email ?? 'admin');
     }
 
     /**
@@ -412,22 +396,27 @@ class UserService
         return $this->userRepository->getStatisticsSummary();
     }
 
-    public function resetAuthentication(string $email, User $currentUser) {
+    /**
+     * Reset two-factor authentication secret for a user account with audit tracking.
+     */
+    public function resetAuthentication(string $email, User $currentUser): ?User
+    {
         $user = $this->userRepository->findByEmail($email);
+        if (!$user) {
+            throw new InvalidArgumentException('User not found.');
+        }
 
-        if (!$user) throw new InvalidArgumentException('User not found');
-
-        if ($currentUser->email === $email) throw new InvalidArgumentException('Not allow reset authencation for self');
+        if ($currentUser->email === $email) {
+            throw new InvalidArgumentException('Cannot reset authentication for your own account.');
+        }
 
         try {
             Audit::track(
-                action: "RESET_AUTHENCATION",
+                action: 'RESET_AUTHENCATION',
                 target: $user->email,
                 execute: function () use ($user) {
-                     DB::transaction(function () use ($user) {
-                        $user->forceFill([
-                            'google2fa_secret' => null
-                        ])->save();
+                    return DB::transaction(function () use ($user) {
+                        return $this->userRepository->resetTwoFactorSecret($user->id);
                     });
                 },
                 metadata: [
@@ -436,8 +425,8 @@ class UserService
                 ]
             );
 
-            return $user->fresh();
-        }catch (\Throwable $th) {
+            return $this->userRepository->findById($user->id);
+        } catch (\Throwable $th) {
             throw new InvalidArgumentException($th->getMessage(), previous: $th);
         }
     }

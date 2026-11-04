@@ -57,6 +57,16 @@ class UserRepository extends BaseRepository implements UserRepositoryInterface
     }
 
     /**
+     * Clear / reset two-factor authentication secret for a user.
+     */
+    public function resetTwoFactorSecret(int|string $userId): bool
+    {
+        return (bool) $this->model->where('id', $userId)->update([
+            'google2fa_secret' => null,
+        ]);
+    }
+
+    /**
      * Retrieve aggregate KPI statistics for user management.
      */
     public function getStatisticsSummary(): array

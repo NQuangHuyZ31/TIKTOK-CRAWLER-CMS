@@ -33,39 +33,20 @@ class UserResource extends JsonResource
             'google2fa_enabled' => $this->google2fa_enabled ?? false,
             'is_admin' => (bool) ($this->is_admin ?? false) || $this->hasRole('admin'),
             'permission_type' => $this->getPermissionType(),
-            'roles' => $this->whenLoaded('roles', function () {
-                return $this->roles->map(fn($r) => [
-                    'id' => $r->id,
-                    'name' => $r->name,
-                    'slug' => $r->slug,
-                    'description' => $r->description,
-                ]);
-            }, function () {
-                return $this->roles->map(fn($r) => [
-                    'id' => $r->id,
-                    'name' => $r->name,
-                    'slug' => $r->slug,
-                    'description' => $r->description,
-                ]);
-            }),
+            'roles' => $this->roles ? $this->roles->map(fn($r) => [
+                'id' => $r->id,
+                'name' => $r->name,
+                'slug' => $r->slug,
+                'description' => $r->description,
+            ]) : [],
             'role_slugs' => $this->getRolesSlugs(),
-            'permissions' => $this->whenLoaded('permissions', function () {
-                return $this->permissions->map(fn($p) => [
-                    'id' => $p->id,
-                    'name' => $p->name,
-                    'slug' => $p->slug,
-                    'module' => $p->module,
-                    'action' => $p->action,
-                ]);
-            }, function () {
-                return $this->permissions->map(fn($p) => [
-                    'id' => $p->id,
-                    'name' => $p->name,
-                    'slug' => $p->slug,
-                    'module' => $p->module,
-                    'action' => $p->action,
-                ]);
-            }),
+            'permissions' => $this->permissions ? $this->permissions->map(fn($p) => [
+                'id' => $p->id,
+                'name' => $p->name,
+                'slug' => $p->slug,
+                'module' => $p->module,
+                'action' => $p->action,
+            ]) : [],
             'all_permissions' => $this->getAllPermissionsSlugs(),
             'permissions_matrix' => $this->getModulePermissionsMatrix(),
             'created_at' => $this->created_at?->toIso8601String(),

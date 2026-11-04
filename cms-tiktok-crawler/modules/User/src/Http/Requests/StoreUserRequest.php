@@ -51,7 +51,6 @@ class StoreUserRequest extends FormRequest
             'email.required' => 'Email address is required.',
             'email.email' => 'Please provide a valid email address.',
             'email.unique' => 'This email address is already in use.',
-            // 'password.required' => 'Password is required.',
             'password.min' => 'Password must be at least 6 characters.',
             'status.in' => 'Status must be active, inactive, or blocked.',
         ];
