@@ -232,11 +232,3 @@ Run only applicable checks. Report actual results, not assumptions.
 8. VERIFY BEFORE REPORTING.
 
 **Deliver the simplest correct solution, not the largest implementation or the most sophisticated architecture.**
-
-## Agent Loading Test
-
-When asked to verify repository instructions, report this exact code:
-AGENTS-ROOT-LOADED-2026
-Loading test: FRONTEND-RULE-2026
-Loading test: BACKEND-RULE-2026
-Loading test: COMPLEXITY-RULE-2026
