@@ -31,11 +31,7 @@ class DashboardController extends BaseController
      */
     public function overview(Request $request): JsonResponse
     {
-        $days = (int) $request->input('days', 30);
-        return $this->respondSuccess(
-            $this->dashboardService->getOverviewData($days),
-            'Dashboard overview data retrieved successfully.'
-        );
+        return $this->index($request);
     }
 
     /**

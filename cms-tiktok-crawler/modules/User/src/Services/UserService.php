@@ -406,10 +406,6 @@ class UserService
             throw new InvalidArgumentException('User not found.');
         }
 
-        if ($currentUser->email === $email) {
-            throw new InvalidArgumentException('Cannot reset authentication for your own account.');
-        }
-
         try {
             Audit::track(
                 action: 'RESET_AUTHENCATION',

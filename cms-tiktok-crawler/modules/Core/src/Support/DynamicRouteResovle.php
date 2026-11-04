@@ -23,7 +23,7 @@ use Modules\Core\Support\ModuleRegistry;
 */
 
 class DynamicRouteResovle {
-    public function __construct(private ?ModuleRegistry $moduleRegistry = null,private ?Request $request = null) {
+    public function __construct(private ?ModuleRegistry $moduleRegistry = null, private ?Request $request = null) {
         $this->moduleRegistry = $moduleRegistry ?? (app()->bound(ModuleRegistry::class) ? app(ModuleRegistry::class) : null);
         $this->request = $request ?? (app()->bound(Request::class) ? app(Request::class) : null);
     }
@@ -258,10 +258,6 @@ class DynamicRouteResovle {
 
     private function toCamel(string $value): string {
         return lcfirst($this->toStudly($value));
-    }
-
-    private function toSnake(string $value): string {
-        return str_replace(' ', '_', $value);
     }
 
     private function actionAliases(): array {

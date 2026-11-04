@@ -12,11 +12,6 @@ class CheckFileUpload
     private static array $allowedImageExtensions = ['jpeg', 'png', 'jpg', 'gif', 'webp'];
 
     /**
-     * Allowed file extensions.
-     */
-    private static array $allowedFileExtensions = ['csv', 'xlsx'];
-
-    /**
      * Maximum image size in kilobytes (2048 KB = 2 MB).
      */
     private static int $maxImageSize = 2048;
