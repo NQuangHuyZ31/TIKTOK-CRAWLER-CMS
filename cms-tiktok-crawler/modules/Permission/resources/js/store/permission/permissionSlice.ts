@@ -69,7 +69,6 @@ const permissionSlice = createSlice({
     },
 
     extraReducers: (builder) => {
-        // fetchPermissions
         builder
             .addCase(fetchPermissions.pending, (state) => {
                 state.loading = true;
@@ -91,19 +90,15 @@ const permissionSlice = createSlice({
             .addCase(fetchPermissions.rejected, (state, action) => {
                 state.loading = false;
                 state.error = (action.payload as string) ?? 'Failed to load permissions';
+            })
+            .addCase(fetchDistinctModules.fulfilled, (state, action) => {
+                const payload = action.payload as any;
+                state.modulesList = payload?.data ?? [];
+            })
+            .addCase(fetchGroupedPermissions.fulfilled, (state, action) => {
+                const payload = action.payload as any;
+                state.groupedPermissions = payload?.data ?? {};
             });
-
-        // fetchDistinctModules
-        builder.addCase(fetchDistinctModules.fulfilled, (state, action) => {
-            const payload = action.payload as any;
-            state.modulesList = payload?.data ?? [];
-        });
-
-        // fetchGroupedPermissions
-        builder.addCase(fetchGroupedPermissions.fulfilled, (state, action) => {
-            const payload = action.payload as any;
-            state.groupedPermissions = payload?.data ?? {};
-        });
     },
 });
 

@@ -63,7 +63,6 @@ const roleSlice = createSlice({
 	},
 
 	extraReducers: (builder) => {
-		// fetchRoles
 		builder
 			.addCase(fetchRoles.pending, (state) => {
 				state.loading = true;
@@ -85,10 +84,7 @@ const roleSlice = createSlice({
 			.addCase(fetchRoles.rejected, (state, action) => {
 				state.loading = false;
 				state.error = (action.payload as string) ?? 'Failed to load roles';
-			});
-
-		// fetchAvailablePermissions
-		builder
+			})
 			.addCase(fetchAvailablePermissions.pending, (state) => {
 				state.permissionsLoading = true;
 			})

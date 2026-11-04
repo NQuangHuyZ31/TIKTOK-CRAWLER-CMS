@@ -8,15 +8,10 @@ use Modules\Permission\Repositories\PermissionRepository;
 
 class PermissionServiceProvider extends ModuleServiceProvider
 {
-    protected string $moduleName = 'Permission';
+    protected string $name = 'Permission';
 
     public function register(): void
     {
         $this->app->bind(PermissionRepositoryInterface::class, PermissionRepository::class);
-    }
-
-    public function boot(): void
-    {
-        parent::boot();
     }
 }
