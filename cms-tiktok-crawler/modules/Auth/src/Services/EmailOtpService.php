@@ -104,8 +104,7 @@ class EmailOtpService implements EmailOtpServiceInterface
                 'code' => ['The verification session has expired. Please sign in again.'],
             ]);
         }
-
-        /** @var User|null $user */
+        
         $user = $this->userRepository->findById($data['user_id']);
         if (!$user) {
             throw ValidationException::withMessages([

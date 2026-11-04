@@ -9,7 +9,7 @@ This document establishes the code formatting, naming, and architectural convent
 All code artifacts MUST be written in **English**:
 - Web UI user-facing text: Titles, headers, buttons, form labels, toasts, errors, table headers.
 - Code identifiers: Class names, functions, variables, database columns, route slugs.
-- Documentation & Comments: Code comments, PHPDoc docstrings, JSDoc annotations, commit messages, and PR descriptions.
+- Documentation & Comments: PR descriptions.
 - Never write Vietnamese in UI code or comments. (Vietnamese is preserved in high-level business README documentation only).
 
 ---

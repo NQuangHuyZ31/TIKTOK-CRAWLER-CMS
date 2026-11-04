@@ -1,53 +1,242 @@
-# AGENTS.md - Engineering Rulebook
+# AGENTS.md — Engineering Rules
 
-Scope: Monorepo. `MUST`/`NEVER` = mandatory; `SHOULD` = default.
-Hierarchy: 1. Code & runtime > 2. Manifests > 3. Tests & CI > 4. Docs (`docs/`) > 5. Rules.
+**Scope:** Entire monorepo.
 
-## 1. Architecture Map & Scoped Navigation
-- `cms-tiktok-crawler/`: Laravel 13 + React 19 SPA (AntD 6). Run `npm`/`php artisan` here.
-- `tiktok-crawler-service/`: Python FastAPI microservice (SQLite WAL). Independent stack.
-- Modules: `API, Auth, Core, Crawler, Permission, Role, System, TiktokAccount, User`.
-- **Dynamic Routing**: `Core/src/Support/DynamicRouteResovle.php` maps `/{module}/{controller}/{id?}/{action?}`. Every `public` method is an HTTP endpoint; helpers MUST be `protected`/`private`. RBAC via `CheckModulePermission` (403).
-- **Domain Rules (Load ONLY when touching domain)**:
-  - Frontend: `.agents/rules/frontend.md` | Skill: `core-reusability-promoter`
-  - Backend: `.agents/rules/backend.md` | Skill: `ureka-module-scaffolder`
-  - Database: `.agents/rules/database.md`
-  - Git & Deploy: `.agents/rules/git-workflow.md` | Skill: `git-workflow`
-  - Master Docs: `docs/README.md` | SOLID: `docs/development/solid-principles.md`
+**Core Workflow: PLAN → APPROVAL → IMPLEMENT → REVIEW → REPORT.**
 
-## 2. Task Tiers & Context Budget
-- **SMALL** (UI fix, validation): Root `AGENTS.md` + inspect touched lines.
-- **NORMAL** (Tab, API, form, migration): Root `AGENTS.md` + domain rule. Search codebase first.
-- **LARGE** (New module, refactor): Root `AGENTS.md` + scoped rules + scaffolder skill + domain docs.
+`MUST` / `NEVER` = mandatory. `SHOULD` = recommended.
 
-## 3. Mandatory Workflow (Every Task)
-1. **Scope**: Restate task and acceptance criteria.
-2. **Git Check**: `git status` & `git branch --show-current`. Uncommitted unrelated work: **STOP and ask a human**.
-3. **Analyze**: Read ONLY relevant scoped rules. Search codebase (`rg`/`Select-String`). Apply SOLID.
-4. **REUSE > EXTEND > CREATE**: Reuse existing code > Extend with optional props > Create novel code only (justify in report).
-5. **Implement & Verify**: Minimal safe change, preserve contracts/docstrings, run quality gates (Section 5), report work (Discovered, Reused/Extended, Created, Refactored).
+---
 
-## 4. Universal Invariants
-- **SOLID Principles**: Mandatory across PHP and React (SRP, OCP, LSP, ISP, DIP). Apply in all designs, changes, and refactoring. Details: `docs/development/solid-principles.md`.
-- **UI Language**: 100% English for all UI text. Never Vietnamese. Rule: `.agents/rules/frontend.md`.
-- **Backend (Strict 3-Layer)**: Rule: `.agents/rules/backend.md`.
-  - **Controller**: Extends `BaseController`. Handles HTTP/validation, delegates to Service. NEVER inject Repositories/Models in custom actions.
-  - **Service**: Business logic & transactions (`DB::transaction`). Depends ONLY on Repository Interfaces. **STRICTLY FORBIDDEN from direct Model queries/calls** (never `Model::where()`, `Model::create()`, `$modelClass::...`, `DB::table()`).
-  - **Repository**: Extends `BaseRepository`, implements `<Model>RepositoryInterface`. Handles Eloquent queries. Bound in ServiceProvider.
-- **Database & Safety**: Migrations MUST be additive (never edit merged migrations). Models declare explicit `$fillable`. Real/production data MUST NEVER be mutated or deleted. Rule: `.agents/rules/database.md`.
-- **Git & Safety**: Work on category branch (`fix`, `feature`, etc.) or worktree slot (`scripts/agent-worktree.ps1`). NEVER push to `main`. Stage explicit files (no `git add .`, no build manifests). Conventional Commits in English. **Human Deploy Gate**: Merging to `main` creates Draft Release only; production deploy requires human publication. Rule: `.agents/rules/git-workflow.md`.
-- **Library-First Development (Mandatory)**:
-  - **REUSE EXISTING LIBRARIES > INSTALL APPROVED LIBRARIES > WRITE CUSTOM CODE**.
-  - MUST prioritize existing project libraries, framework features, and internal reusable code before writing custom implementations. Install new dependencies only when existing solutions are insufficient; verify compatibility, maintenance, security, and licensing first. Avoid duplicate packages and unnecessary dependencies. Custom code MUST be justified when no suitable existing solution exists.
+## 1. Project Context
 
-## 5. Quality Gates
-Run from `cms-tiktok-crawler/` before committing:
-- **TypeScript**: `npm.cmd run check-types` (0 errors).
-- **Backend Tests**: `php artisan test --filter <TestName>` (dev); full suite before commit.
-- **Workflow**: `powershell -ExecutionPolicy Bypass -File scripts/verify-workflow.ps1` (35/35 pass).
+| Path | Stack |
+|---|---|
+| `cms-tiktok-crawler/` | Laravel 13, React 19, AntD 6 |
+| `tiktok-crawler-service/` | Python FastAPI, SQLite WAL |
 
-## 6. Known Architectural Exceptions (Do Not "Fix" Silently)
-1. **BaseController CRUD**: Uses `$modelClass::query()` across 9 controllers. 3-layer rule applies to custom actions/new code. Do not refactor without explicit instruction.
-2. **Legacy Service Persistence**: `SystemSettingService` (`$modelClass::where()->delete()`) & `DashboardService` (`DB::table()`). Do not copy; migrate only if in scope.
-3. **Repository Interface Location**: `Permission` & `Role` place interfaces in `Repositories/`; new modules use `Repositories/Interfaces/`.
-4. **Manifest Discrepancies**: Trust manifests (`composer.json`: `laravel/framework ^13.17`, `tsconfig.json`: `strict: false`).
+Laravel modules: `API, Auth, Core, Crawler, Permission, Role, System, TiktokAccount, User`.
+
+- Run npm/PHP commands inside `cms-tiktok-crawler/`.
+- Run Python commands inside `tiktok-crawler-service/`.
+- Dynamic routing: `Core/src/Support/DynamicRouteResovle.php`.
+- Every public controller method may be an HTTP endpoint. Internal helpers MUST be protected/private.
+- RBAC: `CheckModulePermission`.
+
+### Domain Rules
+
+Read only rules relevant to the task:
+
+| Domain | Rule |
+|---|---|
+| Frontend | `.agents/rules/frontend.md` |
+| Backend | `.agents/rules/backend.md` |
+| Database | `.agents/rules/database.md` |
+| Git/Deploy | `.agents/rules/git-workflow.md` |
+| Simplicity | `.agents/rules/complexity.md` |
+
+References: `docs/README.md`, `docs/development/solid-principles.md`.
+
+---
+
+## 2. Mandatory Workflow
+
+Every task MUST follow this sequence:
+
+`UNDERSTAND → PLAN → WAIT FOR APPROVAL → IMPLEMENT → REVIEW → REPORT`
+
+### Phase 1: Understand (Read-Only)
+
+- Understand the request and acceptance criteria.
+- Identify affected domains and files.
+- Check `git status` and `git branch --show-current`.
+- Inspect relevant code, existing implementations, and scoped rules.
+- Search for reusable components before proposing new ones.
+- If unrelated uncommitted changes exist, STOP and ask the user.
+
+During this phase, NEVER modify files, schemas, configurations, or data.
+
+### Phase 2: Plan
+
+Present a plan proportional to task complexity.
+
+The plan MUST include:
+
+1. **Objective:** Expected behavior.
+2. **Current State:** Existing implementation and relevant findings.
+3. **Solution:** Simplest suitable approach.
+4. **Files:** Exact expected files and Create/Modify/Delete actions.
+5. **Complexity:** New classes, abstractions, or dependencies and their justification.
+6. **Risks:** Potential side effects and compatibility concerns.
+7. **Verification:** Tests and acceptance criteria.
+
+Small tasks need concise plans. Large tasks need detailed plans.
+
+### Phase 3: Approval Gate
+
+**NO EXPLICIT APPROVAL = NO IMPLEMENTATION.**
+
+- Present the plan and ask for approval.
+- STOP and wait.
+- A task request is not approval of the implementation plan.
+- Silence or ambiguous responses are not approval.
+- Approval applies only to the presented scope.
+- If the plan changes, present the changes and obtain approval again.
+
+Do not create, modify, or delete project files before approval.
+
+### Phase 4: Implement
+
+After approval:
+
+- Follow the approved plan and scope.
+- Apply existing architecture and domain rules.
+- Reuse existing components before extending or creating new ones.
+- Do not add unrequested features.
+- Do not refactor unrelated code.
+- Do not silently introduce dependencies, migrations, or architectural changes.
+
+If unexpected changes are necessary, STOP and request approval.
+
+### Phase 5: Review
+
+Before completion:
+
+- Compare actual changes against the approved plan.
+- Inspect the complete Git diff.
+- Check correctness, readability, security, and architecture.
+- Remove unnecessary code and abstractions.
+- Check for regressions and unintended modifications.
+- Run relevant quality gates.
+- Report tests that could not be executed.
+
+### Phase 6: Report
+
+Provide a concise report containing:
+
+- Implementation summary.
+- Files created, modified, and deleted.
+- Existing components reused or extended.
+- New abstractions and justification.
+- Review findings.
+- Test results.
+- Remaining issues.
+
+Never claim unverified success.
+
+---
+
+## 3. Universal Engineering Principles
+
+- KISS, YAGNI, DRY, SOLID, Minimal Change.
+- SOLID MUST be applied pragmatically, not mechanically.
+- Prefer the simplest correct and maintainable solution.
+- Do not create unnecessary classes, interfaces, DTOs, factories, managers, or abstraction layers.
+- Do not split simple logic into multiple files without a clear benefit.
+- Do not duplicate existing framework or library functionality.
+- Do not optimize without an identified problem.
+- Reuse existing code before extending or creating new components.
+- New abstractions and dependencies require justification in the plan.
+- Code length is not a quality metric. Never inflate implementation to satisfy architectural patterns.
+- All UI text MUST be English.
+
+Detailed rules: `.agents/rules/complexity.md`.
+
+---
+
+## 4. Architecture Constraints
+
+### Backend: Strict 3-Layer
+
+Reference: `.agents/rules/backend.md`.
+
+`Controller → Service → Repository`
+
+- Controller: HTTP handling and validation; delegates to Service.
+- Service: Business logic and transactions; depends only on Repository Interfaces.
+- Repository: Eloquent queries and persistence; extends `BaseRepository`.
+
+Service MUST NOT directly query Models or use `DB::table()` for business persistence.
+
+### Known Exceptions — Do Not Refactor Silently
+
+1. `BaseController` CRUD uses `$modelClass::query()` across 9 controllers. The 3-layer rule applies to custom actions and new code.
+2. `SystemSettingService` and `DashboardService` contain legacy direct persistence.
+3. Permission/Role interfaces are in `Repositories/`; new modules use `Repositories/Interfaces/`.
+4. Trust manifests over outdated documentation:
+   - `composer.json`: Laravel `^13.17`.
+   - `tsconfig.json`: `strict: false`.
+
+### Database
+
+- Migrations MUST be additive.
+- NEVER edit merged migrations.
+- Models MUST declare explicit `$fillable`.
+- NEVER mutate or delete real production data.
+
+---
+
+## 5. Git, Security & Deployment
+
+Reference: `.agents/rules/git-workflow.md`.
+
+- Work on category branches or approved worktree slots.
+- NEVER push directly to `main`.
+- NEVER use `git add .`.
+- Stage explicit files only.
+- Use Conventional Commits in English.
+- Do not overwrite user changes.
+- Never expose secrets or credentials.
+- Never deploy or publish to production without human authorization.
+
+**Human Deploy Gate:** Merging to `main` creates a Draft Release. Production deployment requires human publication.
+
+---
+
+## 6. Quality Gates
+
+Run relevant checks from `cms-tiktok-crawler/`.
+
+**TypeScript**
+```bash
+npm.cmd run check-types
+```
+
+**Backend**
+```bash
+php artisan test --filter <TestName>
+```
+
+**Workflow**
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/verify-workflow.ps1
+```
+
+Expected workflow result: 35/35, subject to current test definitions.
+
+For Python changes, inspect the service's existing test/lint configuration and run relevant checks.
+
+Run only applicable checks. Report actual results, not assumptions.
+
+---
+
+## 7. Final Enforcement
+
+1. PLAN BEFORE CODING.
+2. WAIT FOR EXPLICIT APPROVAL.
+3. IMPLEMENT ONLY APPROVED SCOPE.
+4. REUSE BEFORE CREATE.
+5. KEEP IMPLEMENTATION SIMPLE.
+6. PRESERVE EXISTING ARCHITECTURE.
+7. REVIEW ACTUAL DIFF.
+8. VERIFY BEFORE REPORTING.
+
+**Deliver the simplest correct solution, not the largest implementation or the most sophisticated architecture.**
+
+## Agent Loading Test
+
+When asked to verify repository instructions, report this exact code:
+AGENTS-ROOT-LOADED-2026
+Loading test: FRONTEND-RULE-2026
+Loading test: BACKEND-RULE-2026
+Loading test: COMPLEXITY-RULE-2026
