@@ -7,7 +7,7 @@ from core.utils import build_profile_url, extract_username_from_url, normalize_u
 from crawler.tiktok_client import TikTokClient
 from engine.store import QueueStore
 from schemas.models import AccountCrawlOutcome, CrawlJobRecord
-from services.laravel_client import LaravelClient, LaravelDeliveryError
+from services.laravel_client import LaravelClient, LaravelDeliveryError, LaravelJobNotFoundError
 
 logger = logging.getLogger(__name__)
 
@@ -91,8 +91,12 @@ class JobRunner:
                 return "interrupted"
 
             current_record = await self.store.get_job(job_id)
-            if current_record and current_record.status == "cancelled":
-                logger.info("[Job #%d] [Worker %s] Job was cancelled; stopping.", job_id, worker_id)
+            if current_record is None or current_record.status == "cancelled":
+                logger.info(
+                    "[Job #%d] [Worker %s] Job was cancelled or deleted; stopping.",
+                    job_id,
+                    worker_id,
+                )
                 return "cancelled"
 
             if username.lower() in done_accounts:
@@ -108,25 +112,17 @@ class JobRunner:
                 profile_url,
             )
 
-            max_videos = (
-                0
-                if getattr(job, "crawl_mode", "account_with_videos") == "account_only"
-                else int(getattr(job, "max_videos_per_account", 20))
-            )
             outcome = await self._crawl_with_timeout(
                 job_id=job_id,
                 worker_id=worker_id,
                 username=username,
                 profile_url=profile_url,
-                max_videos=max_videos,
+                max_videos=job.max_videos_per_account,
             )
 
             if outcome.status == "success" and outcome.account is not None:
                 acc = outcome.account
-                avatar_info = (
-                    acc.avatar_path
-                    or (f"base64({outcome.avatar.mime})" if outcome.avatar else "none")
-                )
+                avatar_info = "yes" if outcome.avatar and outcome.avatar.content_base64 else "no"
                 logger.info(
                     "[Job #%d] [Worker %s] [%d/%d] SUCCESS @%s | followers=%d | following=%d | likes=%d | videos=%d | avatar=%s | status=%s",
                     job_id,

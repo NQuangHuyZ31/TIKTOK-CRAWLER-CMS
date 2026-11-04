@@ -13,7 +13,7 @@ from crawler.tiktok_client import TikTokClient
 from engine.job_runner import JobRunner
 from engine.store import QueueStore
 from schemas.models import CrawlJobRecord
-from services.laravel_client import LaravelClient, LaravelDeliveryError
+from services.laravel_client import LaravelClient, LaravelDeliveryError, LaravelJobNotFoundError
 
 logger = logging.getLogger(__name__)
 
@@ -217,6 +217,12 @@ class QueueManager:
             self._enqueued_ids.discard(job_id)
             return cancelled
 
+    async def delete_job(self, job_id: int) -> bool:
+        async with self._lock:
+            deleted = await self.store.delete_job(job_id)
+            self._enqueued_ids.discard(job_id)
+            return deleted
+
     async def get_job_status(self, job_id: int) -> dict | None:
         record = await self.store.get_job(job_id)
         if not record:
@@ -336,6 +342,16 @@ class QueueManager:
         job_id = record.job_id
         try:
             await self.runner.run(record, worker_id=worker_id, stop_event=self._stop_event)
+        except LaravelJobNotFoundError as not_found_err:
+            logger.warning(
+                "[Job #%d] [Worker %s] Job not found or deleted in Laravel CMS (%s); terminating crawl and removing from queue.",
+                job_id,
+                worker_id,
+                not_found_err,
+            )
+            async with self._lock:
+                self._enqueued_ids.discard(job_id)
+            await self.store.delete_job(job_id)
         except LaravelDeliveryError as delivery_err:
             # Mechanism #9: Laravel unreachable -> pause & requeue after 60s WITHOUT counting against MAX_JOB_RESUMES
             logger.warning(

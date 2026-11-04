@@ -48,6 +48,27 @@ class TestQueueStore(unittest.TestCase):
             finally:
                 store.close()
 
+    def test_delete_job_removes_job_and_done_accounts(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            db_path = Path(tmp) / "queue.db"
+            store = QueueStore(db_path=db_path)
+            try:
+                store.upsert_job_sync(job_id=99, source_type="usernames", targets=["user_a", "user_b"])
+                store.mark_account_done_sync(99, "user_a")
+
+                self.assertIsNotNone(store.get_job_sync(99))
+                self.assertEqual(store.get_done_accounts_sync(99), {"user_a"})
+
+                deleted = store.delete_job_sync(99)
+                self.assertTrue(deleted)
+                self.assertIsNone(store.get_job_sync(99))
+                self.assertEqual(store.get_done_accounts_sync(99), set())
+
+                # Deleting again returns False
+                self.assertFalse(store.delete_job_sync(99))
+            finally:
+                store.close()
+
 
 if __name__ == "__main__":
     unittest.main()

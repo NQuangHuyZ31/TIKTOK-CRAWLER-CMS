@@ -349,6 +349,17 @@ class QueueStore:
     async def cancel_job(self, job_id: int) -> bool:
         return self.cancel_job_sync(job_id)
 
+    def delete_job_sync(self, job_id: int) -> bool:
+        with self._lock:
+            cur = self._conn.cursor()
+            cur.execute("DELETE FROM done_accounts WHERE job_id = ?", (job_id,))
+            cur.execute("DELETE FROM jobs WHERE job_id = ?", (job_id,))
+            self._conn.commit()
+            return cur.rowcount > 0
+
+    async def delete_job(self, job_id: int) -> bool:
+        return self.delete_job_sync(job_id)
+
     def list_unfinished_for_recovery_sync(self) -> list[CrawlJobRecord]:
         """
         Return unfinished jobs ordered by Recovery Priority + FIFO:
