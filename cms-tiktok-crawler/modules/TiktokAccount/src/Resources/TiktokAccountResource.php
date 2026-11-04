@@ -30,7 +30,7 @@ class TiktokAccountResource extends JsonResource
             'avatar_url' => $this->avatar_url,
             'avatar_path' => $this->resolveAvatarUrl(),
             'status' => $this->status,
-            'error_message' => $this->error_message ? $this->error_message : null,
+            'error_message' => $this->error_message ?: null,
             'crawled_at' => $this->crawled_at,
             'last_crawled_at' => $this->last_crawled_at,
             'created_at' => $this->created_at?->toIso8601String() ?? $this->created_at,
