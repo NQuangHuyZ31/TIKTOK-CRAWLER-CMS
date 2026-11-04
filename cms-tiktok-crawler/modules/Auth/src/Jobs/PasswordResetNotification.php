@@ -38,7 +38,6 @@ class PasswordResetNotification implements ShouldQueue
      */
     public function handle(): void
     {
-        // 2. Use the aliased class
         Mail::to($this->email)->send(new PasswordReset($this->resetUrl, $this->name));
     }
 

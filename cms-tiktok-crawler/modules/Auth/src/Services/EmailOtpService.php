@@ -21,12 +21,7 @@ class EmailOtpService implements EmailOtpServiceInterface
 
     public function isEnabled(): bool
     {
-        $enabled = config('auth.email_otp.enabled');
-        if ($enabled !== null) {
-            return filter_var($enabled, FILTER_VALIDATE_BOOLEAN);
-        }
-
-        return filter_var(env('AUTH_EMAIL_OTP_ENABLED', false), FILTER_VALIDATE_BOOLEAN);
+        return (bool) config('auth.email_otp.enabled', false);
     }
 
     public function sendOtp(User $user, array $context = []): array
@@ -104,7 +99,7 @@ class EmailOtpService implements EmailOtpServiceInterface
                 'code' => ['The verification session has expired. Please sign in again.'],
             ]);
         }
-        
+
         $user = $this->userRepository->findById($data['user_id']);
         if (!$user) {
             throw ValidationException::withMessages([

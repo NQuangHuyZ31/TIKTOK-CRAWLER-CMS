@@ -1,7 +1,7 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import type { UserProfile } from '../../configs/authConfig';
 import { AUTH_STORAGE_KEYS } from '../../configs/authConfig';
-import { fetchMeThunk, loginThunk, logoutThunk, verifyCodeThunk, verify2FAThunk, verifyEmailOtpThunk } from './authThunks';
+import { fetchMeThunk, loginThunk, logoutThunk, verifyCodeThunk } from './authThunks';
 
 export interface AuthState {
 	user: UserProfile | null;
@@ -81,19 +81,19 @@ const authSlice = createSlice({
 		},
 	},
 	extraReducers: (builder) => {
-		// 1. Password Login
+		// Password Login
 		builder
 			.addCase(loginThunk.pending, (s) => { s.loading = true; s.error = null; })
 			.addCase(loginThunk.fulfilled, applyAuthSuccess)
 			.addCase(loginThunk.rejected, (s, a) => { s.loading = false; s.error = (a.payload as string) || 'Authentication failed.'; });
 
-		// 2. Challenge Code Verification (Email OTP / 2FA)
+		// Challenge Code Verification (Email OTP / 2FA)
 		builder
 			.addCase(verifyCodeThunk.pending, (s) => { s.loading = true; s.error = null; })
 			.addCase(verifyCodeThunk.fulfilled, applyAuthSuccess)
 			.addCase(verifyCodeThunk.rejected, (s, a) => { s.loading = false; s.error = (a.payload as string) || 'Verification failed.'; });
 
-		// 3. Fetch Me
+		// Fetch Current User
 		builder
 			.addCase(fetchMeThunk.fulfilled, (s, a) => {
 				s.user = a.payload;
@@ -108,7 +108,7 @@ const authSlice = createSlice({
 				localStorage.removeItem(AUTH_STORAGE_KEYS.TOKEN);
 			});
 
-		// 5. Logout
+		// Logout
 		builder
 			.addCase(logoutThunk.pending, (s) => { s.loading = true; })
 			.addCase(logoutThunk.fulfilled, (s) => {

@@ -43,10 +43,6 @@ export const verifyCodeThunk = createAsyncThunk(
 	}
 );
 
-// Backward-compatible thunk aliases
-export const verify2FAThunk = verifyCodeThunk;
-export const verifyEmailOtpThunk = verifyCodeThunk;
-
 /**
  * Thunk to fetch current authenticated user profile.
  */

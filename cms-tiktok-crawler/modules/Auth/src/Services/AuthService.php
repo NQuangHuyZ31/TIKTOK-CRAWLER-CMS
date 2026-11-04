@@ -64,14 +64,7 @@ class AuthService
     public function verifyEmailOtp(string $tempToken, string $code): array
     {
         $session = $this->emailOtpService->verifyOtp($tempToken, $code);
-        $user = $this->userRepository->findById($session['user_id']);
-        if (!$user) {
-            throw ValidationException::withMessages(['code' => ['User account not found.']]);
-        }
-
-        $logData = $this->buildLogData($user, null, $session['ip_address'] ?? null, $session['user_agent'] ?? null);
-
-        return $this->finalizeLogin($user, $logData);
+        return $this->finalizeChallengeLogin($session);
     }
 
     /**
@@ -96,6 +89,14 @@ class AuthService
     public function verify2fa(string $tempToken, string $code): array
     {
         $session = $this->twoFactorService->verify($tempToken, $code);
+        return $this->finalizeChallengeLogin($session);
+    }
+
+    /**
+     * Finalize authentication for a verified challenge session (Email OTP or 2FA).
+     */
+    protected function finalizeChallengeLogin(array $session): array
+    {
         $user = $this->userRepository->findById($session['user_id']);
         if (!$user) {
             throw ValidationException::withMessages(['code' => ['User account not found.']]);
@@ -157,37 +158,24 @@ class AuthService
     }
 
     /**
-     * Update user profile attributes.
+     * Generate password reset token and dispatch notification.
      */
-    public function updateProfile(User $user, array $data): array
+    public function forgotPassword(string $email): void
     {
-        $updateData = array_intersect_key($data, array_flip(['name', 'phone', 'avatar']));
-
-        if (!empty($updateData)) {
-            $this->userRepository->update($user->id, $updateData);
-            $user->refresh();
+        $user = $this->userRepository->findByEmail($email);
+        if (!$user) {
+            throw new InvalidArgumentException('User account not found.');
         }
 
-        Audit::record(
-            action: 'UPDATE_PROFILE',
-            target: $user,
-            metadata: $updateData,
-            status: 'SUCCESS',
-            module: 'AUTH',
-            user: $user
-        );
-
-        return $this->formatUserData($user);
+        $this->sendPasswordResetLink($user, 'user');
     }
 
     /**
-     * Generate password reset token.
+     * Reusable password reset token generation, URL construction, and queued notification dispatch.
      */
-    public function forgotPassword(string $email)
+    public function sendPasswordResetLink(User $user, string $triggerBy = 'user'): void
     {
         try {
-            $user = $this->userRepository->findByEmail($email);
-            
             Audit::track(
                 action: 'REQUEST_RESET_PASSWORD',
                 target: $user,
@@ -198,7 +186,7 @@ class AuthService
                 },
                 metadata: [
                     'target_email' => $user->email,
-                    'trigger_by' => 'user',
+                    'trigger_by' => $triggerBy,
                 ]
             );
         } catch (\Throwable $th) {
@@ -239,29 +227,6 @@ class AuthService
             status: 'SUCCESS',
             module: 'AUTH',
             user: $resetUser
-        );
-    }
-
-    /**
-     * Update password for an authenticated user.
-     */
-    public function changePassword(User $user, array $data): void
-    {
-        if (!Hash::check($data['current_password'], $user->password)) {
-            throw ValidationException::withMessages([
-                'current_password' => ['The provided current password does not match our records.'],
-            ]);
-        }
-
-        $this->userRepository->update($user->id, ['password' => Hash::make($data['password'])]);
-
-        Audit::record(
-            action: 'CHANGE_PASSWORD',
-            target: $user,
-            metadata: ['email' => $user->email],
-            status: 'SUCCESS',
-            module: 'AUTH',
-            user: $user
         );
     }
 
