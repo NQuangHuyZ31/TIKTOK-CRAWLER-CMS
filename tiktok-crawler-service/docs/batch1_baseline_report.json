@@ -1,0 +1,87 @@
+{
+  "sqlite_wal_latencies": {
+    "NORMAL": {
+      "iterations": 200,
+      "avg_ms": 0.034,
+      "p50_ms": 0.025,
+      "p90_ms": 0.064,
+      "p95_ms": 0.078,
+      "p99_ms": 0.109,
+      "min_ms": 0.023,
+      "max_ms": 0.141,
+      "tx_per_sec": 29462.0
+    },
+    "FULL": {
+      "iterations": 200,
+      "avg_ms": 0.653,
+      "p50_ms": 0.408,
+      "p90_ms": 0.843,
+      "p95_ms": 0.986,
+      "p99_ms": 1.319,
+      "min_ms": 0.384,
+      "max_ms": 33.238,
+      "tx_per_sec": 1532.2
+    }
+  },
+  "payload_sizes": {
+    "monolithic_single_account_20_videos_kb": 144.37,
+    "monolithic_single_account_100_videos_kb": 185.78,
+    "monolithic_25_accounts_100_videos_projected_mb": 4.54,
+    "proposed_account_batch_25_records_kb": 13.9,
+    "proposed_video_batch_500_records_kb": 271.96,
+    "proposed_video_batch_500_records_mb": 0.266,
+    "within_1mb_ceiling": true
+  },
+  "requests_per_account": {
+    "0_videos": {
+      "profile_req": 1,
+      "avatar_req": 1,
+      "video_pagination_pages": 0,
+      "total_requests": 2
+    },
+    "10_videos": {
+      "profile_req": 1,
+      "avatar_req": 1,
+      "video_pagination_pages": 1,
+      "total_requests": 3
+    },
+    "20_videos": {
+      "profile_req": 1,
+      "avatar_req": 1,
+      "video_pagination_pages": 2,
+      "total_requests": 4
+    },
+    "50_videos": {
+      "profile_req": 1,
+      "avatar_req": 1,
+      "video_pagination_pages": 4,
+      "total_requests": 6
+    },
+    "100_videos": {
+      "profile_req": 1,
+      "avatar_req": 1,
+      "video_pagination_pages": 7,
+      "total_requests": 9
+    }
+  },
+  "discovery_probes": {
+    "explore_item_list": {
+      "url": "https://www.tiktok.com/api/explore/item_list/?aid=1988&count=10",
+      "status": "isolated_environment",
+      "notes": "Requires live internet or mock provider during sandbox execution.",
+      "accessible": false
+    },
+    "creator_item_list": {
+      "url": "https://www.tiktok.com/api/creator/item_list/?aid=1988&count=10",
+      "status": "isolated_environment",
+      "notes": "Requires live internet or mock provider during sandbox execution.",
+      "accessible": false
+    },
+    "challenge_item_list": {
+      "url": "https://www.tiktok.com/api/challenge/item_list/?aid=1988&count=10",
+      "status": "isolated_environment",
+      "notes": "Requires live internet or mock provider during sandbox execution.",
+      "accessible": false
+    }
+  }
+}
