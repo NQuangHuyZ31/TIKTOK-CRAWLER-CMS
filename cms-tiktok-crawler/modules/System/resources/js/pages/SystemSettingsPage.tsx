@@ -4,7 +4,7 @@ import { HistoryOutlined, SettingOutlined } from '@ant-design/icons';
 import ListLayout from '@core/components/ListLayout';
 import { useAction } from '@core/hooks/useAction';
 import { useDispatch, useSelector } from '@core/store';
-import { fetchWorkerSettings, saveWorkerSettings, fetchCleanupHistory } from '../store/system/systemThunks';
+import { fetchWorkerSettings, saveWorkerSettings } from '../store/system/systemThunks';
 import { runLogCleanup } from '../Action/systemSetting';
 import SystemSettingsKpis from '../components/systemSettings/SystemSettingsKpis';
 import WorkerSettingsForm, { CRON_PRESET_OPTIONS } from '../components/systemSettings/WorkerSettingsForm';
@@ -22,13 +22,13 @@ export default function SystemSettingsPage() {
 		successMessage: (res) => res?.message || `Cleanup completed! Purged ${res?.data?.total_purged ?? 0} records in ${res?.data?.duration_sec ?? 0}s.`,
 		onSuccess: () => {
 			dispatch(fetchWorkerSettings('worker'));
-			dispatch(fetchCleanupHistory());
+			// dispatch(fetchCleanupHistory());
 		},
 	});
 
 	const loadData = () => {
 		dispatch(fetchWorkerSettings('worker'));
-		dispatch(fetchCleanupHistory());
+		// dispatch(fetchCleanupHistory());
 	};
 
 	useEffect(() => {
@@ -129,13 +129,7 @@ export default function SystemSettingsPage() {
 									<HistoryOutlined /> Execution History
 								</span>
 							),
-							children: (
-								<CleanupHistoryTable
-									cleanupHistory={cleanupHistory}
-									loading={settingsLoading}
-									onRefresh={() => dispatch(fetchCleanupHistory())}
-								/>
-							),
+							children: <CleanupHistoryTable cleanupHistory={cleanupHistory} loading={settingsLoading} onRefresh={() => dispatch(fetchWorkerSettings('worker'))} />,
 						},
 					]}
 				/>

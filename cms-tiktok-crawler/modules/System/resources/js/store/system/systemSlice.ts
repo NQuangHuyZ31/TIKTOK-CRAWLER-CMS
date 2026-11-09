@@ -8,7 +8,6 @@ import {
 	fetchWorkerSettings,
 	saveWorkerSettings,
 	triggerManualCleanup,
-	fetchCleanupHistory,
 } from './systemThunks';
 import { initialSystemState, type SystemState } from './systemSliceTypes';
 
@@ -99,7 +98,8 @@ const systemSlice = createSlice({
 			})
 			.addCase(fetchWorkerSettings.fulfilled, (state, action) => {
 				state.settingsLoading = false;
-				state.workerSettings = (action.payload as any)?.data ?? null;
+				state.workerSettings = (action.payload as any) ?? null;
+				state.cleanupHistory = (action.payload as any)?.last_cleanup_history ?? [];
 			})
 			.addCase(fetchWorkerSettings.rejected, (state) => {
 				state.settingsLoading = false;
@@ -123,9 +123,6 @@ const systemSlice = createSlice({
 			.addCase(triggerManualCleanup.rejected, (state) => {
 				state.cleanupRunning = false;
 			})
-			.addCase(fetchCleanupHistory.fulfilled, (state, action) => {
-				state.cleanupHistory = (action.payload as any)?.data ?? [];
-			});
 	},
 });
 

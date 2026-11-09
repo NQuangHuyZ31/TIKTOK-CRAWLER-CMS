@@ -215,7 +215,9 @@ class CrawlJobService
 
         if (!empty($response['targets']) && is_array($response['targets'])) {
             $updateAttributes['data_crawls'] = json_encode(array_values($response['targets']));
-            $updateAttributes['total_accounts'] = count($response['targets']);
+            if ($crawlJob->source_type !== 'count') {
+                $updateAttributes['total_accounts'] = count($response['targets']);
+            }
         }
 
         $this->crawlJobRepository->update($id, $updateAttributes);

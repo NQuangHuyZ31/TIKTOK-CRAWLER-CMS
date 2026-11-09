@@ -72,6 +72,22 @@ class CrawlerEngineClient
     }
 
     /**
+     * Dispatch privacy purge request to Python Crawler Engine (/api/crawler/privacy/purge).
+     */
+    public function purgePrivacyEntity(string $entityType, string $entityKey, string $purgeRequestId, ?string $reason = null): array
+    {
+        $url = $this->getBaseUrl() . '/api/crawler/privacy/purge';
+        $payload = [
+            'entity_type' => $entityType,
+            'entity_key' => $entityKey,
+            'purge_request_id' => $purgeRequestId,
+            'reason' => $reason ?? 'privacy_request',
+        ];
+
+        return FetchApi::post($url, $payload, $this->getHeaders());
+    }
+
+    /**
      * Resolve authorization headers for Python daemon.
      */
     protected function getHeaders(): array
