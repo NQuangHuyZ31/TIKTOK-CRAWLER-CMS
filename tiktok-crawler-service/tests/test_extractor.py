@@ -4,8 +4,13 @@ import unittest
 
 SERVICE_ROOT = Path(__file__).resolve().parent.parent
 APP_DIR = SERVICE_ROOT / "app"
-if str(APP_DIR) not in sys.path:
-    sys.path.insert(0, str(APP_DIR))
+TESTS_DIR = SERVICE_ROOT / "tests"
+for p in (str(APP_DIR), str(TESTS_DIR)):
+    if p not in sys.path:
+        sys.path.insert(0, p)
+
+from _async_compat import patch_windows_self_pipe_if_needed
+patch_windows_self_pipe_if_needed()
 
 from crawler.extractor import ExtractorError, extract_profile
 from crawler.video_extractor import extract_videos_from_body
@@ -13,7 +18,7 @@ from crawler.video_extractor import extract_videos_from_body
 FIXTURES_DIR = Path(__file__).resolve().parent / "fixtures"
 
 
-class TestExtractor(unittest.TestCase):
+class TestExtractor(unittest.IsolatedAsyncioTestCase):
     def test_extract_profile_ok_from_rehydration_json(self):
         html = (FIXTURES_DIR / "profile_ok.html").read_text(encoding="utf-8")
         account = extract_profile(
@@ -76,6 +81,28 @@ class TestExtractor(unittest.TestCase):
         self.assertEqual(ctx.exception.error_code, "CHALLENGE")
         self.assertFalse(ctx.exception.is_retryable)
 
+    def test_page_with_hashtag_challenge_metadata_raises_not_found_not_challenge(self):
+        # TikTok pages often contain "challenges" or "challenge_id" in JSON metadata
+        # which must not falsely trigger a WAF CHALLENGE error.
+        html = """
+        <!DOCTYPE html>
+        <html>
+        <head><title>TikTok - Make Your Day</title></head>
+        <body>
+            <script>window.__INITIAL_DATA__ = {"challenges": [{"id": 123, "title": "dancechallenge"}]};</script>
+            <div>Account content unavailable</div>
+        </body>
+        </html>
+        """
+        with self.assertRaises(ExtractorError) as ctx:
+            extract_profile(
+                body=html,
+                profile_url="https://www.tiktok.com/@empty_account",
+                target_username="empty_account",
+            )
+        self.assertEqual(ctx.exception.error_code, "NOT_FOUND")
+        self.assertFalse(ctx.exception.is_retryable)
+
     def test_extract_profile_from_opengraph_meta_tags(self):
         html = """
         <!DOCTYPE html>
@@ -101,6 +128,74 @@ class TestExtractor(unittest.TestCase):
             account.avatar_url,
             "https://p16-common-sign.tiktokcdn.com/tos-maliva-avt-0068/avatar.jpeg?x=1&y=2",
         )
+    def test_extract_profile_from_vietnamese_opengraph(self):
+        html = """
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>nguyenvana (@nguyenvana) trên TikTok</title>
+            <meta property="og:title" content="Nguyen Van A (@nguyenvana) | TikTok"/>
+            <meta property="og:image" content="https://p16-sign.tiktokcdn.com/avatar_vn.jpg"/>
+            <meta property="og:description" content="125.4K Người theo dõi, 80 Đang theo dõi, 1.5M Thích. Xem video mới nhất từ Nguyen Van A (@nguyenvana)."/>
+        </head>
+        <body></body>
+        </html>
+        """
+        account = extract_profile(
+            body=html,
+            profile_url="https://www.tiktok.com/@nguyenvana",
+            target_username="nguyenvana",
+        )
+        self.assertEqual(account.username, "nguyenvana")
+        self.assertEqual(account.followers, 125400)
+        self.assertEqual(account.following, 80)
+        self.assertEqual(account.likes, 1500000)
+        self.assertEqual(account.avatar_url, "https://p16-sign.tiktokcdn.com/avatar_vn.jpg")
+
+    def test_extract_profile_from_rehydration_alternate_user_page_scope(self):
+        html = """
+        <!DOCTYPE html>
+        <html>
+        <head><title>TikTok Profile</title></head>
+        <body>
+            <script id="__UNIVERSAL_DATA_FOR_REHYDRATION__" type="application/json">
+            {
+                "__DEFAULT_SCOPE__": {
+                    "webapp.user-page": {
+                        "statusCode": 0,
+                        "userInfo": {
+                            "user": {
+                                "uniqueId": "alternate_creator",
+                                "nickname": "Alternate Creator",
+                                "secUid": "MS4wLjABAAAA_alt_sec_uid",
+                                "avatarLarger": "https://p16-sign.tiktokcdn.com/alt_avt.jpg"
+                            },
+                            "stats": {
+                                "followerCount": 45000,
+                                "followingCount": 120,
+                                "heartCount": 890000,
+                                "videoCount": 25
+                            }
+                        }
+                    }
+                }
+            }
+            </script>
+        </body>
+        </html>
+        """
+        account = extract_profile(
+            body=html,
+            profile_url="https://www.tiktok.com/@alternate_creator",
+            target_username="alternate_creator",
+        )
+        self.assertEqual(account.username, "alternate_creator")
+        self.assertEqual(account.followers, 45000)
+        self.assertEqual(account.following, 120)
+        self.assertEqual(account.likes, 890000)
+        self.assertEqual(account.video_count, 25)
+        self.assertEqual(account.sec_uid, "MS4wLjABAAAA_alt_sec_uid")
+
 
     def test_extract_videos_from_rehydration_and_sigi_json(self):
         html = """
@@ -211,7 +306,7 @@ class TestExtractor(unittest.TestCase):
         self.assertEqual(v.published_at.year, 2024)
         self.assertEqual(v.hashtags, ["lifehack"])
 
-    def test_fetch_creator_videos_paginated_multipage(self):
+    async def test_fetch_creator_videos_paginated_multipage(self):
         import asyncio
         import httpx
         from unittest.mock import AsyncMock, MagicMock
@@ -253,13 +348,11 @@ class TestExtractor(unittest.TestCase):
 
         mock_client.get = AsyncMock(side_effect=[resp1, resp2])
 
-        videos = asyncio.run(
-            fetch_creator_videos_paginated(
-                client=mock_client,
-                username="test_creator",
-                sec_uid="MS4wLjABAAAA_test_sec_uid",
-                max_videos=20,
-            )
+        videos = await fetch_creator_videos_paginated(
+            client=mock_client,
+            username="test_creator",
+            sec_uid="MS4wLjABAAAA_test_sec_uid",
+            max_videos=20,
         )
 
         self.assertEqual(len(videos), 20)

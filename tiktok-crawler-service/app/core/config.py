@@ -51,17 +51,59 @@ def _resolve_datasets_dir() -> Path:
 DATASETS_DIR = _resolve_datasets_dir()
 
 # Laravel API & shared secret token
+LARAVEL_BASE_URL = (
+    os.getenv("LARAVEL_BASE_URL")
+    or os.getenv("LARAVEL_URL")
+    or "http://127.0.0.1:8000"
+).rstrip("/")
+
 LARAVEL_API_URL = (
     os.getenv("LARAVEL_API_URL")
     or os.getenv("BACKEND_CALLBACK_URL")
-    or "http://localhost:8000/admin/api/public/crawler"
+    or f"{LARAVEL_BASE_URL}/admin/api/public/crawler"
 ).rstrip("/")
 
 CRAWLER_TOKEN = (
     os.getenv("CRAWLER_TOKEN")
     or os.getenv("CALLBACK_TOKEN")
-    or None
+    or "2703ac97eb897aacbf1235f5e608bf93d2ca7e0c2fe9d09a35e44f6ad6ab410c"
 )
+
+CRAWLER_HMAC_SECRET = (
+    os.getenv("CRAWLER_HMAC_SECRET")
+    or CRAWLER_TOKEN
+)
+CRAWLER_KEY_ID = os.getenv("CRAWLER_KEY_ID", "key_v1")
+
+# Outbox Dispatcher
+OUTBOX_BATCH_SIZE = int(os.getenv("OUTBOX_BATCH_SIZE", "25"))
+OUTBOX_DISPATCH_TIMEOUT = float(os.getenv("OUTBOX_DISPATCH_TIMEOUT", "5.0"))
+
+# Scheduler & Chunk Lease configuration (TikTok Crawler v2.2)
+CRAWLER_MAX_ACTIVE_JOBS = int(os.getenv("CRAWLER_MAX_ACTIVE_JOBS", "20"))
+CRAWLER_MAX_ACTIVE_JOBS_PER_OWNER = int(os.getenv("CRAWLER_MAX_ACTIVE_JOBS_PER_OWNER", "3"))
+CRAWLER_CHUNK_SIZE = int(os.getenv("CRAWLER_CHUNK_SIZE", "25"))
+CRAWLER_CHUNK_LEASE_MS = int(os.getenv("CRAWLER_CHUNK_LEASE_MS", "60000"))
+CRAWLER_MAX_CHUNK_CRASHES = int(os.getenv("CRAWLER_MAX_CHUNK_CRASHES", "3"))
+CRAWLER_MAX_TARGET_ATTEMPTS = int(os.getenv("CRAWLER_MAX_TARGET_ATTEMPTS", "3"))
+CRAWLER_GLOBAL_RATE_LIMIT_RPS = float(os.getenv("CRAWLER_GLOBAL_RATE_LIMIT_RPS", "2.0"))
+
+# Discovery & Candidate Pool Watermark (Batch 8)
+CRAWLER_DISCOVERY_ENABLED = os.getenv("CRAWLER_DISCOVERY_ENABLED", "true").lower() in ("true", "1", "yes")
+DISCOVERY_WORKER_COUNT = int(os.getenv("DISCOVERY_WORKER_COUNT", "2"))
+DISCOVERY_INTERVAL_SECONDS = float(os.getenv("DISCOVERY_INTERVAL_SECONDS", "10.0"))
+CRAWLER_CANDIDATE_POOL_TARGET_SIZE = int(os.getenv("CRAWLER_CANDIDATE_POOL_TARGET_SIZE", "2000"))
+CRAWLER_CANDIDATE_POOL_LOW_WATERMARK = int(os.getenv("CRAWLER_CANDIDATE_POOL_LOW_WATERMARK", "500"))
+CRAWLER_DISCOVERY_SCAN_VIDEOS_PER_SEED = int(os.getenv("CRAWLER_DISCOVERY_SCAN_VIDEOS_PER_SEED", "20"))
+ALLOW_BOOTSTRAP_FALLBACK = os.getenv("ALLOW_BOOTSTRAP_FALLBACK", "true").lower() in ("true", "1", "yes")
+DISCOVERY_RATE_LIMITED = os.getenv("DISCOVERY_RATE_LIMITED", "false").lower() in ("true", "1", "yes")
+DISCOVERY_MAX_BATCH_SIZE = int(os.getenv("DISCOVERY_MAX_BATCH_SIZE", "50"))
+DISCOVERY_FRONTIER_THRESHOLD = int(os.getenv("DISCOVERY_FRONTIER_THRESHOLD", "100"))
+SHARED_RATE_LIMIT_PROFILE_WEIGHT = int(os.getenv("SHARED_RATE_LIMIT_PROFILE_WEIGHT", "4"))
+
+# Operational Safeguards (Batch 8)
+CRAWLER_MIN_FREE_DISK_GB = float(os.getenv("CRAWLER_MIN_FREE_DISK_GB", "5.0"))
+CRAWLER_MAX_WAL_BYTES = int(os.getenv("CRAWLER_MAX_WAL_BYTES", str(1000 * 1024 * 1024)))
 
 # Timeouts & Retry limits
 REQUEST_TIMEOUT = float(os.getenv("REQUEST_TIMEOUT", "20"))
@@ -85,27 +127,30 @@ MAX_HTML_BYTES = int(os.getenv("MAX_HTML_BYTES", str(5 * 1024 * 1024)))
 
 DEFAULT_USER_AGENT = os.getenv(
     "USER_AGENT",
-    "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) "
-    "AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
 )
 
 USER_AGENT_POOL = [
     DEFAULT_USER_AGENT,
     (
-        "Mozilla/5.0 (iPhone; CPU iPhone OS 17_4_1 like Mac OS X) "
-        "AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4.1 Mobile/15E148 Safari/604.1"
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36"
     ),
     (
-        "Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) "
-        "AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1"
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
     ),
     (
-        "Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro) "
-        "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.6367.82 Mobile Safari/537.36"
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:130.0) "
+        "Gecko/20100101 Firefox/130.0"
     ),
     (
-        "Mozilla/5.0 (Linux; Android 13; SM-S918B) "
-        "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.6312.99 Mobile Safari/537.36"
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36 Edg/128.0.0.0"
+    ),
+    (
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+        "AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.6 Safari/605.1.15"
     ),
 ]
 

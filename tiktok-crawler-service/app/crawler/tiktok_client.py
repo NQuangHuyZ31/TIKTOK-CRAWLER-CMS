@@ -70,16 +70,24 @@ class TikTokClient:
 
     @staticmethod
     def _default_headers(user_agent: str | None = None) -> dict[str, str]:
-        return {
-            "User-Agent": user_agent or random.choice(USER_AGENT_POOL) or DEFAULT_USER_AGENT,
+        ua = user_agent or random.choice(USER_AGENT_POOL) or DEFAULT_USER_AGENT
+        headers = {
+            "User-Agent": ua,
             "Accept": (
                 "text/html,application/xhtml+xml,application/xml;q=0.9,"
-                "application/json;q=0.8,*/*;q=0.7"
+                "image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7"
             ),
-            "Accept-Language": "en-US,en;q=0.9",
+            "Accept-Language": "en-US,en;q=0.9,vi;q=0.8",
             "Cache-Control": "no-cache",
             "Pragma": "no-cache",
+            "Sec-Ch-Ua-Mobile": "?0",
+            "Upgrade-Insecure-Requests": "1",
         }
+        if "Windows" in ua:
+            headers["Sec-Ch-Ua-Platform"] = '"Windows"'
+        elif "Macintosh" in ua:
+            headers["Sec-Ch-Ua-Platform"] = '"macOS"'
+        return headers
 
     @staticmethod
     def _parse_retry_after(header_value: str | None, default_delay: float) -> float:
