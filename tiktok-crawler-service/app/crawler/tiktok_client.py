@@ -83,10 +83,16 @@ class TikTokClient:
             "Sec-Ch-Ua-Mobile": "?0",
             "Upgrade-Insecure-Requests": "1",
         }
+        is_mobile = any(m in ua for m in ("iPhone", "Android", "Mobile"))
+        headers["Sec-Ch-Ua-Mobile"] = "?1" if is_mobile else "?0"
         if "Windows" in ua:
             headers["Sec-Ch-Ua-Platform"] = '"Windows"'
         elif "Macintosh" in ua:
             headers["Sec-Ch-Ua-Platform"] = '"macOS"'
+        elif "iPhone" in ua or "iPad" in ua:
+            headers["Sec-Ch-Ua-Platform"] = '"iOS"'
+        elif "Android" in ua:
+            headers["Sec-Ch-Ua-Platform"] = '"Android"'
         return headers
 
     @staticmethod

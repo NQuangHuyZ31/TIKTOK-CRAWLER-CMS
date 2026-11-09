@@ -206,8 +206,11 @@ class DiscoveryWorker:
         refilled_count = 0
         frontier_rows = self.frontier_repo.get_pending_candidates(limit=needed)
 
-        if not frontier_rows and self.allow_bootstrap_fallback and current_count == 0:
-            logger.info("Candidate pool is empty on cold start. Seeding from dataset...")
+        if not frontier_rows and self.allow_bootstrap_fallback and current_count < self.low_watermark:
+            logger.info(
+                f"[Discovery] Candidate pool ({current_count}) below low watermark ({self.low_watermark}) "
+                "with empty frontier. Re-seeding from dataset..."
+            )
             self.seed_from_dataset()
             frontier_rows = self.frontier_repo.get_pending_candidates(limit=needed)
 
@@ -308,8 +311,31 @@ class DiscoveryWorker:
                 max_videos=max_videos,
             )
 
-            # 1. Extract mentions from video descriptions
-            for v in outcome.videos:
+            videos = outcome.videos if outcome and outcome.videos else []
+
+            # Multi-tier fallback: if profile crawl yielded no videos, fallback to Embed SSR
+            if not videos:
+                try:
+                    client = await self.tiktok_client._get_client()
+                    try:
+                        from crawler.video.video_embed import fetch_embed_videos
+                    except ImportError:
+                        from app.crawler.video.video_embed import fetch_embed_videos
+                    embed_videos = await fetch_embed_videos(
+                        client=client,
+                        clean_username=norm_seed,
+                        max_videos=max_videos,
+                    )
+                    if embed_videos:
+                        videos = embed_videos
+                        logger.info(
+                            f"[Discovery] Embed fallback extracted {len(videos)} videos for seed @{norm_seed}."
+                        )
+                except Exception as embed_err:
+                    logger.debug(f"[Discovery] Embed fallback skipped for @{norm_seed}: {embed_err}")
+
+            # 1. Extract mentions from video descriptions & sound author
+            for v in videos:
                 desc = getattr(v, "description", None) or ""
                 for match in re.findall(r"@([A-Za-z0-9_.]+)", desc):
                     cleaned = CandidateManager.normalize_username(match)
@@ -327,8 +353,8 @@ class DiscoveryWorker:
                     ):
                         found_mentions.add(clean_music)
 
-            # 2. Extract mentions from profile bio
-            if outcome.account and getattr(outcome.account, "bio", None):
+            # 2. Extract mentions from profile bio (if available from outcome)
+            if outcome and outcome.account and getattr(outcome.account, "bio", None):
                 bio = outcome.account.bio
                 for match in re.findall(r"@([A-Za-z0-9_.]+)", bio):
                     cleaned = CandidateManager.normalize_username(match)
@@ -336,7 +362,7 @@ class DiscoveryWorker:
                         found_mentions.add(cleaned)
 
             # 3. Extract active commenters from top 3 videos
-            for v in outcome.videos[:3]:
+            for v in videos[:3]:
                 vid_id = getattr(v, "video_id", None)
                 if vid_id:
                     commenters = await self.fetch_video_commenters(vid_id, norm_seed, max_comments=20)
@@ -402,9 +428,9 @@ class DiscoveryWorker:
                     seed_username,
                     max_videos=self.scan_videos_per_seed,
                 )
-                self.mark_seed_exhausted(seed_username)
 
                 if mentions:
+                    self.mark_seed_exhausted(seed_username)
                     for m in mentions:
                         self.enqueue_frontier_candidate(
                             username=m,

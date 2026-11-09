@@ -103,9 +103,17 @@ def extract_profile(
         is_challenge = True
     elif "secsdk-captcha" in body or "captcha_verify_container" in body or "verify-bar-close" in body:
         is_challenge = True
+    elif (
+        "_wafchallengeid" in body
+        or "waforiginalreid" in body
+        or "slardarwaf" in body.lower()
+        or "slardar_us_waf" in body.lower()
+    ):
+        is_challenge = True
 
     if is_challenge:
-        raise ExtractorError("CHALLENGE", f"TikTok challenge encountered: {title_text}", is_retryable=False)
+        desc = title_text or "ByteDance Slardar WAF / Captcha"
+        raise ExtractorError("CHALLENGE", f"TikTok challenge encountered: {desc}", is_retryable=False)
 
     raise ExtractorError("NOT_FOUND", f"Could not extract TikTok profile for @{clean_user or 'unknown'}", is_retryable=False)
 

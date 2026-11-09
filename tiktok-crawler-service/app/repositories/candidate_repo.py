@@ -616,6 +616,24 @@ class CandidateRepository(BaseRepository):
                     )
                     return cand_username
 
+                # 3. If all seeds are exhausted and candidate pool accounts are in cooldown, recycle bootstrap seeds
+                cursor.execute("UPDATE bootstrap_seeds SET is_exhausted = 0;")
+                cursor.execute(
+                    """
+                    SELECT seed_id, username FROM bootstrap_seeds
+                    ORDER BY priority DESC, created_at_ms ASC
+                    LIMIT 1;
+                    """
+                )
+                row = cursor.fetchone()
+                if row:
+                    seed_id, seed_username = row
+                    cursor.execute(
+                        "UPDATE bootstrap_seeds SET is_exhausted = 1 WHERE seed_id = ?;",
+                        (seed_id,)
+                    )
+                    return seed_username
+
                 return None
         finally:
             conn.close()
