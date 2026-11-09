@@ -41,7 +41,6 @@ export default function AppRouter() {
 												<PermissionGate module={route.module} action={route.action} slug={route.slug} roles={route.roles} fallback={<AccessDeny />}>
 													<Component />
 												</PermissionGate>
-												// <Component />
 											}
 										/>
 									);

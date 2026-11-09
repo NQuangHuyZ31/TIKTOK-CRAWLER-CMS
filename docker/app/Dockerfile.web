@@ -58,9 +58,9 @@ ENV APP_ENV=production
 ENV LOG_CHANNEL=stderr
 
 # Copy Nginx & PHP configuration
-COPY docker/nginx.conf /etc/nginx/http.d/default.conf
-COPY docker/php.ini /usr/local/etc/php/conf.d/custom.ini
-COPY docker/start-web.sh /usr/local/bin/start-web.sh
+COPY docker/app/nginx.conf /etc/nginx/http.d/default.conf
+COPY docker/app/php.ini /usr/local/etc/php/conf.d/custom.ini
+COPY docker/app/start-web.sh /usr/local/bin/start-web.sh
 RUN chmod +x /usr/local/bin/start-web.sh
 
 # Storage, Cache & Public Avatars permissions

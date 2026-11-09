@@ -121,7 +121,7 @@ trait LogsActivity
         $result = $relationQuery->sync($filteredIds);
         $newItems = $relationQuery->pluck($identifierColumn)->toArray();
 
-        if (!$this->wasRecentlyCreated && $oldItems != $newItems) {
+        if (!$this->wasRecentlyCreated && $oldItems !== $newItems) {
             $resolvedAction = $action ?? strtoupper($relation) . '_CHANGE';
             $resolvedModule = $module ?? $this->getActivityModuleName();
 

@@ -91,6 +91,7 @@ class CrawlJobRecord(BaseModel):
     crawl_mode: str = "account_with_videos"
     max_videos_per_account: int = 20
     targets: list[str] = Field(default_factory=list)
+    requested_total: int | None = None
     status: Literal["queued", "running", "completed", "failed", "cancelled"] = "queued"
     worker_id: str | None = None
     resume_count: int = 0

@@ -8,11 +8,24 @@ from pydantic import BaseModel, Field, model_validator
 from core.config import (
     CRAWLER_TOKEN,
     MAX_ACCOUNTS_PER_JOB,
+    QUEUE_DB_PATH,
+    CRAWLER_DISCOVERY_ENABLED,
     normalize_callback_url,
 )
 from core.utils import extract_username_from_url, normalize_username
 from engine.queue_manager import QueueFullError, QueueManager
 from services.dataset import DatasetInsufficientError, DatasetLoader
+
+try:
+    from engine.discovery_worker import DiscoveryWorker, DiscoveryWorkerPool
+    from engine.privacy_saga import PrivacySagaCoordinator
+    from engine.schema import initialize_database
+    from repositories.candidate_repo import CandidateRepository
+except ImportError:
+    from app.engine.discovery_worker import DiscoveryWorker, DiscoveryWorkerPool
+    from app.engine.privacy_saga import PrivacySagaCoordinator
+    from app.engine.schema import initialize_database
+    from app.repositories.candidate_repo import CandidateRepository
 
 logging.basicConfig(
     level=logging.INFO,
@@ -55,6 +68,13 @@ class CrawlRequest(BaseModel):
         return self
 
 
+class PrivacyPurgeRequest(BaseModel):
+    entity_type: str = Field(..., description="Entity type: 'username', 'sec_uid', or 'account'")
+    entity_key: str = Field(..., description="Identifier: username or sec_uid")
+    purge_request_id: str = Field(..., description="Correlation ID from CMS purge request")
+    reason: str | None = Field(default="privacy_request")
+
+
 def verify_bearer_token(authorization: str | None = Header(default=None)) -> None:
     """Verify shared Bearer token when CRAWLER_TOKEN is configured."""
     if not CRAWLER_TOKEN:
@@ -69,21 +89,52 @@ def verify_bearer_token(authorization: str | None = Header(default=None)) -> Non
 def create_app(
     queue_manager: QueueManager | None = None,
     dataset_loader: DatasetLoader | None = None,
+    discovery_pool: DiscoveryWorkerPool | None = None,
+    candidate_repo: CandidateRepository | None = None,
 ) -> FastAPI:
     qm = queue_manager or QueueManager()
     ds = dataset_loader or DatasetLoader()
+    cr = candidate_repo or CandidateRepository(QUEUE_DB_PATH)
+    dp = discovery_pool
+    if dp is None and CRAWLER_DISCOVERY_ENABLED:
+        try:
+            dp = DiscoveryWorkerPool(QUEUE_DB_PATH)
+        except Exception as e:
+            logger.warning(f"DiscoveryWorkerPool initialization warning: {e}")
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
+        # 1. Ensure full SQLite WAL schema (all 24 tables & rate limit state) is initialized
+        try:
+            init_conn = initialize_database(QUEUE_DB_PATH)
+            init_conn.close()
+        except Exception as e:
+            logger.warning(f"Database schema initialization warning: {e}")
+
+        # 2. Start legacy QueueManager workers
         await qm.start()
+
+        # 3. Discovery Refill Worker pre-warm and start dedicated Discovery Worker Pool
+        if CRAWLER_DISCOVERY_ENABLED and dp:
+            try:
+                dp.worker.check_and_refill_on_startup()
+                await dp.start()
+                app.state.discovery_worker = dp.worker
+                app.state.discovery_pool = dp
+            except Exception as e:
+                logger.warning(f"Discovery pool startup skipped or failed: {e}")
+
         try:
             yield
         finally:
+            if dp:
+                await dp.stop()
             await qm.stop()
 
     app = FastAPI(title="TikTok Crawler Service", lifespan=lifespan)
     app.state.queue_manager = qm
     app.state.dataset_loader = ds
+    app.state.candidate_repo = cr
 
     @app.get("/health")
     async def health():
@@ -102,7 +153,7 @@ def create_app(
     @app.post("/api/crawl-jobs", status_code=202, dependencies=[Depends(verify_bearer_token)])
     @app.post("/api/crawl-jobs/start", status_code=202, dependencies=[Depends(verify_bearer_token)])
     async def submit_crawl_job(request: CrawlRequest):
-        targets = _resolve_targets(request, ds)
+        targets = _resolve_targets(request, ds, cr)
         if len(targets) > MAX_ACCOUNTS_PER_JOB:
             raise HTTPException(
                 status_code=422,
@@ -124,6 +175,7 @@ def create_app(
                 done_usernames=request.done_usernames,
                 crawl_mode=request.crawl_mode,
                 max_videos_per_account=request.max_videos_per_account,
+                requested_total=request.total_accounts if request.source_type == "count" else None,
             )
             return result
         except QueueFullError as err:
@@ -146,11 +198,30 @@ def create_app(
             )
         return {"job_id": job_id, "status": "cancelled"}
 
+    @app.post("/api/crawler/privacy/purge", dependencies=[Depends(verify_bearer_token)])
+    async def purge_privacy_entity(payload: PrivacyPurgeRequest):
+        try:
+            coordinator = PrivacySagaCoordinator(QUEUE_DB_PATH)
+            result = coordinator.purge_entity(
+                entity_type=payload.entity_type,
+                entity_key=payload.entity_key,
+                purge_request_id=payload.purge_request_id,
+                reason=payload.reason or "gdpr_purge",
+            )
+            return {"status": "success", "data": result}
+        except Exception as e:
+            logger.error(f"Privacy purge failed for {payload.entity_key}: {e}")
+            raise HTTPException(status_code=500, detail=str(e))
+
     return app
 
 
-def _resolve_targets(request: CrawlRequest, dataset_loader: DatasetLoader) -> list[str]:
-    """Deduplicate and resolve target usernames/URLs or sample from dataset for 'count' mode."""
+def _resolve_targets(
+    request: CrawlRequest,
+    dataset_loader: DatasetLoader,
+    candidate_repo: CandidateRepository | None = None,
+) -> list[str]:
+    """Deduplicate and resolve target usernames/URLs or sample balanced 50/50 targets for 'count' mode."""
     seen: set[str] = set()
     targets: list[str] = []
 
@@ -177,6 +248,21 @@ def _resolve_targets(request: CrawlRequest, dataset_loader: DatasetLoader) -> li
                 status_code=422,
                 detail=f"Requested count ({request.total_accounts}) exceeds maximum allowed ({MAX_ACCOUNTS_PER_JOB}).",
             )
+
+        # 1. Primary resolver: Sample 50% Historical + 50% Fresh Discovery from SQLite Candidate Pool (v2.2 Architecture)
+        if candidate_repo:
+            try:
+                sampled = candidate_repo.sample_targets_balanced(
+                    count=request.total_accounts,
+                    exclude=request.done_usernames,
+                    allow_fallback=True,
+                )
+                if sampled:
+                    return sampled
+            except Exception as e:
+                logger.warning(f"Error sampling balanced targets from candidate_repo: {e}")
+
+        # 2. Fallback resolver for cold start or tests without candidate pool
         try:
             return dataset_loader.sample_usernames(
                 count=request.total_accounts,

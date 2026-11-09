@@ -3,6 +3,8 @@
 namespace Modules\TiktokAccount\Providers;
 
 use Modules\Core\Providers\ModuleServiceProvider;
+use Modules\TiktokAccount\Models\TiktokAccount;
+use Modules\TiktokAccount\Observers\TiktokAccountObserver;
 use Modules\TiktokAccount\Repositories\Interfaces\TiktokAccountRepositoryInterface;
 use Modules\TiktokAccount\Repositories\Interfaces\TiktokVideoRepositoryInterface;
 use Modules\TiktokAccount\Repositories\TiktokAccountRepository;
@@ -16,5 +18,11 @@ class TiktokAccountServiceProvider extends ModuleServiceProvider
     {
         $this->app->bind(TiktokAccountRepositoryInterface::class, TiktokAccountRepository::class);
         $this->app->bind(TiktokVideoRepositoryInterface::class, TiktokVideoRepository::class);
+    }
+
+    public function boot(): void
+    {
+        parent::boot();
+        TiktokAccount::observe(TiktokAccountObserver::class);
     }
 }

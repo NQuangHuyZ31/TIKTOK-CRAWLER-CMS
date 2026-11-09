@@ -12,6 +12,10 @@ class LaravelDeliveryError(RuntimeError):
     """Raised when sending an event to Laravel fails after all retry attempts."""
 
 
+class LaravelJobNotFoundError(RuntimeError):
+    """Raised when Laravel rejects an event because the job does not exist (404/410 or 422 invalid job_id)."""
+
+
 class LaravelClient:
     """
     HTTP client for sending crawl events (`started`, `account`, `completed`)
@@ -86,6 +90,10 @@ class LaravelClient:
                 except ValueError:
                     return {"status_code": response.status_code, "text": response.text}
             except httpx.HTTPError as error:
+                resp = response or getattr(error, "response", None)
+                if resp is not None:
+                    self._check_if_job_not_found(job_id, resp, error)
+
                 last_error = self._format_error(error, response)
                 logger.warning(
                     "[Job #%d] Callback '%s' attempt %d/%d failed: %s",
@@ -103,6 +111,42 @@ class LaravelClient:
             f"Could not deliver '{event}' event for job #{job_id} after "
             f"{self.MAX_ATTEMPTS} attempts: {last_error}"
         )
+
+    @staticmethod
+    def _check_if_job_not_found(
+        job_id: int,
+        response: httpx.Response,
+        error: httpx.HTTPError,
+    ) -> None:
+        if response.status_code in (404, 410):
+            raise LaravelJobNotFoundError(
+                f"Job #{job_id} not found in Laravel CMS (HTTP {response.status_code})"
+            ) from error
+
+        if response.status_code == 422:
+            body = None
+            try:
+                body = response.json()
+            except Exception:
+                pass
+
+            body_text = response.text.lower() if hasattr(response, "text") else ""
+            if isinstance(body, dict):
+                msg = str(body.get("message", "")).lower()
+                errors = body.get("errors", {})
+                if (
+                    "job id is invalid" in msg
+                    or "job_id" in errors
+                    or "the route job_id does not match" in msg
+                ):
+                    raise LaravelJobNotFoundError(
+                        f"Job #{job_id} does not exist in Laravel CMS (HTTP 422: {body})"
+                    ) from error
+
+            if "job id is invalid" in body_text or "selected job id is invalid" in body_text:
+                raise LaravelJobNotFoundError(
+                    f"Job #{job_id} does not exist in Laravel CMS (HTTP 422: {response.text})"
+                ) from error
 
     async def send_started(
         self,

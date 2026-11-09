@@ -27,17 +27,7 @@ class PermissionController extends BaseController
     ) {}
 
     /**
-     * Get list of all permissions with filtering and pagination.
-     * api: GET /admin/api/permission/permission (and /admin/api/user/permission)
-     */
-    public function index(Request $request): JsonResponse
-    {
-        return parent::index($request);
-    }
-
-    /**
      * Create a single new permission.
-     * api: POST /admin/api/permission/permission
      */
     public function store(Request $request): JsonResponse
     {
@@ -55,7 +45,6 @@ class PermissionController extends BaseController
 
     /**
      * Create a module with basic permissions (view, create, edit, delete).
-     * api: POST /admin/api/permission/permission/create-module
      */
     public function createModule(CreateModulePermissionsRequest $request): JsonResponse
     {
@@ -83,7 +72,6 @@ class PermissionController extends BaseController
 
     /**
      * Delete a permission by ID.
-     * api: DELETE /admin/api/permission/permission/{id}
      */
     public function destroy(int|string $id): JsonResponse
     {
@@ -97,7 +85,6 @@ class PermissionController extends BaseController
 
     /**
      * Get permissions matrix grouped by module.
-     * api: GET /admin/api/permission/permission/modules
      */
     public function modules(): JsonResponse
     {
@@ -107,7 +94,6 @@ class PermissionController extends BaseController
 
     /**
      * Get list of unique module names.
-     * api: GET /admin/api/permission/permission/distinct-modules
      */
     public function distinctModules(): JsonResponse
     {

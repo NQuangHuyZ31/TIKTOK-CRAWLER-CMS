@@ -1,8 +1,5 @@
 import type { SelectOption } from '@core/configs/systemOptions';
 
-// -----------------------------------------------------------------------------
-// SYSTEM ACTIVITY & AUDIT LOG CONFIGURATION
-// -----------------------------------------------------------------------------
 export const ACTIVITY_ACTION_CONFIG: Record<string, { label: string; color: string }> = {
 	CREATE: { label: 'CREATE', color: 'green' },
 	UPDATE: { label: 'UPDATE', color: 'blue' },

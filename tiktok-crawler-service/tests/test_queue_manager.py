@@ -4,6 +4,7 @@ from pathlib import Path
 import sys
 import tempfile
 import unittest
+import httpx
 
 SERVICE_ROOT = Path(__file__).resolve().parent.parent
 APP_DIR = SERVICE_ROOT / "app"
@@ -19,7 +20,7 @@ patch_windows_self_pipe_if_needed()
 from engine.queue_manager import QueueManager
 from engine.store import QueueStore
 from schemas.models import AccountCrawlOutcome, TikTokAccount
-from services.laravel_client import LaravelDeliveryError
+from services.laravel_client import LaravelClient, LaravelDeliveryError, LaravelJobNotFoundError
 
 
 class FakeTikTokClient:
@@ -62,12 +63,20 @@ class FakeTikTokClient:
 
 
 class FakeLaravelClient:
-    def __init__(self, unfinished_jobs: list[dict] | None = None, fail_account_delivery: bool = False):
+    def __init__(
+        self,
+        unfinished_jobs: list[dict] | None = None,
+        fail_account_delivery: bool = False,
+        fail_with_not_found: bool = False,
+    ):
         self.events: list[tuple[str, int, dict]] = []
         self.unfinished_jobs = unfinished_jobs or []
         self.fail_account_delivery = fail_account_delivery
+        self.fail_with_not_found = fail_with_not_found
 
     async def send_started(self, job_id: int, worker_id: str, resumed: bool = False, **kwargs) -> dict:
+        if self.fail_with_not_found:
+            raise LaravelJobNotFoundError(f"Job #{job_id} does not exist in Laravel CMS (HTTP 422: The selected job id is invalid.)")
         self.events.append(("started", job_id, {"worker_id": worker_id, "resumed": resumed}))
         return {"status": "ok"}
 
@@ -253,6 +262,52 @@ class TestQueueManager(unittest.IsolatedAsyncioTestCase):
             finally:
                 await qm.stop()
                 store.close()
+
+    async def test_laravel_job_not_found_terminates_job_and_deletes_from_queue(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            store = QueueStore(db_path=Path(tmp) / "queue.db")
+            tiktok = FakeTikTokClient(delay=0.001)
+            laravel = FakeLaravelClient(fail_with_not_found=True)
+            qm = QueueManager(
+                store=store,
+                tiktok_client=tiktok,  # type: ignore[arg-type]
+                laravel_client=laravel,  # type: ignore[arg-type]
+                worker_count=1,
+                requeue_delay_seconds=60.0,
+            )
+            await qm.start()
+            try:
+                await qm.enqueue_job(88, "usernames", ["u_deleted"])
+                await asyncio.wait_for(qm.queue.join(), timeout=5.0)
+                # Job must be deleted from SQLite store
+                rec = await store.get_job(88)
+                self.assertIsNone(rec)
+                # Job must be removed from enqueued ids
+                self.assertNotIn(88, qm._enqueued_ids)
+                # No delayed requeue tasks
+                self.assertEqual(len(qm._delayed_tasks), 0)
+            finally:
+                await qm.stop()
+                store.close()
+
+    async def test_laravel_client_422_job_invalid_raises_not_found_without_retrying(self):
+        call_count = 0
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            nonlocal call_count
+            call_count += 1
+            return httpx.Response(
+                422,
+                json={"message": "The selected job id is invalid.", "errors": {"job_id": ["The selected job id is invalid."]}},
+            )
+
+        transport = httpx.MockTransport(handler)
+        async with httpx.AsyncClient(transport=transport) as client:
+            lc = LaravelClient(base_url="http://mock-laravel", token="tok", http_client=client, backoff_base=0.01)
+            with self.assertRaises(LaravelJobNotFoundError):
+                await lc.send_started(job_id=999, worker_id="w-1")
+            # Must fail immediately on first attempt without retrying 5 times!
+            self.assertEqual(call_count, 1)
 
 
 if __name__ == "__main__":

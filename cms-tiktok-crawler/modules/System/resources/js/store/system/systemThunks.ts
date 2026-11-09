@@ -94,14 +94,14 @@ export const triggerManualCleanup = createAsyncThunk(
 	}
 );
 
-export const fetchCleanupHistory = createAsyncThunk(
-	'system/fetchCleanupHistory',
-	async (_, { rejectWithValue }) => {
-		try {
-			const res = await getCleanupHistory();
-			return res.data;
-		} catch (error: any) {
-			return rejectWithValue(error?.message || 'Failed to fetch cleanup history');
-		}
-	}
-);
+// export const fetchCleanupHistory = createAsyncThunk(
+// 	'system/fetchCleanupHistory',
+// 	async (_, { rejectWithValue }) => {
+// 		try {
+// 			const res = await getCleanupHistory();
+// 			return res.data;
+// 		} catch (error: any) {
+// 			return rejectWithValue(error?.message || 'Failed to fetch cleanup history');
+// 		}
+// 	}
+// );

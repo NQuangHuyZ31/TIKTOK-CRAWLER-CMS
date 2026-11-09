@@ -26,17 +26,7 @@ class RoleController extends BaseController
     ) {}
 
     /**
-     * Get list of roles with pagination and keyword search.
-     * api: GET /admin/api/role/role (and /admin/api/user/role)
-     */
-    public function index(Request $request): JsonResponse
-    {
-        return parent::index($request);
-    }
-
-    /**
      * Get details of a single role with its assigned permissions.
-     * api: GET /admin/api/role/role/{id}
      */
     public function show(int|string $id): JsonResponse
     {
@@ -50,7 +40,6 @@ class RoleController extends BaseController
 
     /**
      * Create a new role with optional permission assignments.
-     * api: POST /admin/api/role/role
      */
     public function store(Request $request): JsonResponse
     {
@@ -66,7 +55,6 @@ class RoleController extends BaseController
 
     /**
      * Update an existing role and its permissions.
-     * api: PUT /admin/api/role/role/{id}
      */
     public function update(Request $request, int|string $id): JsonResponse
     {
@@ -82,7 +70,6 @@ class RoleController extends BaseController
 
     /**
      * Delete an existing role with protection for system administrator.
-     * api: DELETE /admin/api/role/role/{id}
      */
     public function destroy(int|string $id): JsonResponse
     {
@@ -98,7 +85,6 @@ class RoleController extends BaseController
 
     /**
      * Get all available permissions grouped by module.
-     * api: GET /admin/api/role/role/permissions
      */
     public function permissions(): JsonResponse
     {

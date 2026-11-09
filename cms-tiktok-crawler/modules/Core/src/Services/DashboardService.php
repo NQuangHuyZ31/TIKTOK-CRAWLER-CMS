@@ -43,10 +43,6 @@ class DashboardService
             'total_failed_jobs' => 0,
         ];
 
-        if (!$this->crawlJobRepository) {
-            return $defaultStats;
-        }
-
         try {
             return array_merge($defaultStats, $this->crawlJobRepository->getStatisticsSummary());
         } catch (\Throwable $e) {
@@ -68,10 +64,6 @@ class DashboardService
             'total_active_accounts' => 0,
             'total_inactive_accounts' => 0,
         ];
-
-        if (!$this->tiktokAccountRepository) {
-            return $defaultStats;
-        }
 
         try {
             return array_merge($defaultStats, $this->tiktokAccountRepository->getStatisticSummary());
@@ -168,7 +160,7 @@ class DashboardService
     /**
      * Helper to construct a continuous time series array for a specific metric.
      */
-    protected function buildTrendSeries(string $title, string $metric, Collection $dailySnapshots, string $field, int $days,): array
+    protected function buildTrendSeries(string $title, string $metric, Collection $dailySnapshots, string $field, int $days): array
     {
         $points = [];
         $previousValue = null;

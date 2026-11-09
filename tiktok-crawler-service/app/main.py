@@ -1,12 +1,14 @@
 from pathlib import Path
 import sys
 
-# Ensure `app` and its modular subdirectories are on sys.path
+# Ensure project root, `app` and its modular subdirectories are on sys.path
 APP_DIR = Path(__file__).resolve().parent
-for sub in ("", "core", "schemas", "crawler", "engine", "services", "api"):
-    target = str(APP_DIR / sub if sub else APP_DIR)
-    if target not in sys.path:
-        sys.path.insert(0, target)
+SERVICE_ROOT = APP_DIR.parent
+
+for target_path in (SERVICE_ROOT, APP_DIR, *(APP_DIR / sub for sub in ("core", "schemas", "crawler", "engine", "services", "api"))):
+    target_str = str(target_path)
+    if target_str not in sys.path:
+        sys.path.insert(0, target_str)
 
 import uvicorn
 from core.config import SERVICE_HOST, SERVICE_PORT

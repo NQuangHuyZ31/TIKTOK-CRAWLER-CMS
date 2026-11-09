@@ -81,9 +81,30 @@ def extract_profile(
     if extracted_dom:
         return _build_account(extracted_dom, profile_url, clean_user)
 
-    # If verification failed
+    # If extraction failed, differentiate between genuine Security Challenge / Captcha vs missing account
     title_text = soup.title.string.strip() if soup.title and soup.title.string else ""
-    if "blocked" in body.lower() or "captcha" in body.lower() or "challenge" in body.lower():
+    title_lower = title_text.lower()
+
+    is_challenge = False
+    challenge_signatures = (
+        "security verification",
+        "security check",
+        "verify to continue",
+        "please verify",
+        "robot",
+        "human verification",
+        "captcha",
+    )
+    if any(sig in title_lower for sig in challenge_signatures):
+        is_challenge = True
+    elif soup.find(class_=lambda c: c and any(k in str(c).lower() for k in ("captcha", "secsdk-captcha", "captcha_verify_container"))):
+        is_challenge = True
+    elif soup.find(id=lambda i: i and any(k in str(i).lower() for k in ("captcha", "verify-ele"))):
+        is_challenge = True
+    elif "secsdk-captcha" in body or "captcha_verify_container" in body or "verify-bar-close" in body:
+        is_challenge = True
+
+    if is_challenge:
         raise ExtractorError("CHALLENGE", f"TikTok challenge encountered: {title_text}", is_retryable=False)
 
     raise ExtractorError("NOT_FOUND", f"Could not extract TikTok profile for @{clean_user or 'unknown'}", is_retryable=False)
