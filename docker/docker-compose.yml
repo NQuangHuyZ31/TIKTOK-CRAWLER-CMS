@@ -1,0 +1,18 @@
+services:
+  app:
+    build: 
+      context: ..                          # Trỏ context ra thư mục gốc TIKTOK-CRAWLER
+      dockerfile: docker/app/Dockerfile.web # Đường dẫn tính từ context (gốc) vào Dockerfile
+    container_name: tiktok_cms_app
+    restart: unless-stopped
+    working_dir: /var/www/html
+    env_file:
+      - ../cms-tiktok-crawler/.env
+    volumes: 
+      - ../cms-tiktok-crawler:/var/www/html
+    networks:
+      - tiktok_network
+
+networks:
+  tiktok_network:
+    driver: bridge
