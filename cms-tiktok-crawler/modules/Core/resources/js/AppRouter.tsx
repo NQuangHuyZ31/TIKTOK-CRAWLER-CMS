@@ -14,7 +14,11 @@ export default function AppRouter() {
 	const adminRoutes = useAdminRoutes();
 	const bareRoutes = useBareRoutes();
 	const { isAuthenticated } = useSelector((state: any) => state.auth);
-	const adminPath = '/admin';
+
+	const hasAdminPrefix = typeof window !== 'undefined' && window.location.pathname.startsWith('/admin');
+	const basename = hasAdminPrefix ? '/admin' : '';
+	const rootRedirect = hasAdminPrefix ? '/dashboard' : '/admin/dashboard';
+
 	return (
 		<ConfigProvider
 			theme={{
@@ -26,7 +30,7 @@ export default function AppRouter() {
 			}}
 		>
 			<AntdApp>
-				<BrowserRouter basename={adminPath}>
+				<BrowserRouter basename={basename}>
 					<Suspense fallback={<SpinComponent />}>
 						<Routes>
 							{/* Routes configured inside AdminLayout */}
@@ -50,14 +54,17 @@ export default function AppRouter() {
 							{/* Bare / Standalone / Public Routes */}
 							{bareRoutes.map((route) => {
 								const Component = route.component;
-								if (isAuthenticated) {
-									return <Route key={route.path} path={route.path} element={<Navigate to="/dashboard" replace />} />;
+								if (route.guestOnly && isAuthenticated) {
+									return <Route key={route.path} path={route.path} element={<Navigate to={rootRedirect} replace />} />;
+								}
+								if (route.isPrivate && !isAuthenticated) {
+									return <Route key={route.path} path={route.path} element={<Navigate to="/auth/login" replace />} />;
 								}
 								return <Route key={route.path} path={route.path} element={<Component />} />;
 							})}
 
 							{/* Root redirect */}
-							<Route path="/" element={<Navigate to="/dashboard" replace />} />
+							<Route path="/" element={<Navigate to={rootRedirect} replace />} />
 
 							{/* Catch-all Not Found */}
 							<Route path="*" element={<NotFound />} />

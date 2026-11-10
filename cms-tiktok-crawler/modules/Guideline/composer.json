@@ -1,0 +1,23 @@
+{
+	"name": "cms-tiktok-crawler/module-guideline",
+	"description": "Guideline module for Tiktok CMS",
+	"version": "1.0.0",
+	"type": "library",
+	"require": {
+		"php": "^8.3",
+		"laravel/framework": "^13.17"
+	},
+	"autoload": {
+		"psr-4": {
+			"Modules\\Guideline\\": "src/"
+		}
+	},
+	"extra": {
+		"laravel": {
+			"providers": [
+				"Modules\\Guideline\\Providers\\GuidelineServiceProvider"
+			]
+		}
+	},
+	"minimum-stability": "stable"
+}

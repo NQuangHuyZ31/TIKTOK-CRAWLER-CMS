@@ -11,9 +11,10 @@ return [
         'system' => 'System',
         'role' => 'Role',
         'permission' => 'Permission',
+        'guideline' => 'Guideline',
     ]),
     'permission_action' => ['view', 'create', 'edit', 'delete'],
-    'modules' => ['core', 'auth', 'system', 'role', 'permission', 'user', 'tiktok_account', 'crawler'],
-    'ignore_check_permission' => ['auth'],
-    'ignore_group' => ['auth'],
+    'modules' => ['core', 'auth', 'system', 'role', 'permission', 'user', 'tiktok_account', 'crawler', 'guideline'],
+    'ignore_check_permission' => ['auth', 'guideline'],
+    'ignore_group' => ['auth', 'guideline'],
 ];
