@@ -24,7 +24,7 @@ export default function JobDetailDescriptions({ job }: JobDetailDescriptionsProp
 							? 'Account Only'
 							: job?.crawl_mode === 'video_only'
 								? 'Video URLs Only'
-								: `Account + Videos (Max ${job?.max_videos_per_account ?? 20})`}
+								: `Account + Videos (Max ${job?.max_videos_per_account ?? 20}${job?.target_date ? ` · Date: ${job.target_date}` : ''})`}
 					</Tag>
 				</Descriptions.Item>
 				<Descriptions.Item label="Total Accounts">

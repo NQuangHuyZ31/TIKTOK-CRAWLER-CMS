@@ -99,7 +99,7 @@ export default function CrawlJobsPage() {
 				status: (status) => <StatusTag status={status} />,
 				crawl_mode: (mode, record) => (
 					<Tag color={mode === 'account_only' ? 'default' : 'purple'}>
-						{mode === 'account_only' ? 'Account Only' : mode === 'video_only' ? 'Video Only' : `Account + Videos (${record.max_videos_per_account ?? 20})`}
+						{mode === 'account_only' ? 'Account Only' : mode === 'video_only' ? 'Video Only' : `Account + Videos (${record.max_videos_per_account ?? 20}${record.target_date ? ` · ${record.target_date}` : ''})`}
 					</Tag>
 				),
 				total_account: (val, record) => formatNumber(val ?? record.total_accounts ?? 0),

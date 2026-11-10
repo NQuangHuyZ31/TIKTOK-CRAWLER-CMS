@@ -49,6 +49,9 @@ class CrawlJobService
             'source_type' => $sourceType,
             'crawl_mode' => $crawlMode,
             'max_videos_per_account' => $maxVideosPerAccount,
+            'target_date' => $data['target_date'] ?? null,
+            'date_from' => $data['date_from'] ?? null,
+            'date_to' => $data['date_to'] ?? null,
             'data_crawls' => json_encode($dataCrawl),
             'total_accounts' => $totalAccounts,
             'status' => 'pending',
@@ -89,6 +92,18 @@ class CrawlJobService
 
         if (isset($data['max_videos_per_account'])) {
             $updateData['max_videos_per_account'] = max(0, min(100, (int) $data['max_videos_per_account']));
+        }
+
+        if (array_key_exists('target_date', $data)) {
+            $updateData['target_date'] = $data['target_date'];
+        }
+
+        if (array_key_exists('date_from', $data)) {
+            $updateData['date_from'] = $data['date_from'];
+        }
+
+        if (array_key_exists('date_to', $data)) {
+            $updateData['date_to'] = $data['date_to'];
         }
 
         if (isset($data['data_crawl'])) {
@@ -529,42 +544,34 @@ class CrawlJobService
 
         if ($crawlJob->source_type === 'database') {
             $usernames = $this->tiktokAccountRepository->getUsernamesByIds($data);
-
             if (empty($usernames)) {
                 throw new \RuntimeException('No matching TikTok accounts found in the database.');
             }
-
-            return [
-                'job_id' => $jobId,
-                'source_type' => 'usernames',
-                'usernames' => $usernames,
-                'crawl_mode' => $crawlMode,
-                'max_videos_per_account' => $maxVideos,
-            ];
         }
 
-        if ($crawlJob->source_type === 'count') {
-            // If targets were already frozen into usernames on a previous start, reuse them
-            if (count($data) > 1 || (isset($data[0]) && !is_numeric($data[0]))) {
-                return [
+        $payload = match ($crawlJob->source_type) {
+            'database' => [
+                'job_id' => $jobId,
+                'source_type' => 'usernames',
+                'usernames' => $usernames ?? [],
+                'crawl_mode' => $crawlMode,
+                'max_videos_per_account' => $maxVideos,
+            ],
+            'count' => (count($data) > 1 || (isset($data[0]) && !is_numeric($data[0])))
+                ? [
                     'job_id' => $jobId,
                     'source_type' => 'usernames',
                     'usernames' => array_values($data),
                     'crawl_mode' => $crawlMode,
                     'max_videos_per_account' => $maxVideos,
-                ];
-            }
-
-            return [
-                'job_id' => $jobId,
-                'source_type' => 'count',
-                'total_accounts' => (int) ($data[0] ?? $crawlJob->total_accounts ?? 0),
-                'crawl_mode' => $crawlMode,
-                'max_videos_per_account' => $maxVideos,
-            ];
-        }
-
-        return match ($crawlJob->source_type) {
+                ]
+                : [
+                    'job_id' => $jobId,
+                    'source_type' => 'count',
+                    'total_accounts' => (int) ($data[0] ?? $crawlJob->total_accounts ?? 0),
+                    'crawl_mode' => $crawlMode,
+                    'max_videos_per_account' => $maxVideos,
+                ],
             'usernames' => [
                 'job_id' => $jobId,
                 'source_type' => 'usernames',
@@ -581,6 +588,18 @@ class CrawlJobService
             ],
             default => throw new \InvalidArgumentException("Unsupported crawl source type: {$crawlJob->source_type}"),
         };
+
+        if (!empty($crawlJob->target_date)) {
+            $payload['target_date'] = (string) $crawlJob->target_date;
+        }
+        if (!empty($crawlJob->date_from)) {
+            $payload['date_from'] = is_string($crawlJob->date_from) ? $crawlJob->date_from : $crawlJob->date_from->toISOString();
+        }
+        if (!empty($crawlJob->date_to)) {
+            $payload['date_to'] = is_string($crawlJob->date_to) ? $crawlJob->date_to : $crawlJob->date_to->toISOString();
+        }
+
+        return $payload;
     }
 
     /**
