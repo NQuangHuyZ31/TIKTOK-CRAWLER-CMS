@@ -4,6 +4,7 @@ namespace Modules\TiktokAccount\Http\Controllers;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
 use Modules\Core\Http\Controllers\BaseController;
 use Modules\TiktokAccount\Models\TiktokAccount;
 use Modules\TiktokAccount\Http\Requests\StoreTiktokAccountRequest;
@@ -46,10 +47,31 @@ class TiktokAccountController extends BaseController
         'updated_at',
     ];
     protected array $defaultSort = ['id', 'desc'];
+    protected string $exportFileName = 'tiktok_accounts';
+    protected string $exportDateField = 'crawled_at';
+    protected array $exportColumns = [
+        'id' => 'ID',
+        'username' => 'Username',
+        'nickname' => 'Nickname',
+        'followers_count' => 'Followers',
+        'following_count' => 'Following',
+        'likes_count' => 'Likes',
+        'video_count' => 'Videos',
+        'is_verified' => 'Verified',
+        'bio' => 'Bio',
+        'status' => 'Status',
+        'crawled_at' => 'Crawled At',
+        'created_at' => 'Created At',
+    ];
 
     public function __construct(
         protected TiktokAccountService $tiktokAccountService
     ) {
+    }
+
+    public static function route()
+    {
+        Route::get('/admin/tiktok-account/export', [self::class, 'export'])->name('tiktok_account.export');
     }
 
     /**
