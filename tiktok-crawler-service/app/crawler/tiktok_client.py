@@ -1,3 +1,4 @@
+from datetime import datetime
 import asyncio
 import logging
 import random
@@ -17,10 +18,10 @@ from core.config import (
     USER_AGENT_POOL,
 )
 from core.utils import build_profile_url, normalize_username
-from crawler.avatar import AvatarDownloader
+from crawler.profile.avatar import AvatarDownloader
 from crawler.extractor import ExtractorError, extract_profile
 from crawler.resilience import CircuitBreaker, RateLimiter
-from crawler.video_extractor import fetch_account_videos
+from crawler.video.video_extractor import fetch_account_videos
 from schemas.models import AccountCrawlOutcome
 
 logger = logging.getLogger(__name__)
@@ -83,10 +84,16 @@ class TikTokClient:
             "Sec-Ch-Ua-Mobile": "?0",
             "Upgrade-Insecure-Requests": "1",
         }
+        is_mobile = any(m in ua for m in ("iPhone", "Android", "Mobile"))
+        headers["Sec-Ch-Ua-Mobile"] = "?1" if is_mobile else "?0"
         if "Windows" in ua:
             headers["Sec-Ch-Ua-Platform"] = '"Windows"'
         elif "Macintosh" in ua:
             headers["Sec-Ch-Ua-Platform"] = '"macOS"'
+        elif "iPhone" in ua or "iPad" in ua:
+            headers["Sec-Ch-Ua-Platform"] = '"iOS"'
+        elif "Android" in ua:
+            headers["Sec-Ch-Ua-Platform"] = '"Android"'
         return headers
 
     @staticmethod
@@ -104,6 +111,8 @@ class TikTokClient:
         username: str,
         profile_url: str | None = None,
         max_videos: int = 20,
+        date_from: datetime | str | None = None,
+        date_to: datetime | str | None = None,
     ) -> AccountCrawlOutcome:
         """
         Crawl a single TikTok account via HTTP request, extract embedded JSON,
@@ -288,6 +297,8 @@ class TikTokClient:
                     max_videos=max_videos,
                     headers=self._default_headers(chosen_ua),
                     timeout=min(self.request_timeout, 20.0),
+                    date_from=date_from,
+                    date_to=date_to,
                 )
                 if videos and account.video_count == 0:
                     account.video_count = len(videos)

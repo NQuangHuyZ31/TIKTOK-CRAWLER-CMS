@@ -149,14 +149,52 @@ class CandidateManager:
     def get_sources(self, candidate_id: str) -> List[Dict[str, Any]]:
         return self.repo.get_sources(candidate_id)
 
+    def get_valid_count(self) -> int:
+        return self.repo.get_valid_count()
+
+    def get_fresh_count(self) -> int:
+        return self.repo.get_fresh_count()
+
+    def get_active_locked_count(self) -> int:
+        return self.repo.get_active_locked_count()
+
+    def get_historical_count(self) -> int:
+        return self.repo.get_historical_count()
+
     def sample_targets_balanced(
         self,
         count: int,
         exclude: Optional[List[str]] = None,
         allow_fallback: bool = True,
+        job_id: Optional[str | int] = None,
     ) -> List[str]:
         return self.repo.sample_targets_balanced(
             count=count,
             exclude=exclude,
             allow_fallback=allow_fallback,
+            job_id=job_id,
         )
+
+    def mark_candidate_crawled_and_released(
+        self, username: str, job_id: Optional[str | int] = None, cooldown_ms: Optional[int] = None
+    ) -> None:
+        self.repo.mark_candidate_crawled_and_released(username, job_id=job_id, cooldown_ms=cooldown_ms)
+
+    def mark_candidate_crawled(self, username: str) -> None:
+        self.repo.mark_candidate_crawled(username)
+
+    def release_unfinished_assignments(self, job_id: str | int) -> int:
+        return self.repo.release_unfinished_assignments(job_id)
+
+    def batch_lock_fresh_candidates(
+        self, usernames: List[str], job_id: str | int
+    ) -> List[str]:
+        return self.repo.batch_lock_fresh_candidates(usernames, job_id=job_id)
+
+    def sync_historical_candidates(self) -> int:
+        return self.repo.sync_historical_candidates()
+
+    def clean_stuck_active_assignments(
+        self, active_job_ids: Optional[List[str | int]] = None
+    ) -> int:
+        return self.repo.clean_stuck_active_assignments(active_job_ids=active_job_ids)

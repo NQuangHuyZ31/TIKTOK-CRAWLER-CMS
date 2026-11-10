@@ -1,7 +1,8 @@
 import React from 'react';
 import type { MenuProps } from 'antd';
 import { Avatar, Button, Dropdown, Flex, Layout, Space, Typography } from 'antd';
-import { DownOutlined, LogoutOutlined, MenuFoldOutlined, MenuOutlined, MenuUnfoldOutlined } from '@ant-design/icons';
+import { BookOutlined, DownOutlined, LogoutOutlined, MenuFoldOutlined, MenuOutlined, MenuUnfoldOutlined } from '@ant-design/icons';
+import { useNavigate } from 'react-router-dom';
 import { useLayout } from '../contexts/LayoutContext';
 import { useCurrentRoute } from '../routes/registry';
 import useCurrentUser from '../hooks/useCurrentUser';
@@ -10,6 +11,7 @@ const { Header: AntHeader } = Layout;
 const { Text } = Typography;
 
 export default function Header() {
+	const navigate = useNavigate();
 	const { user, initials, roleLabel, logout } = useCurrentUser();
 	const { collapsed, toggleCollapsed, toggleMobileDrawer, isMobile } = useLayout();
 	const currentRoute = useCurrentRoute();
@@ -54,6 +56,22 @@ export default function Header() {
 
 			{/* Right section: User profile & Logout dropdown */}
 			<Flex align="center" gap={isMobile ? 10 : 16}>
+				<Button
+					type="default"
+					icon={<BookOutlined style={{ color: '#1677ff' }} />}
+					onClick={() => navigate('/guideline')}
+					style={{
+						height: 38,
+						borderRadius: 8,
+						fontSize: 13,
+						display: 'inline-flex',
+						alignItems: 'center',
+						borderColor: '#e2e8f0',
+					}}
+				>
+					{!isMobile && 'Guidelines & Docs'}
+				</Button>
+
 				<Dropdown menu={{ items: accountMenuItems, onClick: handleMenuClick }} trigger={['click']} placement="bottomRight">
 					<Button
 						type="text"

@@ -92,8 +92,10 @@ CRAWLER_GLOBAL_RATE_LIMIT_RPS = float(os.getenv("CRAWLER_GLOBAL_RATE_LIMIT_RPS",
 CRAWLER_DISCOVERY_ENABLED = os.getenv("CRAWLER_DISCOVERY_ENABLED", "true").lower() in ("true", "1", "yes")
 DISCOVERY_WORKER_COUNT = int(os.getenv("DISCOVERY_WORKER_COUNT", "2"))
 DISCOVERY_INTERVAL_SECONDS = float(os.getenv("DISCOVERY_INTERVAL_SECONDS", "10.0"))
-CRAWLER_CANDIDATE_POOL_TARGET_SIZE = int(os.getenv("CRAWLER_CANDIDATE_POOL_TARGET_SIZE", "2000"))
-CRAWLER_CANDIDATE_POOL_LOW_WATERMARK = int(os.getenv("CRAWLER_CANDIDATE_POOL_LOW_WATERMARK", "500"))
+CRAWLER_CANDIDATE_POOL_TARGET_SIZE = int(os.getenv("CRAWLER_CANDIDATE_POOL_TARGET_SIZE", "5000"))
+CRAWLER_CANDIDATE_POOL_LOW_WATERMARK = int(os.getenv("CRAWLER_CANDIDATE_POOL_LOW_WATERMARK", "1000"))
+CRAWLER_FRESH_TARGET_SIZE = int(os.getenv("CRAWLER_FRESH_TARGET_SIZE", "5000"))
+CRAWLER_CANDIDATE_COOLDOWN_MS = int(os.getenv("CRAWLER_CANDIDATE_COOLDOWN_MS", str(24 * 3600 * 1000)))
 CRAWLER_DISCOVERY_SCAN_VIDEOS_PER_SEED = int(os.getenv("CRAWLER_DISCOVERY_SCAN_VIDEOS_PER_SEED", "20"))
 ALLOW_BOOTSTRAP_FALLBACK = os.getenv("ALLOW_BOOTSTRAP_FALLBACK", "true").lower() in ("true", "1", "yes")
 DISCOVERY_RATE_LIMITED = os.getenv("DISCOVERY_RATE_LIMITED", "false").lower() in ("true", "1", "yes")
@@ -120,37 +122,33 @@ CIRCUIT_BREAKER_THRESHOLD = int(os.getenv("CIRCUIT_BREAKER_THRESHOLD", "10"))
 CIRCUIT_BREAKER_COOLDOWN = float(os.getenv("CIRCUIT_BREAKER_COOLDOWN", "15"))
 
 # Input & Resource bounds
-MAX_ACCOUNTS_PER_JOB = int(os.getenv("MAX_ACCOUNTS_PER_JOB", "500"))
+MAX_ACCOUNTS_PER_JOB = int(os.getenv("MAX_ACCOUNTS_PER_JOB", "2000"))
 QUEUE_MAX_SIZE = int(os.getenv("QUEUE_MAX_SIZE", "5000"))
 AVATAR_MAX_BYTES = int(os.getenv("AVATAR_MAX_BYTES", str(2 * 1024 * 1024)))
 MAX_HTML_BYTES = int(os.getenv("MAX_HTML_BYTES", str(5 * 1024 * 1024)))
 
 DEFAULT_USER_AGENT = os.getenv(
     "USER_AGENT",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1",
 )
 
 USER_AGENT_POOL = [
     DEFAULT_USER_AGENT,
     (
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-        "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36"
+        "Mozilla/5.0 (iPhone; CPU iPhone OS 17_4_1 like Mac OS X) "
+        "AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4.1 Mobile/15E148 Safari/604.1"
     ),
     (
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
-        "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
+        "Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.6613.127 Mobile Safari/537.36"
     ),
     (
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:130.0) "
-        "Gecko/20100101 Firefox/130.0"
+        "Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) "
+        "AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1"
     ),
     (
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-        "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36 Edg/128.0.0.0"
-    ),
-    (
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
-        "AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.6 Safari/605.1.15"
+        "Mozilla/5.0 (Linux; Android 14; SM-S928B) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.6613.88 Mobile Safari/537.36"
     ),
 ]
 

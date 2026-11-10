@@ -31,7 +31,7 @@ patch_windows_self_pipe_if_needed()
 
 from engine.schema import initialize_database
 from engine.shared_rate_limiter import SharedHostRateLimiter
-from engine.scheduler_daemon import SchedulerDaemon, FencingException
+from workers.scheduler_daemon import SchedulerDaemon, FencingException
 
 
 class TestBatch6SchedulerAndRateLimiter(unittest.TestCase):

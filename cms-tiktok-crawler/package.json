@@ -20,8 +20,9 @@
 		"mix:permission": "node scripts/mix-module.cjs Permission",
 		"mix:auth": "node scripts/mix-module.cjs Auth",
 		"mix:user": "node scripts/mix-module.cjs User",
+		"mix:guideline": "node scripts/mix-module.cjs Guideline",
 		"mix:module": "node scripts/mix-module.cjs",
-		"check-types": "tsc --noEmit"
+		"check-types": "node ./node_modules/typescript/bin/tsc --noEmit"
 	},
 	"overrides": {
 		"webpack": "5.94.0"

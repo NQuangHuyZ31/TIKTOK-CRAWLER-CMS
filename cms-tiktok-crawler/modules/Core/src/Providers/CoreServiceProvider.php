@@ -134,18 +134,29 @@ class CoreServiceProvider extends ServiceProvider
                     $this->loadRoutesFrom($apiRoute);
                 }
             });
+        });
 
-            // 2. Register Web routes for modules under /{admin_path}
+        // 2. Register Web routes for modules
             Route::middleware('web')->group(function () use ($registry) {
+                foreach ($registry->all() as $name => $moduleDir) {
+                    if ($name === 'Core') {
+                        continue;
+                    }
+
+                    $webRoutes = $registry->path($name, 'routes/web.php');
+                    if (is_file($webRoutes)) {
+                        $this->loadRoutesFrom($webRoutes);
+                    }
+                }
+                
                 $coreWebRoutes = $registry->path('Core', 'routes/web.php');
                 if (is_file($coreWebRoutes)) {
                     $this->loadRoutesFrom($coreWebRoutes);
                 }
             });
-        });
 
         Route::middleware('web')->get('/', function () use ($adminPrefix) {
-            return redirect('/' . $adminPrefix);
+            return redirect('/' . $adminPrefix . '/dashboard');
         });
     }
 }

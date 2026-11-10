@@ -10,6 +10,8 @@ export interface RouteDef {
 	layout?: 'admin' | 'main' | 'bare' | 'none';
 	/** Whether the route requires authentication / private (default true) */
 	isPrivate?: boolean;
+	/** Whether the route is only for unauthenticated guests (e.g. login) */
+	guestOnly?: boolean;
 	/** Page title */
 	title?: string;
 	/** Label to show in navigation menu (routes without label are routed but not shown in sidebar menu) */

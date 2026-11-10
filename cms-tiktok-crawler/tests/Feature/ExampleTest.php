@@ -7,11 +7,16 @@ test('the application returns a successful response on admin route', function ()
     $response->assertStatus(200);
 });
 
-test('the application root redirects to admin path', function () {
+test('the application root redirects to admin dashboard', function () {
     $adminPath = trim((string) config('admin.admin_path', 'admin'), '/');
     $response = $this->get('/');
 
-    $response->assertRedirect('/' . $adminPath);
+    $response->assertRedirect('/' . $adminPath . '/dashboard');
+});
+
+test('non-admin route serves spa directly without redirect', function () {
+    $response = $this->get('/login');
+    $response->assertStatus(200);
 });
 
 test('admin dashboard returns 200', function () {

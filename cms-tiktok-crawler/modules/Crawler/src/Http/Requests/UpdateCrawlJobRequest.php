@@ -26,6 +26,9 @@ class UpdateCrawlJobRequest extends FormRequest
             'source_type' => 'sometimes|required|in:usernames,urls,database,count',
             'crawl_mode' => 'sometimes|nullable|in:account_only,account_with_videos,video_only',
             'max_videos_per_account' => 'sometimes|nullable|integer|min:0|max:100',
+            'target_date' => 'sometimes|nullable|string|max:32',
+            'date_from' => 'sometimes|nullable|date',
+            'date_to' => 'sometimes|nullable|date',
             'data_crawl' => 'sometimes|required|array|min:1',
         ];
     }

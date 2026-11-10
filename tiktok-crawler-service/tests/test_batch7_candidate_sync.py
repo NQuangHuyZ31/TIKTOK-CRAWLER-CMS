@@ -28,7 +28,7 @@ patch_windows_self_pipe_if_needed()
 
 from engine.schema import initialize_database
 from engine.candidate_manager import CandidateManager
-from engine.seed_synchronizer import SeedSynchronizer
+from engine.sagas.seed_synchronizer import SeedSynchronizer
 
 
 class TestBatch7CandidateAndSeedSync(unittest.TestCase):

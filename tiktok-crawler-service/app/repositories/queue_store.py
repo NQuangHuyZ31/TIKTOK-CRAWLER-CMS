@@ -94,6 +94,8 @@ class QueueStore:
             callback_url=payload.get("callback_url"),
             callback_token=payload.get("callback_token"),
             requested_total=payload.get("requested_total"),
+            date_from=payload.get("date_from"),
+            date_to=payload.get("date_to"),
         )
 
     def upsert_job_sync(
@@ -108,6 +110,8 @@ class QueueStore:
         max_videos_per_account: int = 20,
         requested_total: int | None = None,
         reset_if_terminal: bool = True,
+        date_from: str | None = None,
+        date_to: str | None = None,
     ) -> tuple[CrawlJobRecord, bool]:
         """
         Insert a job into SQLite BEFORE enqueuing in memory.
@@ -126,6 +130,8 @@ class QueueStore:
                 "requested_total": requested_total,
                 "callback_url": callback_url,
                 "callback_token": callback_token,
+                "date_from": date_from,
+                "date_to": date_to,
             }
         )
 
@@ -288,6 +294,35 @@ class QueueStore:
 
     async def get_done_accounts(self, job_id: int) -> set[str]:
         return self.get_done_accounts_sync(job_id)
+
+    def get_active_job_targets_sync(self, exclude_job_id: int | None = None) -> set[str]:
+        """Return all target usernames currently allocated to running or queued jobs."""
+        with self._lock:
+            cur = self._conn.cursor()
+            if exclude_job_id is not None:
+                cur.execute(
+                    "SELECT payload_json FROM jobs WHERE status IN ('queued', 'running') AND job_id != ?",
+                    (exclude_job_id,),
+                )
+            else:
+                cur.execute(
+                    "SELECT payload_json FROM jobs WHERE status IN ('queued', 'running')"
+                )
+            active_targets: set[str] = set()
+            for row in cur.fetchall():
+                try:
+                    payload = json.loads(row["payload_json"]) if row["payload_json"] else {}
+                    targets = payload.get("targets") or []
+                    for t in targets:
+                        clean = normalize_username(t)
+                        if clean:
+                            active_targets.add(clean.lower())
+                except Exception:
+                    pass
+            return active_targets
+
+    async def get_active_job_targets(self, exclude_job_id: int | None = None) -> set[str]:
+        return self.get_active_job_targets_sync(exclude_job_id)
 
     def mark_finished_sync(
         self,

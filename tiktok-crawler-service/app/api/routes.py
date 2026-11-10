@@ -12,20 +12,22 @@ from core.config import (
     CRAWLER_DISCOVERY_ENABLED,
     normalize_callback_url,
 )
-from core.utils import extract_username_from_url, normalize_username
+from core.utils import extract_username_from_url, normalize_username, resolve_date_bounds
 from engine.queue_manager import QueueFullError, QueueManager
 from services.dataset import DatasetInsufficientError, DatasetLoader
 
 try:
-    from engine.discovery_worker import DiscoveryWorker, DiscoveryWorkerPool
-    from engine.privacy_saga import PrivacySagaCoordinator
+    from workers.discovery_worker import DiscoveryWorker, DiscoveryWorkerPool
+    from engine.sagas.privacy_saga import PrivacySagaCoordinator
     from engine.schema import initialize_database
     from repositories.candidate_repo import CandidateRepository
+    from repositories.queue_store import QueueStore
 except ImportError:
-    from app.engine.discovery_worker import DiscoveryWorker, DiscoveryWorkerPool
-    from app.engine.privacy_saga import PrivacySagaCoordinator
+    from app.workers.discovery_worker import DiscoveryWorker, DiscoveryWorkerPool
+    from app.engine.sagas.privacy_saga import PrivacySagaCoordinator
     from app.engine.schema import initialize_database
     from app.repositories.candidate_repo import CandidateRepository
+    from app.repositories.queue_store import QueueStore
 
 logging.basicConfig(
     level=logging.INFO,
@@ -45,6 +47,10 @@ class CrawlRequest(BaseModel):
     urls: list[str] | None = None
     total_accounts: int | None = Field(default=None, gt=0)
     done_usernames: list[str] | None = None
+    target_date: str | None = None
+    date_from: str | None = None
+    date_to: str | None = None
+    timezone: str | None = "Asia/Ho_Chi_Minh"
 
     @model_validator(mode="after")
     def validate_source(self):
@@ -153,7 +159,7 @@ def create_app(
     @app.post("/api/crawl-jobs", status_code=202, dependencies=[Depends(verify_bearer_token)])
     @app.post("/api/crawl-jobs/start", status_code=202, dependencies=[Depends(verify_bearer_token)])
     async def submit_crawl_job(request: CrawlRequest):
-        targets = _resolve_targets(request, ds, cr)
+        targets = _resolve_targets(request, ds, cr, qm.store)
         if len(targets) > MAX_ACCOUNTS_PER_JOB:
             raise HTTPException(
                 status_code=422,
@@ -166,6 +172,12 @@ def create_app(
             )
 
         try:
+            df_utc, dt_utc = resolve_date_bounds(
+                target_date=request.target_date,
+                date_from=request.date_from,
+                date_to=request.date_to,
+                tz_name=request.timezone,
+            )
             result = await qm.enqueue_job(
                 job_id=request.job_id,
                 source_type=request.source_type or "usernames",
@@ -176,6 +188,8 @@ def create_app(
                 crawl_mode=request.crawl_mode,
                 max_videos_per_account=request.max_videos_per_account,
                 requested_total=request.total_accounts if request.source_type == "count" else None,
+                date_from=df_utc,
+                date_to=dt_utc,
             )
             return result
         except QueueFullError as err:
@@ -220,6 +234,7 @@ def _resolve_targets(
     request: CrawlRequest,
     dataset_loader: DatasetLoader,
     candidate_repo: CandidateRepository | None = None,
+    queue_store: QueueStore | None = None,
 ) -> list[str]:
     """Deduplicate and resolve target usernames/URLs or sample balanced 50/50 targets for 'count' mode."""
     seen: set[str] = set()
@@ -252,10 +267,17 @@ def _resolve_targets(
         # 1. Primary resolver: Sample 50% Historical + 50% Fresh Discovery from SQLite Candidate Pool (v2.2 Architecture)
         if candidate_repo:
             try:
+                active_targets = (
+                    queue_store.get_active_job_targets_sync(exclude_job_id=request.job_id)
+                    if queue_store
+                    else set()
+                )
+                exclude_list = list(set(request.done_usernames or []).union(active_targets))
                 sampled = candidate_repo.sample_targets_balanced(
                     count=request.total_accounts,
-                    exclude=request.done_usernames,
+                    exclude=exclude_list,
                     allow_fallback=True,
+                    job_id=str(request.job_id) if request.job_id is not None else None,
                 )
                 if sampled:
                     return sampled

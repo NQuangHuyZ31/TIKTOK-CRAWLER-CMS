@@ -29,7 +29,7 @@ from _async_compat import patch_windows_self_pipe_if_needed
 patch_windows_self_pipe_if_needed()
 
 from engine.schema import initialize_database
-from engine.outbox_dispatcher import OutboxDispatcher
+from workers.outbox_dispatcher import OutboxDispatcher
 
 
 class TestBatch4Outbox(unittest.IsolatedAsyncioTestCase):

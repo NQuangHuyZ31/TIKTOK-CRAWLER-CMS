@@ -36,8 +36,9 @@ except ImportError:
         config = None
 
 DB_PATH = getattr(config, "QUEUE_DB_PATH", SERVICE_ROOT / "data" / "queue.db")
-TARGET_SIZE = getattr(config, "CRAWLER_CANDIDATE_POOL_TARGET_SIZE", 2000)
-LOW_WATERMARK = getattr(config, "CRAWLER_CANDIDATE_POOL_LOW_WATERMARK", 500)
+TARGET_SIZE = getattr(config, "CRAWLER_CANDIDATE_POOL_TARGET_SIZE", 5000)
+LOW_WATERMARK = getattr(config, "CRAWLER_CANDIDATE_POOL_LOW_WATERMARK", 1000)
+FRESH_TARGET = getattr(config, "CRAWLER_FRESH_TARGET_SIZE", 2500)
 DISCOVERY_WORKERS = getattr(config, "DISCOVERY_WORKER_COUNT", 2)
 TOTAL_PROFILE_WORKERS = getattr(config, "WORKER_COUNT", 5)
 SERVICE_PORT = getattr(config, "SERVICE_PORT", 8001)
@@ -62,6 +63,9 @@ def get_sqlite_stats(db_path: Path) -> dict:
     stats = {
         "db_exists": db_path.exists(),
         "candidate_valid": 0,
+        "candidate_fresh": 0,
+        "candidate_active_locked": 0,
+        "candidate_historical": 0,
         "candidate_verified": 0,
         "candidate_unresolved": 0,
         "frontier_pending": 0,
@@ -88,6 +92,15 @@ def get_sqlite_stats(db_path: Path) -> dict:
         try:
             cur.execute("SELECT COUNT(*) FROM candidate_pool WHERE lifecycle_status = 'valid';")
             stats["candidate_valid"] = cur.fetchone()[0]
+
+            cur.execute("SELECT COUNT(*) FROM candidate_pool WHERE lifecycle_status = 'valid' AND allocation_class = 'fresh_discovery' AND crawl_count = 0;")
+            stats["candidate_fresh"] = cur.fetchone()[0]
+
+            cur.execute("SELECT COUNT(*) FROM candidate_assignments WHERE status = 'active';")
+            stats["candidate_active_locked"] = cur.fetchone()[0]
+
+            cur.execute("SELECT COUNT(*) FROM candidate_pool WHERE lifecycle_status = 'valid' AND (crawl_count > 0 OR allocation_class = 'historical');")
+            stats["candidate_historical"] = cur.fetchone()[0]
 
             cur.execute("SELECT COUNT(*) FROM candidate_pool WHERE identity_state = 'verified';")
             stats["candidate_verified"] = cur.fetchone()[0]
@@ -201,31 +214,36 @@ def render_dashboard(db_path: Path, watch: bool = False):
 
     # 3. Discovery Workers & Candidate Pool
     pool_count = db_stats["candidate_valid"]
-    if pool_count >= TARGET_SIZE:
-        pool_status = f"{GREEN}Đầy đủ ({pool_count} >= {TARGET_SIZE}){RESET}"
-    elif pool_count < LOW_WATERMARK:
-        pool_status = f"{YELLOW}Dưới ngưỡng tối thiểu ({pool_count} < {LOW_WATERMARK}) -> Đang nạp gấp!{RESET}"
+    fresh_count = db_stats.get("candidate_fresh", 0)
+    locked_count = db_stats.get("candidate_active_locked", 0)
+    hist_count = db_stats.get("candidate_historical", 0)
+
+    if fresh_count < LOW_WATERMARK:
+        disco_status = f"{YELLOW}Đang thức & nạp đầy (Fresh: {fresh_count} < {LOW_WATERMARK}){RESET}"
+    elif fresh_count >= FRESH_TARGET:
+        disco_status = f"{GREEN}Đã nạp đầy & Ngủ chờ (Fresh: {fresh_count}/{FRESH_TARGET}){RESET}"
     else:
-        pool_status = f"{CYAN}Đang nạp bổ sung ({pool_count} < {TARGET_SIZE}){RESET}"
+        disco_status = f"{CYAN}Ngủ chờ (Fresh dồi dào: {fresh_count} >= {LOW_WATERMARK}){RESET}"
 
     disco_badge = f"{GREEN}{DISCOVERY_WORKERS} workers (Active){RESET}" if http_data else f"{DIM}{DISCOVERY_WORKERS} workers (Sẵn sàng khi start){RESET}"
 
     print(f"{BOLD}[2] Discovery Workers (Tiến trình khám phá ứng viên mới){RESET}")
     print(f"    • Số Worker ngầm      : {disco_badge}")
-    print(f"    • Kho ứng viên (Pool) : {BOLD}{pool_count} / {TARGET_SIZE}{RESET} tài khoản hợp lệ")
-    print(f"      - Đã xác minh sec_uid: {db_stats['candidate_verified']}")
-    print(f"      - Chưa phân giải uid : {db_stats['candidate_unresolved']}")
-    print(f"      - Ngưỡng tối thiểu   : {LOW_WATERMARK}")
-    print(f"      - Trạng thái kho     : {pool_status}")
+    print(f"    • Tổng kho ứng viên   : {BOLD}{pool_count} / {TARGET_SIZE}{RESET} tài khoản hợp lệ")
+    print(f"      - Ứng viên mới (Fresh) : {CYAN}{BOLD}{fresh_count}{RESET} / {FRESH_TARGET} (crawl_count = 0)")
+    print(f"      - Đang khóa cấp phát   : {YELLOW}{BOLD}{locked_count}{RESET} account(s) đang được job cào")
+    print(f"      - Ứng viên lịch sử     : {hist_count} account(s) (crawl_count > 0)")
+    print(f"      - Ngưỡng đánh thức     : {LOW_WATERMARK} fresh accounts")
+    print(f"      - Trạng thái Discovery : {disco_status}")
     print(f"    • Hàng đợi Frontier   : {db_stats['frontier_pending']} ứng viên chờ duyệt (Đã duyệt: {db_stats['frontier_validated']})")
     print(f"    • Tài khoản hạt giống : {db_stats['seeds_unexhausted']} / {db_stats['seeds_total']} hạt giống chưa khai thác hết")
     print()
 
-    # 4. Progress bar for Candidate Pool
-    percent = min(100.0, (pool_count / TARGET_SIZE) * 100) if TARGET_SIZE > 0 else 0
+    # 4. Progress bar for Fresh Candidate Pool (Goal: 5000 Fresh)
+    percent = min(100.0, (fresh_count / FRESH_TARGET) * 100) if FRESH_TARGET > 0 else 0
     filled = int(percent / 4)  # 25 characters width
     bar = "█" * filled + "░" * (25 - filled)
-    print(f"    Tiến độ kho: [{GREEN}{bar}{RESET}] {percent:.1f}% ({pool_count}/{TARGET_SIZE})")
+    print(f"    Tiến độ kho mới (Fresh): [{CYAN}{bar}{RESET}] {percent:.1f}% ({fresh_count}/{FRESH_TARGET})")
 
     print(f"{CYAN}{BOLD}{'=' * 65}{RESET}")
     if watch:

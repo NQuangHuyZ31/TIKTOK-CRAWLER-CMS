@@ -7,6 +7,7 @@ const authRoutes: RouteDef[] = [
         component: LoginPage,
         layout: 'bare',
         isPrivate: false,
+        guestOnly: true,
         title: 'Sign In',
         order: 900,
     },

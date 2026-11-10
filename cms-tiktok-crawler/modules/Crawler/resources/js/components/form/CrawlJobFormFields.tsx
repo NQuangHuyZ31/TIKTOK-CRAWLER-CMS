@@ -9,6 +9,7 @@ import {
 } from '../../configs/crawlerOptions';
 import { extractCleanUrls, extractCleanUsernames } from '../../utils/crawlerHelpers';
 import CrawlModeSelector from './CrawlModeSelector';
+import VideoDateFilterSelector from './VideoDateFilterSelector';
 import SourceTypeSelector from './SourceTypeSelector';
 import SourceInputFields from './SourceInputFields';
 import JobSummaryPreview from './JobSummaryPreview';
@@ -88,6 +89,12 @@ export default function CrawlJobFormFields({ form, isEdit, record }: ResourceFor
 				onSelectMode={handleCrawlModeSelect}
 				onSelectMaxVideosPreset={(val) => form.setFieldsValue({ max_videos_per_account: val })}
 			/>
+
+			{crawlMode === 'account_with_videos' && (
+				<Form.Item name="target_date" noStyle>
+					<VideoDateFilterSelector isReadOnly={isReadOnly} />
+				</Form.Item>
+			)}
 
 			<Card
 				size="small"

@@ -10,9 +10,10 @@ from core.config import (
 )
 from core.utils import normalize_username
 from crawler.tiktok_client import TikTokClient
-from engine.job_runner import JobRunner
-from engine.store import QueueStore
+from workers.job_runner import JobRunner
+from repositories.queue_store import QueueStore
 from repositories.candidate_repo import CandidateRepository
+from repositories.frontier_repo import FrontierRepository
 from schemas.models import CrawlJobRecord
 from services.laravel_client import LaravelClient, LaravelDeliveryError, LaravelJobNotFoundError
 
@@ -51,11 +52,13 @@ class QueueManager:
         self.requeue_delay_seconds = max(0.0, requeue_delay_seconds)
 
         self.candidate_repo = CandidateRepository(self.store.db_path)
+        self.frontier_repo = FrontierRepository(self.store.db_path)
         self.runner = JobRunner(
             store=self.store,
             tiktok_client=self.tiktok_client,
             laravel_client=self.laravel_client,
             candidate_repo=self.candidate_repo,
+            frontier_repo=self.frontier_repo,
             account_timeout=self.account_timeout,
         )
 
@@ -88,6 +91,14 @@ class QueueManager:
 
         # Clean up completed jobs older than 7 days
         await self.store.cleanup_old_jobs(older_than_days=7)
+
+        # Release any stuck orphan active candidate assignments and sync historical status
+        if self.candidate_repo:
+            try:
+                self.candidate_repo.clean_stuck_active_assignments()
+                self.candidate_repo.sync_historical_candidates()
+            except Exception as e:
+                logger.debug(f"Startup candidate cleanup: {e}")
 
         # Recover unfinished jobs from SQLite (or fallback to Laravel if SQLite is empty)
         await self._recover_unfinished_jobs()
@@ -175,6 +186,8 @@ class QueueManager:
         crawl_mode: str = "account_with_videos",
         max_videos_per_account: int = 20,
         requested_total: int | None = None,
+        date_from: str | None = None,
+        date_to: str | None = None,
     ) -> dict:
         """
         Persist job to SQLite first, then enqueue into `asyncio.Queue`.
@@ -201,6 +214,8 @@ class QueueManager:
                 crawl_mode=crawl_mode,
                 max_videos_per_account=max_videos_per_account,
                 requested_total=requested_total,
+                date_from=date_from,
+                date_to=date_to,
             )
 
             if is_new and job_id not in self._enqueued_ids and job_id not in self._running_jobs:

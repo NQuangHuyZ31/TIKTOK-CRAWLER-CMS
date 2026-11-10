@@ -13,7 +13,7 @@ from _async_compat import patch_windows_self_pipe_if_needed
 patch_windows_self_pipe_if_needed()
 
 from crawler.extractor import ExtractorError, extract_profile
-from crawler.video_extractor import extract_videos_from_body
+from crawler.video.video_extractor import extract_videos_from_body
 
 FIXTURES_DIR = Path(__file__).resolve().parent / "fixtures"
 
@@ -128,6 +128,20 @@ class TestExtractor(unittest.IsolatedAsyncioTestCase):
             account.avatar_url,
             "https://p16-common-sign.tiktokcdn.com/tos-maliva-avt-0068/avatar.jpeg?x=1&y=2",
         )
+    def test_extract_profile_identifies_slardar_waf(self):
+        html = """
+        <!DOCTYPE html> <html lang="en"> <head>
+        <script id="slardar-config" type="application/json">{"slardarClient":"SlardarWAF"}</script>
+        </head> <body> Please wait... <p id="wci" class="_wafchallengeid"></p> </body> </html>
+        """
+        with self.assertRaises(ExtractorError) as ctx:
+            extract_profile(
+                body=html,
+                profile_url="https://www.tiktok.com/@linhbarbie",
+                target_username="linhbarbie",
+            )
+        self.assertEqual(ctx.exception.error_code, "CHALLENGE")
+
     def test_extract_profile_from_vietnamese_opengraph(self):
         html = """
         <!DOCTYPE html>
@@ -310,7 +324,7 @@ class TestExtractor(unittest.IsolatedAsyncioTestCase):
         import asyncio
         import httpx
         from unittest.mock import AsyncMock, MagicMock
-        from crawler.video_api import fetch_creator_videos_paginated
+        from crawler.video.video_api import fetch_creator_videos_paginated
 
         # Mock page 1 and page 2 responses
         page1_data = {

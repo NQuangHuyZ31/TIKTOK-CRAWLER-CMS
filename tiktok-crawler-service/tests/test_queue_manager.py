@@ -18,7 +18,7 @@ from _async_compat import patch_windows_self_pipe_if_needed
 patch_windows_self_pipe_if_needed()
 
 from engine.queue_manager import QueueManager
-from engine.store import QueueStore
+from repositories.queue_store import QueueStore
 from schemas.models import AccountCrawlOutcome, TikTokAccount
 from services.laravel_client import LaravelClient, LaravelDeliveryError, LaravelJobNotFoundError
 

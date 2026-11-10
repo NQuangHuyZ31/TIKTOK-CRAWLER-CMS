@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 import logging
 import httpx
 
@@ -17,7 +18,46 @@ __all__ = [
     "extract_videos_from_body",
     "enrich_videos_stats",
     "parse_video_item",
+    "filter_videos_by_date",
 ]
+
+
+def filter_videos_by_date(
+    videos: list[TikTokVideo],
+    date_from: datetime | str | None,
+    date_to: datetime | str | None,
+) -> list[TikTokVideo]:
+    """Filter list of TikTokVideo by publication date range [date_from, date_to] in UTC."""
+    if not date_from and not date_to:
+        return videos
+
+    def _to_utc(d: datetime | str | None) -> datetime | None:
+        if not d:
+            return None
+        if isinstance(d, str):
+            try:
+                d = datetime.fromisoformat(d)
+            except Exception:
+                return None
+        if isinstance(d, datetime):
+            if d.tzinfo:
+                return d.astimezone(timezone.utc).replace(tzinfo=None)
+            return d
+        return None
+
+    dt_from = _to_utc(date_from)
+    dt_to = _to_utc(date_to)
+
+    filtered: list[TikTokVideo] = []
+    for vid in videos:
+        if not vid.published_at:
+            continue
+        if dt_to and vid.published_at > dt_to:
+            continue
+        if dt_from and vid.published_at < dt_from:
+            continue
+        filtered.append(vid)
+    return filtered
 
 
 async def fetch_account_videos(
@@ -29,12 +69,14 @@ async def fetch_account_videos(
     headers: dict[str, str] | None = None,
     timeout: float = 15.0,
     enrich_stats: bool = True,
+    date_from: datetime | str | None = None,
+    date_to: datetime | str | None = None,
 ) -> list[TikTokVideo]:
     """
     Multi-layer resilient video extractor for a TikTok account:
     1. Tier 1 (Primary API): If `sec_uid` is available, paginates via Creator Item List API
        (https://www.tiktok.com/api/creator/item_list/). Delivers exact count (20, 50, 100...)
-       with 100% complete statistics out of the box.
+       with 100% complete statistics out of the box and date range filtering with early stop.
     2. Tier 2 (Zero-request): Extracts directly from already-fetched profile HTML/JSON if present.
     3. Tier 3 (Embed Fallback): Fetches lightweight Creator Embed page (/embed/@username)
        and enriches interaction statistics for any missing fields.
@@ -57,6 +99,8 @@ async def fetch_account_videos(
                 max_videos=max_videos,
                 headers=headers,
                 timeout=min(timeout, 15.0),
+                date_from=date_from,
+                date_to=date_to,
             )
             if api_videos:
                 return api_videos[:max_videos]
@@ -71,6 +115,8 @@ async def fetch_account_videos(
             target_username=clean_username,
             max_videos=max_videos,
         )
+        if videos and (date_from or date_to):
+            videos = filter_videos_by_date(videos, date_from, date_to)
 
     # Tier 3: Fallback to Creator Embed SSR page (/embed/@username)
     if not videos:
@@ -82,6 +128,8 @@ async def fetch_account_videos(
                 headers=headers,
                 timeout=timeout,
             )
+            if videos and (date_from or date_to):
+                videos = filter_videos_by_date(videos, date_from, date_to)
         except Exception as exc:
             logger.debug("Tier 3 Embed fetch skipped for @%s: %s", clean_username, exc)
 

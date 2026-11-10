@@ -1,4 +1,5 @@
 import asyncio
+from datetime import datetime, timezone
 import logging
 import random
 import string
@@ -14,6 +15,21 @@ API_CREATOR_ITEM_LIST_URL = "https://www.tiktok.com/api/creator/item_list/"
 PAGE_BATCH_SIZE = 15
 
 
+def _to_utc_naive_datetime(d: datetime | str | None) -> datetime | None:
+    if not d:
+        return None
+    if isinstance(d, str):
+        try:
+            d = datetime.fromisoformat(d)
+        except Exception:
+            return None
+    if isinstance(d, datetime):
+        if d.tzinfo:
+            return d.astimezone(timezone.utc).replace(tzinfo=None)
+        return d
+    return None
+
+
 async def fetch_creator_videos_paginated(
     client: httpx.AsyncClient,
     username: str,
@@ -21,10 +37,14 @@ async def fetch_creator_videos_paginated(
     max_videos: int = 20,
     headers: dict[str, str] | None = None,
     timeout: float = 12.0,
+    date_from: datetime | str | None = None,
+    date_to: datetime | str | None = None,
 ) -> list[TikTokVideo]:
     """
     Fetch up to `max_videos` from TikTok Creator Item List API using cursor-based pagination.
     Requires creator's `sec_uid`. Each batch delivers up to 15 videos with complete statistics.
+    Optionally filters by publication date [date_from, date_to] and exits early when videos
+    are older than date_from.
     """
     if max_videos <= 0 or not sec_uid:
         return []
@@ -32,6 +52,8 @@ async def fetch_creator_videos_paginated(
     videos: dict[str, TikTokVideo] = {}
     device_id = str(random.randint(7250000000000000000, 7325099899999994577))
     cursor = int(time.time() * 1000)
+    dt_from = _to_utc_naive_datetime(date_from)
+    dt_to = _to_utc_naive_datetime(date_to)
 
     req_headers = {
         "User-Agent": (
@@ -122,15 +144,37 @@ async def fetch_creator_videos_paginated(
 
             new_in_batch = 0
             last_create_time = None
+            early_stop = False
             for item in raw_items:
                 vid = parse_video_item(item, fallback_username=username)
-                if vid and vid.video_id not in videos:
+                if not vid:
+                    continue
+
+                is_in_range = True
+                if vid.published_at:
+                    if dt_to and vid.published_at > dt_to:
+                        is_in_range = False
+                    if dt_from and vid.published_at < dt_from:
+                        is_in_range = False
+                        if not vid.is_pinned:
+                            early_stop = True
+
+                if is_in_range and vid.video_id not in videos:
                     videos[vid.video_id] = vid
                     new_in_batch += 1
+
                 if item.get("createTime"):
                     last_create_time = item["createTime"]
-                if len(videos) >= max_videos:
+                if len(videos) >= max_videos or early_stop:
                     break
+
+            if early_stop:
+                logger.debug(
+                    "Creator item_list early break for @%s: encountered video published before date_from (%s)",
+                    username,
+                    dt_from,
+                )
+                break
 
             if new_in_batch == 0 or not last_create_time:
                 break

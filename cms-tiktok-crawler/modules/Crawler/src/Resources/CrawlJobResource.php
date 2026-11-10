@@ -26,6 +26,9 @@ class CrawlJobResource extends JsonResource
             'source_type' => $this->source_type,
             'crawl_mode' => $this->crawl_mode ?? 'account_with_videos',
             'max_videos_per_account' => (int) ($this->max_videos_per_account ?? 20),
+            'target_date' => $this->target_date,
+            'date_from' => $this->date_from,
+            'date_to' => $this->date_to,
             'data_crawl' => $this->data_crawls
                 ? json_decode($this->data_crawls, true)
                 : [],

@@ -103,13 +103,29 @@ class DiscoveryWorker:
     # --------------------------------------------------------------------------
     # 1. Pool Watermark Inspections
     # --------------------------------------------------------------------------
+    @property
+    def fresh_target_size(self) -> int:
+        return getattr(config, "CRAWLER_FRESH_TARGET_SIZE", 5000)
+
     def get_valid_candidate_count(self) -> int:
         """Count valid candidates currently in the candidate pool."""
         return self.candidate_repo.get_valid_count()
 
+    def get_fresh_candidate_count(self) -> int:
+        """Count valid candidates with crawl_count = 0 and allocation_class = 'fresh_discovery'."""
+        return self.candidate_repo.get_fresh_count()
+
+    def get_active_locked_candidate_count(self) -> int:
+        """Count active locked assignments in candidate_assignments."""
+        return self.candidate_repo.get_active_locked_count()
+
+    def get_historical_candidate_count(self) -> int:
+        """Count candidates with crawl_count > 0 or allocation_class = 'historical'."""
+        return self.candidate_repo.get_historical_count()
+
     def is_pool_below_watermark(self) -> bool:
-        """Returns True if the valid candidate count is below the low watermark."""
-        return self.get_valid_candidate_count() < self.low_watermark
+        """Returns True if fresh candidates count is below low watermark (unrelated to historical count)."""
+        return self.get_fresh_candidate_count() < self.low_watermark
 
     # --------------------------------------------------------------------------
     # 2. Frontier Enqueue & Seed Extraction
@@ -187,32 +203,35 @@ class DiscoveryWorker:
         4. Acquires discovery rate limit permit.
         5. Validates and upserts into candidate_pool via CandidateManager.
         """
-        target = target_size if target_size is not None else self.target_size
-        current_count = self.get_valid_candidate_count()
+        target = target_size if target_size is not None else self.fresh_target_size
+        current_fresh = self.get_fresh_candidate_count()
 
-        if current_count >= target:
+        if current_fresh >= target:
             logger.info(
-                f"[Discovery] Pool capacity satisfied: ({current_count} >= {target}) "
+                f"[Discovery] Fresh pool capacity satisfied: ({current_fresh} >= {target}) "
                 f"[Low Watermark: {self.low_watermark}]. No refill needed."
             )
             return 0
 
-        needed = min(target - current_count, max_batch)
+        needed = min(target - current_fresh, max_batch)
         logger.info(
-            f"[Discovery] Refilling Candidate Pool: ({current_count} < {target}) "
+            f"[Discovery] Refilling Fresh Candidate Pool: ({current_fresh} < {target}) "
             f"[Low Watermark: {self.low_watermark}]. Batch target: +{needed} candidates."
         )
 
         refilled_count = 0
         frontier_rows = self.frontier_repo.get_pending_candidates(limit=needed)
 
-        if not frontier_rows and self.allow_bootstrap_fallback and current_count == 0:
-            logger.info("Candidate pool is empty on cold start. Seeding from dataset...")
+        if not frontier_rows and self.allow_bootstrap_fallback and current_fresh < self.low_watermark:
+            logger.info(
+                f"[Discovery] Fresh pool ({current_fresh}) below low watermark ({self.low_watermark}) "
+                "with empty frontier. Re-seeding from dataset..."
+            )
             self.seed_from_dataset()
             frontier_rows = self.frontier_repo.get_pending_candidates(limit=needed)
 
         for frontier_id, username in frontier_rows:
-            if current_count + refilled_count >= target:
+            if current_fresh + refilled_count >= target:
                 break
 
             if rate_limited and self.rate_limiter:
@@ -308,8 +327,31 @@ class DiscoveryWorker:
                 max_videos=max_videos,
             )
 
-            # 1. Extract mentions from video descriptions
-            for v in outcome.videos:
+            videos = outcome.videos if outcome and outcome.videos else []
+
+            # Multi-tier fallback: if profile crawl yielded no videos, fallback to Embed SSR
+            if not videos:
+                try:
+                    client = await self.tiktok_client._get_client()
+                    try:
+                        from crawler.video.video_embed import fetch_embed_videos
+                    except ImportError:
+                        from app.crawler.video.video_embed import fetch_embed_videos
+                    embed_videos = await fetch_embed_videos(
+                        client=client,
+                        clean_username=norm_seed,
+                        max_videos=max_videos,
+                    )
+                    if embed_videos:
+                        videos = embed_videos
+                        logger.info(
+                            f"[Discovery] Embed fallback extracted {len(videos)} videos for seed @{norm_seed}."
+                        )
+                except Exception as embed_err:
+                    logger.debug(f"[Discovery] Embed fallback skipped for @{norm_seed}: {embed_err}")
+
+            # 1. Extract mentions from video descriptions & sound author
+            for v in videos:
                 desc = getattr(v, "description", None) or ""
                 for match in re.findall(r"@([A-Za-z0-9_.]+)", desc):
                     cleaned = CandidateManager.normalize_username(match)
@@ -327,8 +369,8 @@ class DiscoveryWorker:
                     ):
                         found_mentions.add(clean_music)
 
-            # 2. Extract mentions from profile bio
-            if outcome.account and getattr(outcome.account, "bio", None):
+            # 2. Extract mentions from profile bio (if available from outcome)
+            if outcome and outcome.account and getattr(outcome.account, "bio", None):
                 bio = outcome.account.bio
                 for match in re.findall(r"@([A-Za-z0-9_.]+)", bio):
                     cleaned = CandidateManager.normalize_username(match)
@@ -336,7 +378,7 @@ class DiscoveryWorker:
                         found_mentions.add(cleaned)
 
             # 3. Extract active commenters from top 3 videos
-            for v in outcome.videos[:3]:
+            for v in videos[:3]:
                 vid_id = getattr(v, "video_id", None)
                 if vid_id:
                     commenters = await self.fetch_video_commenters(vid_id, norm_seed, max_comments=20)
@@ -386,8 +428,8 @@ class DiscoveryWorker:
         3. Enqueues discovered mentions into discovery_frontier.
         4. Refills candidate pool from discovery_frontier under rate limit.
         """
-        current_count = self.get_valid_candidate_count()
-        if current_count >= self.target_size:
+        current_fresh = self.get_fresh_candidate_count()
+        if current_fresh >= self.fresh_target_size:
             return 0
 
         pending_frontier = self.frontier_repo.get_pending_count()
@@ -402,9 +444,9 @@ class DiscoveryWorker:
                     seed_username,
                     max_videos=self.scan_videos_per_seed,
                 )
-                self.mark_seed_exhausted(seed_username)
 
                 if mentions:
+                    self.mark_seed_exhausted(seed_username)
                     for m in mentions:
                         self.enqueue_frontier_candidate(
                             username=m,
@@ -420,7 +462,7 @@ class DiscoveryWorker:
                     )
 
         refilled = self.refill_candidate_pool(
-            target_size=self.target_size,
+            target_size=self.fresh_target_size,
             max_batch=self.max_batch_size,
             rate_limited=self.rate_limited,
         )
@@ -455,6 +497,7 @@ class DiscoveryWorkerPool:
         )
         self.worker = discovery_worker or DiscoveryWorker(self.db_path)
         self._running = False
+        self._refilling_fresh = False
         self._tasks: List[asyncio.Task] = []
 
     async def start(self) -> None:
@@ -506,11 +549,31 @@ class DiscoveryWorkerPool:
 
         while self._running:
             try:
-                valid_count = self.worker.get_valid_candidate_count()
-                if valid_count < self.worker.target_size:
-                    await self.worker.run_discovery_cycle(worker_id)
-                    await asyncio.sleep(2.0 + random.uniform(0.5, 1.5))
+                fresh_count = self.worker.get_fresh_candidate_count()
+
+                # Trigger hysteresis: when fresh drops below low watermark (< 1,000)
+                if fresh_count < self.worker.low_watermark:
+                    if not self._refilling_fresh:
+                        logger.info(
+                            f"[Discovery-Worker-{worker_id}] Fresh candidates below watermark "
+                            f"({fresh_count} < {self.worker.low_watermark}). Waking up to refill fresh pool to target {self.worker.fresh_target_size}..."
+                        )
+                        self._refilling_fresh = True
+
+                if self._refilling_fresh:
+                    # Refill until full: fresh_target_size (5,000 new accounts)
+                    if fresh_count >= self.worker.fresh_target_size:
+                        self._refilling_fresh = False
+                        logger.info(
+                            f"[Discovery-Worker-{worker_id}] Fresh pool fully refilled "
+                            f"(Fresh: {fresh_count}/{self.worker.fresh_target_size}). Entering standby."
+                        )
+                        await asyncio.sleep(self.interval_seconds)
+                    else:
+                        await self.worker.run_discovery_cycle(worker_id)
+                        await asyncio.sleep(2.0 + random.uniform(0.5, 1.5))
                 else:
+                    # Standby mode: fresh count is healthy (>= 1,000), sleeping
                     await asyncio.sleep(self.interval_seconds)
             except asyncio.CancelledError:
                 break

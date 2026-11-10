@@ -26,6 +26,9 @@ class StoreCrawlJobRequest extends FormRequest
             "source_type" => "required|in:usernames,urls,database,count",
             "crawl_mode" => "nullable|in:account_only,account_with_videos,video_only",
             "max_videos_per_account" => "nullable|integer|min:0|max:100",
+            "target_date" => "nullable|string|max:32",
+            "date_from" => "nullable|date",
+            "date_to" => "nullable|date",
             'data_crawl' => 'required|array',
         ];
     }
