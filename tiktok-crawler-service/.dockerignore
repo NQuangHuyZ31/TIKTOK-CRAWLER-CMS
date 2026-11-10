@@ -15,5 +15,7 @@ htmlcov
 data/*.db
 data/*.db-wal
 data/*.db-shm
+datasets/*
+!datasets/dataset.csv
 *.log
 tests

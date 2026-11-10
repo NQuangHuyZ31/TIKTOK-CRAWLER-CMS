@@ -25,7 +25,7 @@ services:
       start_period: 15s
 
   # ----------------------------------------------------------------------------
-  # 2. CMS Backend: Laravel 13 PHP 8.3-FPM
+  # 2. Main Web App: Laravel 13 + React SPA + Nginx + Queue + Schedule (All-in-One)
   # ----------------------------------------------------------------------------
   cms-app:
     build:
@@ -36,8 +36,8 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
-    expose:
-      - "9000"
+    ports:
+      - "${CMS_PORT:-8000}:80"
     environment:
       APP_NAME: "${APP_NAME:-CMS TikTok Crawler}"
       APP_ENV: ${APP_ENV:-production}
@@ -56,68 +56,13 @@ services:
       CRAWLER_AUTH_TOKEN: ${CRAWLER_AUTH_TOKEN:-}
       LARAVEL_API_SECRET: ${LARAVEL_API_SECRET:-}
     volumes:
-      - cms_public:/var/www/html/public
       - cms_storage:/var/www/html/storage
       - cms_avatars:/var/www/html/public/tiktok-accounts
     networks:
       - tiktok_network
 
   # ----------------------------------------------------------------------------
-  # 3. Web Server: Dedicated Nginx Reverse Proxy
-  # ----------------------------------------------------------------------------
-  nginx:
-    build:
-      context: ./nginx
-      dockerfile: Dockerfile
-    container_name: tiktok_nginx
-    restart: unless-stopped
-    ports:
-      - "${CMS_PORT:-8000}:80"
-    depends_on:
-      cms-app:
-        condition: service_started
-    volumes:
-      - cms_public:/var/www/html/public:ro
-      - cms_avatars:/var/www/html/public/tiktok-accounts:ro
-    networks:
-      - tiktok_network
-
-  # ----------------------------------------------------------------------------
-  # 4. Background Queue Worker: Laravel Queue Processing
-  # ----------------------------------------------------------------------------
-  cms-worker:
-    build:
-      context: ./cms-tiktok-crawler
-      dockerfile: Dockerfile
-    container_name: tiktok_cms_worker
-    restart: unless-stopped
-    depends_on:
-      mysql:
-        condition: service_healthy
-      cms-app:
-        condition: service_started
-    command: ["php", "artisan", "queue:work", "--sleep=3", "--tries=3", "--max-time=3600", "--queue=default,crawler,system"]
-    environment:
-      APP_NAME: "${APP_NAME:-CMS TikTok Crawler}"
-      APP_ENV: ${APP_ENV:-production}
-      APP_KEY: "${APP_KEY:-base64:GkS35gLq8gM+9UvH2lA5jD1vE4kF7mO0pQ2rS4tU6w8=}"
-      APP_DEBUG: "${APP_DEBUG:-false}"
-      DB_CONNECTION: mysql
-      DB_HOST: mysql
-      DB_PORT: 3306
-      DB_DATABASE: ${DB_DATABASE:-tiktok_crawler}
-      DB_USERNAME: ${DB_USERNAME:-tiktok_user}
-      DB_PASSWORD: ${DB_PASSWORD:-secret_password}
-      CRAWLER_SERVICE_URL: ${CRAWLER_SERVICE_URL:-http://crawler-service:8001}
-      CRAWLER_AUTH_TOKEN: ${CRAWLER_AUTH_TOKEN:-}
-      LARAVEL_API_SECRET: ${LARAVEL_API_SECRET:-}
-    volumes:
-      - cms_storage:/var/www/html/storage
-    networks:
-      - tiktok_network
-
-  # ----------------------------------------------------------------------------
-  # 5. Crawler Engine: Python FastAPI + SQLite WAL
+  # 3. Crawler Engine: Python FastAPI + SQLite WAL
   # ----------------------------------------------------------------------------
   crawler-service:
     build:
@@ -130,7 +75,7 @@ services:
     environment:
       CRAWLER_HOST: "0.0.0.0"
       CRAWLER_PORT: 8001
-      BACKEND_CALLBACK_URL: ${BACKEND_CALLBACK_URL:-http://nginx/admin/api/public/crawler}
+      BACKEND_CALLBACK_URL: ${BACKEND_CALLBACK_URL:-http://cms-app/admin/api/public/crawler}
       CRAWLER_AUTH_TOKEN: ${CRAWLER_AUTH_TOKEN:-}
       LARAVEL_API_SECRET: ${LARAVEL_API_SECRET:-}
     volumes:
@@ -147,8 +92,6 @@ networks:
 volumes:
   mysql_data:
     name: tiktok_mysql_data
-  cms_public:
-    name: tiktok_cms_public
   cms_storage:
     name: tiktok_cms_storage
   cms_avatars:

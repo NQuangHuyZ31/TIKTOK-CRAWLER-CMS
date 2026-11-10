@@ -25,12 +25,13 @@ ENV VITE_APP_NAME=$VITE_APP_NAME
 RUN npm run mix:prod && npx vite build
 
 # ==============================================================================
-# Stage 2: Pure PHP 8.3 FPM Runtime
+# Stage 2: PHP 8.3 FPM + Nginx All-in-One Runtime
 # ==============================================================================
 FROM php:8.3-fpm-alpine
 
 # Install system dependencies & PHP extensions
 RUN apk add --no-cache \
+    nginx \
     curl \
     git \
     libpng-dev \
@@ -68,7 +69,8 @@ RUN composer install --no-dev --optimize-autoloader --no-interaction --prefer-di
 ENV APP_ENV=production
 ENV LOG_CHANNEL=stderr
 
-# Copy PHP configuration & entrypoint script
+# Copy Nginx & PHP configuration
+COPY docker/nginx.conf /etc/nginx/http.d/default.conf
 COPY docker/php.ini /usr/local/etc/php/conf.d/custom.ini
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
@@ -78,6 +80,6 @@ RUN mkdir -p /var/www/html/public/tiktok-accounts/avatars \
     && chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache /var/www/html/public/tiktok-accounts \
     && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache /var/www/html/public/tiktok-accounts
 
-EXPOSE 9000
+EXPOSE 80
 
 CMD ["/usr/local/bin/entrypoint.sh"]
