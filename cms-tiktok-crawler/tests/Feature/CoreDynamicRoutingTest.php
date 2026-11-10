@@ -134,7 +134,7 @@ class CoreDynamicRoutingTest extends TestCase
         $adminPath = trim((string) config('admin.admin_path', 'admin'), '/');
         $response = $this->get('/');
 
-        $response->assertRedirect('/' . $adminPath);
+        $response->assertRedirect('/' . $adminPath . '/dashboard');
     }
 
     public function test_dynamic_route_resolver_unit_methods(): void

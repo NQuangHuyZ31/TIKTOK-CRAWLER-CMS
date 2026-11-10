@@ -35,7 +35,8 @@ export default function LoginPage() {
 	// Redirect destination
 	const destination = useMemo(() => {
 		const state = location.state as { from?: { pathname?: string } } | null;
-		return state?.from?.pathname || AUTH_ROUTES.DEFAULT_REDIRECT;
+		const target = state?.from?.pathname || AUTH_ROUTES.DEFAULT_REDIRECT;
+		return target.startsWith('/admin') ? target : `/admin${target.startsWith('/') ? target : `/${target}`}`;
 	}, [location.state]);
 
 	// Consolidated State driven by step
@@ -88,7 +89,7 @@ export default function LoginPage() {
 			localStorage.setItem(AUTH_STORAGE_KEYS.TOKEN, token);
 			dispatch(setToken(token));
 			dispatch(fetchMeThunk());
-			navigate(destination, { replace: true });
+			window.location.href = destination;
 		}
 	}, [searchParams, dispatch, destination, navigate]);
 
@@ -118,7 +119,7 @@ export default function LoginPage() {
 			).unwrap();
 
 			await dispatch(fetchMeThunk());
-			navigate(destination, { replace: true });
+			window.location.href = destination;
 		} catch (err: any) {
 			setState((s) => ({
 				...s,
@@ -195,7 +196,9 @@ export default function LoginPage() {
 			default:
 				return (
 					<LoginForm
-						onSuccess={() => navigate(destination, { replace: true })}
+						onSuccess={() => {
+							window.location.href = destination;
+						}}
 						onRequireEmailOtp={(data) => setState({ step: 'email_otp', loading: false, error: null, challenge: null, emailOtpData: data })}
 						onForgotPassword={() => setState((s) => ({ ...s, step: 'reset-password', error: null }))}
 						onGoogleLoginClick={() => {
