@@ -10,12 +10,13 @@ WORKDIR /app
 ENV PYTHONUNBUFFERED=1
 
 # Copy requirements & install Python dependencies
-COPY tiktok-crawler-service/requirements.txt ./
+COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy Python Crawler application
-COPY tiktok-crawler-service /app
+# Copy Python Crawler application code
+COPY . /app
 
+# Ensure data and dataset directories exist
 RUN mkdir -p /app/data /app/datasets
 
 EXPOSE 8001
