@@ -1,36 +1,37 @@
 # Docker Deployment & Containerization Guide
 
-This guide provides end-to-end instructions for building, running, and managing the **CMS TikTok Crawler** platform using Docker and Docker Compose.
+This guide provides end-to-end instructions for building, running, and managing the **CMS TikTok Crawler** platform using Docker, Docker Compose, and Cloud PaaS (Render.com).
 
 ---
 
 ## 1. Architecture Overview
 
-The system is partitioned into modular containerized services connected via the internal bridge network `tiktok_network`:
+The system is partitioned into high-performance containerized services connected via the internal bridge network `tiktok_network`:
 
 | Container | Image / Source | Port | Role |
 |---|---|---|---|
-| **`tiktok_mysql`** | `mysql:8.0` | `3306` | Primary relational database for CMS |
-| **`tiktok_cms_app`** | `./cms-tiktok-crawler` | `9000` (internal) | Pure Laravel 13 PHP 8.3-FPM backend |
-| **`tiktok_nginx`** | `./nginx` | `8000:80` | Dedicated Nginx reverse proxy & static asset server |
-| **`tiktok_cms_worker`**| `./cms-tiktok-crawler` | — | Laravel Queue Worker (`queue:work`) |
+| **`tiktok_mysql`** | `mysql:8.0` | `3306` | Relational database for CMS |
+| **`tiktok_cms_app`** | `./cms-tiktok-crawler` | `8000:80` | Laravel 13 + React SPA + Nginx + Queue + Schedule (All-in-One) |
 | **`tiktok_crawler_service`** | `./tiktok-crawler-service` | `8001:8001`| Python FastAPI Crawler Engine + SQLite WAL |
 
 ```mermaid
 flowchart TD
-    Client["Client / Web Browser<br/>(http://localhost:8000)"] -->|Port 8000| NGINX["tiktok_nginx (Service: nginx)<br/>Nginx 1.27 Alpine"]
+    Client["Client / Web Browser<br/>(http://localhost:8000)"] -->|Port 8000| CMS["tiktok_cms_app (Service: cms-app)<br/>Nginx (Port 80) + PHP 8.3 FPM<br/>+ Queue Worker + Scheduler Daemon"]
     
     subgraph "Internal Network (tiktok_network)"
-        NGINX -->|Serve Static /public| VOL_PUB[("Shared Volume: cms_public")]
-        NGINX -->|FastCGI proxy: 9000| CMS["tiktok_cms_app (Service: cms-app)<br/>PHP 8.3 FPM"]
-        CMS -->|Read/Write Assets| VOL_PUB
-        CMS -->|Persistent Logs/Cache| VOL_STORAGE[("Volume: cms_storage")]
         CMS -->|DB Connection: 3306| MYSQL["tiktok_mysql (Service: mysql)<br/>MySQL 8.0"]
         CMS -->|REST API: 8001| CRAWLER["tiktok_crawler_service (Service: crawler-service)<br/>Python FastAPI"]
-        CRAWLER -->|API Callback: 80| NGINX
-        WORKER["tiktok_cms_worker (Service: cms-worker)<br/>Queue Worker"] --> MYSQL
+        CRAWLER -->|API Callback: 80| CMS
+        CMS -->|Persistent Logs/Cache| VOL_STORAGE[("Volume: cms_storage")]
+        CMS -->|Creator Avatars| VOL_AVATARS[("Volume: cms_avatars")]
     end
 ```
+
+### Highlights of the All-in-One CMS Container:
+1. **Render.com Ready**: Nginx runs in foreground on HTTP port 80 (or dynamic `$PORT` provided by Render), immediately satisfying Render's HTTP health check scanners.
+2. **Built-in Queue Worker**: Runs continuously in background with a supervisor loop to automatically restart on exit or memory refresh.
+3. **Built-in Scheduler Daemon**: Runs `php artisan schedule:work` every minute in background to trigger periodic cron tasks without requiring system cron daemon.
+4. **Cost Efficient**: Single Web Service on Render covers Web, Queue, and Cron, saving \$14–\$20/month.
 
 ---
 
@@ -51,7 +52,7 @@ cp .env.docker.example .env
 ```
 
 Review and adjust variables as needed:
-- `CMS_PORT`: Host port for the Nginx Web UI & API (Default: `8000`).
+- `CMS_PORT`: Host port for the CMS Web UI & API (Default: `8000`).
 - `CRAWLER_PORT`: Host port for the Python Crawler API (Default: `8001`).
 - `DB_PORT`: Host port for MySQL database (Default: `3306`).
 - `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD`: Database credentials.
@@ -74,22 +75,7 @@ docker compose build --no-cache
 
 ### Option B: Build Individual Images Separately
 
-You can build any service image independently using either **Docker Compose targets** or **native `docker build`**.
-
-#### 1. Nginx Reverse Proxy (`nginx`)
-```bash
-# Method 1: Via Docker Compose
-docker compose build nginx
-
-# Method 2: Via standalone Docker build
-docker build -t tiktok-nginx ./nginx
-
-# Method 3: From within the service directory
-cd nginx
-docker build -t tiktok-nginx .
-```
-
-#### 2. CMS Backend PHP-FPM (`cms-tiktok-crawler`)
+#### 1. CMS Web, API, Queue & Schedule (`cms-tiktok-crawler`)
 ```bash
 # Method 1: Via Docker Compose
 docker compose build cms-app
@@ -102,7 +88,7 @@ cd cms-tiktok-crawler
 docker build -t cms-tiktok-crawler .
 ```
 
-#### 3. Python Crawler Service (`tiktok-crawler-service`)
+#### 2. Python Crawler Service (`tiktok-crawler-service`)
 ```bash
 # Method 1: Via Docker Compose
 docker compose build crawler-service
@@ -136,6 +122,13 @@ docker compose ps
 - **Crawler API Swagger Docs**: [http://localhost:8001/docs](http://localhost:8001/docs)
 - **Crawler Health Endpoint**: [http://localhost:8001/api/v1/health](http://localhost:8001/api/v1/health)
 
+### Realtime Crawler Dashboard
+
+```bash
+# Run realtime CLI dashboard
+docker compose exec crawler-service python scripts/status.py --watch
+```
+
 ### Stopping Services
 
 ```bash
@@ -148,62 +141,20 @@ docker compose down -v
 
 ---
 
-## 6. Common Operations & Maintenance
+## 6. Deploying to Render.com
 
-### View Logs
+To deploy this setup to **Render.com**:
 
-```bash
-# Stream all logs
-docker compose logs -f
-
-# Stream logs for a specific service
-docker compose logs -f nginx
-docker compose logs -f cms-app
-docker compose logs -f crawler-service
-docker compose logs -f cms-worker
-```
-
-### Run Laravel Artisan Commands
-
-```bash
-# Run database migrations
-docker compose exec cms-app php artisan migrate
-
-# Seed database
-docker compose exec cms-app php artisan db:seed
-
-# Clear application cache
-docker compose exec cms-app php artisan optimize:clear
-
-# Interactive Tinker shell
-docker compose exec cms-app php artisan tinker
-```
-
-### Access Container Shell
-
-```bash
-# Shell into CMS PHP-FPM container
-docker compose exec cms-app sh
-
-# Shell into Nginx container
-docker compose exec nginx sh
-
-# Shell into Python Crawler container
-docker compose exec crawler-service bash
-
-# MySQL CLI
-docker compose exec mysql mysql -u tiktok_user -p tiktok_crawler
-```
-
----
-
-## 7. Persistent Data & Volumes
-
-The Docker Compose configuration persists stateful data across restarts using named volumes:
-
-- `tiktok_mysql_data`: Stores MySQL database tables (`/var/lib/mysql`).
-- `tiktok_cms_public`: Shares compiled SPA assets and storage links between `cms-app` and `nginx` (`/var/www/html/public`).
-- `tiktok_cms_storage`: Stores Laravel logs, cache, sessions (`/var/www/html/storage`).
-- `tiktok_cms_avatars`: Stores crawled TikTok creator profile avatars (`/var/www/html/public/tiktok-accounts`).
-- `tiktok_crawler_data`: Stores SQLite WAL queue and candidate database (`/app/data`).
-- `tiktok_crawler_datasets`: Stores downloaded TikTok video datasets (`/app/datasets`).
+1. **Database**: Use a managed MySQL service (Aiven, PlanetScale, AWS RDS) or deploy MySQL as a Render Private Service with persistent disk mounted to `/var/lib/mysql`.
+2. **CMS Web Service**:
+   - Create a **Web Service** on Render.
+   - Root Directory: `cms-tiktok-crawler`
+   - Dockerfile Path: `Dockerfile`
+   - Render automatically assigns dynamic `$PORT` (e.g. 10000), which `entrypoint.sh` binds automatically.
+   - Health check: `/api/health`.
+3. **Crawler Service**:
+   - Create a **Web Service** (or **Private Service**).
+   - Root Directory: `tiktok-crawler-service`
+   - Dockerfile Path: `Dockerfile`
+   - Port: `8001`.
+   - Health check: `/api/v1/health`.

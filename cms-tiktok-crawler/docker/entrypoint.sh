@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-echo "[CMS] Starting CMS TikTok Crawler PHP-FPM Service..."
+echo "[CMS] Initializing CMS TikTok Crawler Production Container..."
 
 # Ensure storage and public avatar directories exist and have proper permissions
 mkdir -p /var/www/html/storage/framework/cache/data \
@@ -14,6 +14,13 @@ mkdir -p /var/www/html/storage/framework/cache/data \
 chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache /var/www/html/public/tiktok-accounts
 chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache /var/www/html/public/tiktok-accounts
 php /var/www/html/artisan storage:link --force || true
+
+# Support Render dynamic $PORT binding (defaults to port 80)
+TARGET_PORT="${PORT:-80}"
+if [ "$TARGET_PORT" != "80" ]; then
+    echo "[CMS] Adjusting Nginx to listen on dynamic port $TARGET_PORT for Render..."
+    sed -i "s/listen 80;/listen ${TARGET_PORT};/g" /etc/nginx/http.d/default.conf
+fi
 
 # Wait for Database if DB_HOST is configured
 if [ -n "$DB_HOST" ] && [ "$DB_CONNECTION" != "sqlite" ]; then
@@ -51,6 +58,30 @@ if [ "${APP_ENV:-production}" = "production" ]; then
     php /var/www/html/artisan view:cache || true
 fi
 
-# Start PHP-FPM in foreground
-echo "[CMS] Starting PHP-FPM on port 9000..."
-exec php-fpm -F
+# Start background Queue Worker with auto-restart supervisor loop
+echo "[Queue] Starting background Queue Worker..."
+(
+    while true; do
+        php /var/www/html/artisan queue:work --sleep=3 --tries=3 --max-time=3600 --queue=default,crawler,system
+        echo "[Queue] Worker stopped, restarting in 2s..."
+        sleep 2
+    done
+) &
+
+# Start background Scheduler with auto-restart supervisor loop
+echo "[Schedule] Starting background Scheduler..."
+(
+    while true; do
+        php /var/www/html/artisan schedule:work
+        echo "[Schedule] Scheduler stopped, restarting in 5s..."
+        sleep 5
+    done
+) &
+
+# Start PHP-FPM in background
+echo "[CMS] Starting PHP-FPM..."
+php-fpm -D
+
+# Start Nginx in foreground to satisfy Render HTTP health checks
+echo "[CMS] Starting Nginx on port $TARGET_PORT..."
+exec nginx -g "daemon off;"
