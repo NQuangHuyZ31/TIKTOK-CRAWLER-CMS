@@ -101,3 +101,5 @@ class CrawlJobRecord(BaseModel):
     updated_at: str
     callback_url: str | None = None
     callback_token: str | None = None
+    date_from: str | None = None
+    date_to: str | None = None

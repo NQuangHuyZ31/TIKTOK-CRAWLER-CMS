@@ -103,13 +103,29 @@ class DiscoveryWorker:
     # --------------------------------------------------------------------------
     # 1. Pool Watermark Inspections
     # --------------------------------------------------------------------------
+    @property
+    def fresh_target_size(self) -> int:
+        return getattr(config, "CRAWLER_FRESH_TARGET_SIZE", 5000)
+
     def get_valid_candidate_count(self) -> int:
         """Count valid candidates currently in the candidate pool."""
         return self.candidate_repo.get_valid_count()
 
+    def get_fresh_candidate_count(self) -> int:
+        """Count valid candidates with crawl_count = 0 and allocation_class = 'fresh_discovery'."""
+        return self.candidate_repo.get_fresh_count()
+
+    def get_active_locked_candidate_count(self) -> int:
+        """Count active locked assignments in candidate_assignments."""
+        return self.candidate_repo.get_active_locked_count()
+
+    def get_historical_candidate_count(self) -> int:
+        """Count candidates with crawl_count > 0 or allocation_class = 'historical'."""
+        return self.candidate_repo.get_historical_count()
+
     def is_pool_below_watermark(self) -> bool:
-        """Returns True if the valid candidate count is below the low watermark."""
-        return self.get_valid_candidate_count() < self.low_watermark
+        """Returns True if fresh candidates count is below low watermark (unrelated to historical count)."""
+        return self.get_fresh_candidate_count() < self.low_watermark
 
     # --------------------------------------------------------------------------
     # 2. Frontier Enqueue & Seed Extraction
@@ -187,35 +203,35 @@ class DiscoveryWorker:
         4. Acquires discovery rate limit permit.
         5. Validates and upserts into candidate_pool via CandidateManager.
         """
-        target = target_size if target_size is not None else self.target_size
-        current_count = self.get_valid_candidate_count()
+        target = target_size if target_size is not None else self.fresh_target_size
+        current_fresh = self.get_fresh_candidate_count()
 
-        if current_count >= target:
+        if current_fresh >= target:
             logger.info(
-                f"[Discovery] Pool capacity satisfied: ({current_count} >= {target}) "
+                f"[Discovery] Fresh pool capacity satisfied: ({current_fresh} >= {target}) "
                 f"[Low Watermark: {self.low_watermark}]. No refill needed."
             )
             return 0
 
-        needed = min(target - current_count, max_batch)
+        needed = min(target - current_fresh, max_batch)
         logger.info(
-            f"[Discovery] Refilling Candidate Pool: ({current_count} < {target}) "
+            f"[Discovery] Refilling Fresh Candidate Pool: ({current_fresh} < {target}) "
             f"[Low Watermark: {self.low_watermark}]. Batch target: +{needed} candidates."
         )
 
         refilled_count = 0
         frontier_rows = self.frontier_repo.get_pending_candidates(limit=needed)
 
-        if not frontier_rows and self.allow_bootstrap_fallback and current_count < self.low_watermark:
+        if not frontier_rows and self.allow_bootstrap_fallback and current_fresh < self.low_watermark:
             logger.info(
-                f"[Discovery] Candidate pool ({current_count}) below low watermark ({self.low_watermark}) "
+                f"[Discovery] Fresh pool ({current_fresh}) below low watermark ({self.low_watermark}) "
                 "with empty frontier. Re-seeding from dataset..."
             )
             self.seed_from_dataset()
             frontier_rows = self.frontier_repo.get_pending_candidates(limit=needed)
 
         for frontier_id, username in frontier_rows:
-            if current_count + refilled_count >= target:
+            if current_fresh + refilled_count >= target:
                 break
 
             if rate_limited and self.rate_limiter:
@@ -412,8 +428,8 @@ class DiscoveryWorker:
         3. Enqueues discovered mentions into discovery_frontier.
         4. Refills candidate pool from discovery_frontier under rate limit.
         """
-        current_count = self.get_valid_candidate_count()
-        if current_count >= self.target_size:
+        current_fresh = self.get_fresh_candidate_count()
+        if current_fresh >= self.fresh_target_size:
             return 0
 
         pending_frontier = self.frontier_repo.get_pending_count()
@@ -446,7 +462,7 @@ class DiscoveryWorker:
                     )
 
         refilled = self.refill_candidate_pool(
-            target_size=self.target_size,
+            target_size=self.fresh_target_size,
             max_batch=self.max_batch_size,
             rate_limited=self.rate_limited,
         )
@@ -481,6 +497,7 @@ class DiscoveryWorkerPool:
         )
         self.worker = discovery_worker or DiscoveryWorker(self.db_path)
         self._running = False
+        self._refilling_fresh = False
         self._tasks: List[asyncio.Task] = []
 
     async def start(self) -> None:
@@ -532,11 +549,31 @@ class DiscoveryWorkerPool:
 
         while self._running:
             try:
-                valid_count = self.worker.get_valid_candidate_count()
-                if valid_count < self.worker.target_size:
-                    await self.worker.run_discovery_cycle(worker_id)
-                    await asyncio.sleep(2.0 + random.uniform(0.5, 1.5))
+                fresh_count = self.worker.get_fresh_candidate_count()
+
+                # Trigger hysteresis: when fresh drops below low watermark (< 1,000)
+                if fresh_count < self.worker.low_watermark:
+                    if not self._refilling_fresh:
+                        logger.info(
+                            f"[Discovery-Worker-{worker_id}] Fresh candidates below watermark "
+                            f"({fresh_count} < {self.worker.low_watermark}). Waking up to refill fresh pool to target {self.worker.fresh_target_size}..."
+                        )
+                        self._refilling_fresh = True
+
+                if self._refilling_fresh:
+                    # Refill until full: fresh_target_size (5,000 new accounts)
+                    if fresh_count >= self.worker.fresh_target_size:
+                        self._refilling_fresh = False
+                        logger.info(
+                            f"[Discovery-Worker-{worker_id}] Fresh pool fully refilled "
+                            f"(Fresh: {fresh_count}/{self.worker.fresh_target_size}). Entering standby."
+                        )
+                        await asyncio.sleep(self.interval_seconds)
+                    else:
+                        await self.worker.run_discovery_cycle(worker_id)
+                        await asyncio.sleep(2.0 + random.uniform(0.5, 1.5))
                 else:
+                    # Standby mode: fresh count is healthy (>= 1,000), sleeping
                     await asyncio.sleep(self.interval_seconds)
             except asyncio.CancelledError:
                 break
