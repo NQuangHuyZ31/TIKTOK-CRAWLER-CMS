@@ -8,7 +8,7 @@ APP_DIR = SERVICE_ROOT / "app"
 if str(APP_DIR) not in sys.path:
     sys.path.insert(0, str(APP_DIR))
 
-from engine.store import QueueStore
+from repositories.queue_store import QueueStore
 
 
 class TestQueueStore(unittest.TestCase):

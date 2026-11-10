@@ -19,7 +19,7 @@ if str(APP_DIR) not in sys.path:
     sys.path.insert(0, str(APP_DIR))
 
 from engine.schema import initialize_database
-from engine.outbox_dispatcher import OutboxDispatcher
+from workers.outbox_dispatcher import OutboxDispatcher
 from schemas.canonical_event import CanonicalEventEnvelope, format_utc_microseconds
 
 try:

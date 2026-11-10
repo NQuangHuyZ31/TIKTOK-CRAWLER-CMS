@@ -73,3 +73,69 @@ def parse_stat_value(raw_value: str | int | float | None) -> int | None:
         return int(float(text))
     except ValueError:
         return None
+
+
+def resolve_date_bounds(
+    target_date: str | None = None,
+    date_from: str | None = None,
+    date_to: str | None = None,
+    tz_name: str | None = "Asia/Ho_Chi_Minh",
+) -> tuple[str | None, str | None]:
+    """
+    Normalizes target_date ('today', 'yesterday', 'YYYY-MM-DD') or date_from/date_to
+    into UTC ISO datetime strings: (start_utc_iso, end_utc_iso).
+    """
+    from datetime import datetime, time, timedelta, timezone
+    from zoneinfo import ZoneInfo
+
+    try:
+        tz = ZoneInfo(tz_name or "Asia/Ho_Chi_Minh")
+    except Exception:
+        tz = timezone(timedelta(hours=7))
+
+    if target_date:
+        td = target_date.strip().lower()
+        now_local = datetime.now(tz)
+        if td == "today":
+            t_date = now_local.date()
+        elif td == "yesterday":
+            t_date = (now_local - timedelta(days=1)).date()
+        else:
+            t_date = datetime.strptime(td, "%Y-%m-%d").date()
+
+        start_local = datetime.combine(t_date, time.min, tzinfo=tz)
+        end_local = datetime.combine(t_date, time.max, tzinfo=tz)
+        start_utc = start_local.astimezone(timezone.utc).replace(tzinfo=None)
+        end_utc = end_local.astimezone(timezone.utc).replace(tzinfo=None)
+        return start_utc.isoformat(), end_utc.isoformat()
+
+    out_from: str | None = None
+    out_to: str | None = None
+
+    if date_from:
+        df = date_from.strip()
+        if len(df) == 10 and "-" in df:
+            d = datetime.strptime(df, "%Y-%m-%d").date()
+            dt = datetime.combine(d, time.min, tzinfo=tz)
+            out_from = dt.astimezone(timezone.utc).replace(tzinfo=None).isoformat()
+        else:
+            dt = datetime.fromisoformat(df)
+            if dt.tzinfo:
+                out_from = dt.astimezone(timezone.utc).replace(tzinfo=None).isoformat()
+            else:
+                out_from = dt.isoformat()
+
+    if date_to:
+        dt_val = date_to.strip()
+        if len(dt_val) == 10 and "-" in dt_val:
+            d = datetime.strptime(dt_val, "%Y-%m-%d").date()
+            dt = datetime.combine(d, time.max, tzinfo=tz)
+            out_to = dt.astimezone(timezone.utc).replace(tzinfo=None).isoformat()
+        else:
+            dt = datetime.fromisoformat(dt_val)
+            if dt.tzinfo:
+                out_to = dt.astimezone(timezone.utc).replace(tzinfo=None).isoformat()
+            else:
+                out_to = dt.isoformat()
+
+    return out_from, out_to

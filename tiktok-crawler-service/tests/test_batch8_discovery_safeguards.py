@@ -27,10 +27,10 @@ except ImportError:
         pass
 
 from app.engine.candidate_manager import CandidateManager
-from app.engine.discovery_worker import DiscoveryWorker
-from app.engine.privacy_saga import PrivacySagaCoordinator
+from app.workers.discovery_worker import DiscoveryWorker
+from app.engine.sagas.privacy_saga import PrivacySagaCoordinator
 from app.engine.safeguards import DiskSafeguards
-from app.engine.scheduler_daemon import SchedulerDaemon
+from app.workers.scheduler_daemon import SchedulerDaemon
 from app.engine.schema import initialize_database
 from app.engine.shared_rate_limiter import SharedHostRateLimiter
 
@@ -86,7 +86,7 @@ class TestBatch8DiscoverySafeguards(unittest.TestCase):
             )
 
         # Mock low disk space (< 5.0 GB)
-        with patch("app.engine.scheduler_daemon.DiskSafeguards.is_disk_space_low", return_value=True):
+        with patch("app.workers.scheduler_daemon.DiskSafeguards.is_disk_space_low", return_value=True):
             admitted = self.scheduler.admit_pending_jobs(min_free_disk_gb=5.0)
             self.assertEqual(admitted, [], "Scheduler must not admit jobs when disk space is low (T22)")
 
@@ -96,7 +96,7 @@ class TestBatch8DiscoverySafeguards(unittest.TestCase):
         self.assertEqual(cursor.fetchone()[0], "admission_pending")
 
         # Mock sufficient disk space (>= 5.0 GB)
-        with patch("app.engine.scheduler_daemon.DiskSafeguards.is_disk_space_low", return_value=False):
+        with patch("app.workers.scheduler_daemon.DiskSafeguards.is_disk_space_low", return_value=False):
             admitted = self.scheduler.admit_pending_jobs(min_free_disk_gb=5.0)
             self.assertEqual(admitted, ["job_t22"], "Scheduler must admit jobs when disk space is sufficient")
 
@@ -294,7 +294,7 @@ class TestBatch8DiscoverySafeguards(unittest.TestCase):
     def test_discovery_worker_pool_lifecycle(self):
         import asyncio
         from unittest.mock import AsyncMock
-        from app.engine.discovery_worker import DiscoveryWorkerPool
+        from app.workers.discovery_worker import DiscoveryWorkerPool
 
         # Mock tiktok_client so tests do not make outbound network calls
         mock_client = MagicMock()

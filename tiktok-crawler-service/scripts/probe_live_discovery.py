@@ -21,7 +21,7 @@ sys.path.insert(0, str(SERVICE_ROOT / "app"))
 
 from core.utils import normalize_username
 from crawler.tiktok_client import TikTokClient
-from crawler.video_api import fetch_creator_videos_paginated
+from crawler.video.video_api import fetch_creator_videos_paginated
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("LiveDiscoveryTest")

@@ -13,7 +13,7 @@ from _async_compat import patch_windows_self_pipe_if_needed
 patch_windows_self_pipe_if_needed()
 
 from crawler.extractor import ExtractorError, extract_profile
-from crawler.video_extractor import extract_videos_from_body
+from crawler.video.video_extractor import extract_videos_from_body
 
 FIXTURES_DIR = Path(__file__).resolve().parent / "fixtures"
 
@@ -324,7 +324,7 @@ class TestExtractor(unittest.IsolatedAsyncioTestCase):
         import asyncio
         import httpx
         from unittest.mock import AsyncMock, MagicMock
-        from crawler.video_api import fetch_creator_videos_paginated
+        from crawler.video.video_api import fetch_creator_videos_paginated
 
         # Mock page 1 and page 2 responses
         page1_data = {

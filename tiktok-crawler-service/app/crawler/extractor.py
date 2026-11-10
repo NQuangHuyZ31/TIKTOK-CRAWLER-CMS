@@ -4,7 +4,7 @@ import logging
 from bs4 import BeautifulSoup
 
 from core.utils import normalize_username
-from crawler.profile_parser import (
+from crawler.profile.profile_parser import (
     CHALLENGE_STATUS_CODES,
     NOT_FOUND_STATUS_CODES,
     ExtractorError,
