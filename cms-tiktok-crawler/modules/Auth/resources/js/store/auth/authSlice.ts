@@ -44,8 +44,17 @@ function applyAuthSuccess(state: AuthState, action: PayloadAction<any>): void {
 		state.user = null;
 		return;
 	}
+
+	if (!payload?.token || payload.token === 'undefined') {
+		state.isAuthenticated = false;
+		state.token = null;
+		state.user = null;
+		state.error = 'Invalid authentication token received.';
+		return;
+	}
+
 	state.token = payload.token;
-	state.user = payload.user;
+	state.user = payload.user || null;
 	state.roles = payload.user?.roles || [];
 	state.permissions = payload.user?.permissions || [];
 	state.modulePermissions = payload.user?.module_permissions || {};
@@ -96,10 +105,10 @@ const authSlice = createSlice({
 		// Fetch Current User
 		builder
 			.addCase(fetchMeThunk.fulfilled, (s, a) => {
-				s.user = a.payload;
-				s.roles = a.payload.roles || [];
-				s.permissions = a.payload.permissions || [];
-				s.modulePermissions = a.payload.module_permissions || {};
+				s.user = a.payload || null;
+				s.roles = a.payload?.roles || [];
+				s.permissions = a.payload?.permissions || [];
+				s.modulePermissions = a.payload?.module_permissions || {};
 			})
 			.addCase(fetchMeThunk.rejected, (s) => {
 				s.isAuthenticated = false;

@@ -85,7 +85,7 @@ export default function LoginPage() {
 			return;
 		}
 
-		if (token) {
+		if (token && token !== 'undefined' && token !== 'null') {
 			localStorage.setItem(AUTH_STORAGE_KEYS.TOKEN, token);
 			dispatch(setToken(token));
 			dispatch(fetchMeThunk());
@@ -111,14 +111,18 @@ export default function LoginPage() {
 
 		setState((s) => ({ ...s, loading: true, error: null }));
 		try {
-			await dispatch(
+			const res = await dispatch(
 				verifyCodeThunk({
 					temp_token: tempToken,
 					code: otp.trim(),
 				}),
 			).unwrap();
 
-			await dispatch(fetchMeThunk());
+			if (!res?.token || res.token === 'undefined') {
+				throw new Error('Verification failed. Invalid token received.');
+			}
+
+			await dispatch(fetchMeThunk()).unwrap();
 			window.location.href = destination;
 		} catch (err: any) {
 			setState((s) => ({
