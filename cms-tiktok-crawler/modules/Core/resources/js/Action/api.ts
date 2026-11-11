@@ -61,9 +61,13 @@ http.interceptors.request.use((config) => {
         localStorage.getItem('cms_tiktok_token') ||
         localStorage.getItem('token') ||
         localStorage.getItem('access_token');
-    if (authToken) {
+    if (authToken && authToken !== 'undefined' && authToken !== 'null') {
         const cleanToken = authToken.startsWith('"') ? JSON.parse(authToken) : authToken;
         config.headers.set('Authorization', `Bearer ${cleanToken}`);
+    } else if (authToken === 'undefined' || authToken === 'null') {
+        localStorage.removeItem('cms_tiktok_token');
+        localStorage.removeItem('token');
+        localStorage.removeItem('access_token');
     }
 
     return config;
@@ -102,7 +106,7 @@ export const setAuthToken = (token: string): void => {
 
 export const getAuthToken = (): string | null => {
     const token = localStorage.getItem('token') || localStorage.getItem('access_token');
-    if (!token) return null;
+    if (!token || token === 'undefined' || token === 'null') return null;
     return token.startsWith('"') ? JSON.parse(token) : token;
 };
 

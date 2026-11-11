@@ -10,6 +10,10 @@ export const loginThunk = createAsyncThunk(
 	async (payload: authApi.LoginPayload, { rejectWithValue }) => {
 		try {
 			const res = await authApi.login(payload);
+			if ((res as any)?.status === 'error') {
+				return rejectWithValue((res as any)?.message || 'Login failed. Please check your credentials.');
+			}
+
 			const data = (res as any)?.data ?? res;
 
 			if (data?.require_2fa || data?.require_otp || data?.step === '2fa' || data?.step === 'email_otp') {
@@ -17,10 +21,14 @@ export const loginThunk = createAsyncThunk(
 			}
 
 			const successData = data as authApi.LoginSuccessData;
+			if (!successData?.token || successData.token === 'undefined') {
+				return rejectWithValue((res as any)?.message || 'Login failed. Invalid token received.');
+			}
+
 			localStorage.setItem(AUTH_STORAGE_KEYS.TOKEN, successData.token);
 			return successData;
 		} catch (error: any) {
-			return rejectWithValue(error.message || 'Login failed. Please check your credentials.');
+			return rejectWithValue(error?.message || 'Login failed. Please check your credentials.');
 		}
 	}
 );
@@ -33,12 +41,19 @@ export const verifyCodeThunk = createAsyncThunk(
 	async (payload: authApi.VerifyCodePayload, { rejectWithValue }) => {
 		try {
 			const res = await authApi.verifyCode(payload);
+			if ((res as any)?.status === 'error') {
+				return rejectWithValue((res as any)?.message || 'Invalid verification code.');
+			}
+
 			const data = (res as any)?.data ?? res;
+			if (!data?.token || data.token === 'undefined') {
+				return rejectWithValue((res as any)?.message || 'Verification failed. Token not received.');
+			}
 
 			localStorage.setItem(AUTH_STORAGE_KEYS.TOKEN, data.token);
 			return data;
 		} catch (error: any) {
-			return rejectWithValue(error.message || 'Verification failed. Please check your code.');
+			return rejectWithValue(error?.message || 'Verification failed. Please check your code.');
 		}
 	}
 );

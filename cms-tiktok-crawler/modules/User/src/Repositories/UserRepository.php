@@ -61,8 +61,14 @@ class UserRepository extends BaseRepository implements UserRepositoryInterface
      */
     public function resetTwoFactorSecret(int|string $userId): bool
     {
+        $user = $this->findById($userId);
+        if ($user) {
+            $user->tokens()->delete();
+        }
+
         return (bool) $this->model->where('id', $userId)->update([
             'google2fa_secret' => null,
+            'google2fa_enabled' => false,
         ]);
     }
 
