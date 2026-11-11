@@ -23,14 +23,19 @@ Built as a standardized **Ureka Modular Architecture** monorepo, connecting an a
    - [6. System Diagnostics, Live Engine Probes & Audit Logs](#6-system-diagnostics-live-engine-probes--audit-logs)
    - [7. Interactive Bilingual Guideline Portal](#7-interactive-bilingual-guideline-portal)
 5. [Prerequisites](#-prerequisites)
-6. [Step-by-Step Installation & Run Guide (Beginner-Friendly)](#-step-by-step-installation--run-guide-beginner-friendly)
+6. [Step-by-Step Installation & Run Guide](#-step-by-step-installation--run-guide)
    - [CRITICAL SECURITY NOTE: Shared Secret Token](#-critical-security-note-shared-secret-token)
-   - [Step 1: Setting Up the Backend & Frontend CMS (`cms-tiktok-crawler`)](#step-1-setting-up-the-backend--frontend-cms-cms-tiktok-crawler)
-   - [Step 2: Setting Up the Python Crawler Service (`tiktok-crawler-service`)](#step-2-setting-up-the-python-crawler-service-tiktok-crawler-service)
-   - [Step 3: Accessing the Application & Default Credentials](#step-3-accessing-the-application--default-credentials)
-   - [Step 4: Troubleshooting Common Issues](#step-4-troubleshooting-common-issues)
+   - [Method A: Quickstart with Docker Compose (Recommended for Beginners)](#method-a-quickstart-with-docker-compose-recommended-for-beginners)
+   - [Method B: Manual Local Setup (Without Docker - For Development)](#method-b-manual-local-setup-without-docker---for-development)
+     - [Step 1: Setting Up the Backend & Frontend CMS (`cms-tiktok-crawler`)](#step-1-setting-up-the-backend--frontend-cms-cms-tiktok-crawler)
+     - [Step 2: Setting Up the Python Crawler Service (`tiktok-crawler-service`)](#step-2-setting-up-the-python-crawler-service-tiktok-crawler-service)
+   - [Default System Credentials & Access URLs](#default-system-credentials--access-urls)
+   - [Troubleshooting Common Issues](#troubleshooting-common-issues)
 7. [Quality Gates & Automated Verification](#-quality-gates--automated-verification)
-8. [Production Deployment & Docker](#-production-deployment--docker)
+8. [Docker Containerization & Image Build Guide](#-docker-containerization--image-build-guide)
+   - [Architecture & Colocated Structure](#architecture--colocated-structure)
+   - [Building Docker Images (Total & Individual)](#building-docker-images-total--individual)
+   - [Stack Orchestration & Management Commands](#stack-orchestration--management-commands)
 9. [Development Standards & Contribution Rules](#-development-standards--contribution-rules)
 
 ---
@@ -83,7 +88,7 @@ flowchart TB
 | **Frontend Portal** | React 19, TypeScript, Ant Design 6, Redux Toolkit, Tailwind CSS 4 | Single Page Application (SPA), 100% strict type safety, standardized path aliases (`@core`, `@modules/*`), responsive layout. |
 | **Crawler & Discovery Engine** | Python 3.10+, FastAPI, AsyncIO, SQLite WAL, httpx, BeautifulSoup4 | Direct script tag parsing (`__UNIVERSAL_DATA_FOR_REHYDRATION__`), minimal memory footprint (50–80MB per worker), Shared Host Rate Limiter, Circuit Breaker, automated 5,000 creator candidate pool. |
 | **Database & Cache** | MySQL 8.0+ / SQLite, Redis | Persistent storage for creator profiles, video catalogs, crawl execution history, audit logs, and cache locks. |
-| **Packaging & CI/CD** | Docker, Nginx, PHP-FPM, Render Blueprint (`render.yaml`) | Modular multi-container compose, automated health probes at `/api/health`, zero-downtime rolling restart compatibility. |
+| **Packaging & CI/CD** | Docker, Docker Compose, Nginx, PHP-FPM, Render Blueprint (`render.yaml`) | Colocated multi-container architecture, automated health probes at `/api/health`, zero-downtime rolling restart compatibility. |
 
 ---
 
@@ -112,7 +117,10 @@ TIKTOK-CRAWLER/
 │   ├── public/                            # Static assets, images/guideline/, entrypoints.json
 │   ├── tests/                             # Automated Feature & Unit test suites (Pest / PHPUnit)
 │   ├── vite.config.ts                     # Vite bundler & Path Aliases configuration
-│   └── package.json                       # Frontend dependencies (React 19 & Ant Design 6)
+│   ├── package.json                       # Frontend dependencies (React 19 & Ant Design 6)
+│   ├── Dockerfile                         # Production multi-stage build (React 19 SPA + PHP 8.3 FPM + Nginx)
+│   ├── docker/                            # Colocated container configs (nginx.conf, supervisord.conf, entrypoint.sh)
+│   └── .dockerignore                      # Docker build context exclusions
 ├── tiktok-crawler-service/                # INDEPENDENT PYTHON CRAWLER & DISCOVERY SERVICE
 │   ├── app/
 │   │   ├── api/                           # FastAPI route handlers (/api/crawl-jobs/start, /health)
@@ -126,8 +134,11 @@ TIKTOK-CRAWLER/
 │   ├── data/                              # SQLite WAL databases (queue.db, candidates.db)
 │   ├── datasets/                          # Initial bootstrap CSV seeds for discovery
 │   ├── tests/                             # Automated Python test suites (pytest)
-│   └── requirements.txt                   # Python dependencies manifest
-├── docker/                                # Dockerfile.web, Dockerfile.crawler, Dockerfile.worker, Nginx
+│   ├── requirements.txt                   # Python dependencies manifest
+│   ├── Dockerfile                         # Dedicated Python 3.12 FastAPI microservice container
+│   └── .dockerignore                      # Python build context exclusions
+├── docker-compose.yml                     # Unified root orchestrator (MySQL 8.0, CMS App, Crawler Service)
+├── .env.docker.example                    # Environment variable template for Docker Compose
 ├── docs/                                  # In-depth architectural specifications & guides
 ├── scripts/                               # Workflow quality verification scripts (verify-workflow.ps1)
 └── render.yaml                            # Cloud deployment blueprint for Render.com
@@ -228,17 +239,16 @@ Ensure your host environment meets the following requirements before installatio
 
 | Requirement | Minimum Version | Notes / Required Extensions |
 | :--- | :--- | :--- |
-| **PHP** | `^8.3` | Extensions: `pdo_mysql`, `pdo_sqlite`, `mbstring`, `bcmath`, `zip`, `intl`, `gd`, `fileinfo`, `curl` |
-| **Composer** | `^2.6` | PHP dependency manager |
-| **Node.js** | `^20.x` | JavaScript runtime environment |
-| **NPM** | `^10.x` | Package manager for frontend dependencies |
-| **Python** | `^3.10` | Python runtime with `pip` and `venv` |
+| **Docker Engine** *(For Docker Setup)* | `24.0+` | Docker Desktop with Docker Compose V2 support |
+| **PHP** *(For Local Manual Setup)* | `^8.3` | Extensions: `pdo_mysql`, `pdo_sqlite`, `mbstring`, `bcmath`, `zip`, `intl`, `gd`, `fileinfo`, `curl` |
+| **Composer** *(For Local Manual Setup)* | `^2.6` | PHP dependency manager |
+| **Node.js** *(For Local Manual Setup)* | `^20.x` | JavaScript runtime environment |
+| **Python** *(For Local Manual Setup)* | `^3.10` | Python runtime with `pip` and `venv` |
 | **Database** | MySQL `8.0+` or SQLite | SQLite is supported out of the box for quick setup |
-| **Operating System** | Windows, Linux, macOS | Commands are provided for both PowerShell and Bash |
 
 ---
 
-## 🚀 Step-by-Step Installation & Run Guide (Beginner-Friendly)
+## 🚀 Step-by-Step Installation & Run Guide
 
 > [!IMPORTANT]
 > ### ⚠️ CRITICAL SECURITY NOTE: SHARED SECRET TOKEN
@@ -257,7 +267,45 @@ Ensure your host environment meets the following requirements before installatio
 
 ---
 
-### Step 1: Setting Up the Backend & Frontend CMS (`cms-tiktok-crawler`)
+### Method A: Quickstart with Docker Compose (Recommended for Beginners)
+
+If you have Docker Desktop installed, you do not need to install PHP, Composer, Node.js, Python, or MySQL locally. Everything runs in isolated containers with just two commands.
+
+#### Step 1: Copy Environment Template
+Run from the repository root directory:
+
+- **Linux / macOS**:
+  ```bash
+  cp .env.docker.example .env
+  ```
+- **Windows (PowerShell)**:
+  ```powershell
+  Copy-Item .env.docker.example .env
+  ```
+
+#### Step 2: Build & Start All Containers
+```bash
+docker compose up -d --build
+```
+*Docker Compose will automatically build the images, launch MySQL 8.0, run database migrations, start the All-in-One CMS container (Nginx + PHP-FPM + Queue + Scheduler), and start the Python Crawler microservice.*
+
+#### Step 3: Seed Default Demo Accounts & Data (Optional)
+```bash
+docker compose exec cms-app php artisan db:seed --force
+```
+
+#### Step 4: Open in Web Browser
+- **CMS Admin Portal**: **[http://localhost:8000/admin](http://localhost:8000/admin)**
+- **Interactive Documentation**: **[http://localhost:8000/guideline](http://localhost:8000/guideline)**
+- **Crawler Swagger API Docs**: **[http://localhost:8001/docs](http://localhost:8001/docs)**
+
+---
+
+### Method B: Manual Local Setup (Without Docker - For Development)
+
+Follow these steps if you want to run the codebase natively on your development machine.
+
+#### Step 1: Setting Up the Backend & Frontend CMS (`cms-tiktok-crawler`)
 
 Open a terminal window and navigate to the `cms-tiktok-crawler` directory:
 
@@ -265,20 +313,12 @@ Open a terminal window and navigate to the `cms-tiktok-crawler` directory:
 cd cms-tiktok-crawler
 ```
 
-#### 1.1. Create Environment File
-Copy the example environment configuration:
+##### 1.1. Create Environment File
+- **Linux / macOS**: `cp .env.example .env`
+- **Windows (PowerShell)**: `Copy-Item .env.example .env`
 
-- **Linux / macOS**:
-  ```bash
-  cp .env.example .env
-  ```
-- **Windows (PowerShell)**:
-  ```powershell
-  Copy-Item .env.example .env
-  ```
-
-#### 1.2. Configure `.env` Settings
-Open `.env` in any text editor. For a quick local setup using **SQLite** (no MySQL installation required), configure:
+##### 1.2. Configure `.env` Settings
+Open `.env` in any text editor. For quick local setup using **SQLite** (no MySQL installation required):
 
 ```ini
 APP_NAME="CMS Tiktok Crawler"
@@ -302,30 +342,29 @@ AUTH_EMAIL_OTP_ENABLED=false
 
 *(If using SQLite, create the empty file: `touch database/database.sqlite` on Linux/macOS or `New-Item -ItemType File -Path database/database.sqlite` on PowerShell).*
 
-#### 1.3. Install PHP Dependencies & Generate Key
+##### 1.3. Install PHP Dependencies & Generate Key
 ```bash
 composer install
 php artisan key:generate
 ```
 
-#### 1.4. Create Public Storage Symlink
+##### 1.4. Create Public Storage Symlink
 ```bash
 php artisan storage:link
 ```
 
-#### 1.5. Run Database Migrations & Seed Default Data
+##### 1.5. Run Database Migrations & Seed Default Data
 ```bash
 php artisan migrate --seed
 ```
-*This provisions all database tables and seeds default user roles, permissions, and administrator accounts.*
 
-#### 1.6. Install Frontend Dependencies & Compile Assets
+##### 1.6. Install Frontend Dependencies & Compile Assets
 ```bash
 npm install
 npm run mix
 ```
 
-#### 1.7. Start the Laravel CMS Server
+##### 1.7. Start the Laravel CMS Server
 ```bash
 php artisan serve --port=8000
 ```
@@ -333,7 +372,7 @@ php artisan serve --port=8000
 
 ---
 
-### Step 2: Setting Up the Python Crawler Service (`tiktok-crawler-service`)
+#### Step 2: Setting Up the Python Crawler Service (`tiktok-crawler-service`)
 
 Open a **second terminal window** and navigate to `tiktok-crawler-service`:
 
@@ -341,7 +380,7 @@ Open a **second terminal window** and navigate to `tiktok-crawler-service`:
 cd tiktok-crawler-service
 ```
 
-#### 2.1. Create & Activate Python Virtual Environment
+##### 2.1. Create & Activate Python Virtual Environment
 - **Linux / macOS**:
   ```bash
   python3 -m venv venv
@@ -354,22 +393,16 @@ cd tiktok-crawler-service
   ```
   *(If PowerShell displays a script execution error, run: `Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass` and retry).*
 
-#### 2.2. Install Python Dependencies
+##### 2.2. Install Python Dependencies
 ```bash
 pip install -r requirements.txt
 ```
 
-#### 2.3. Create Environment File
-- **Linux / macOS**:
-  ```bash
-  cp .env.example .env
-  ```
-- **Windows (PowerShell)**:
-  ```powershell
-  Copy-Item .env.example .env
-  ```
+##### 2.3. Create Environment File
+- **Linux / macOS**: `cp .env.example .env`
+- **Windows (PowerShell)**: `Copy-Item .env.example .env`
 
-#### 2.4. Verify `.env` Configuration
+##### 2.4. Verify `.env` Configuration
 Open `.env` in your text editor and ensure the secret token matches the CMS:
 
 ```ini
@@ -391,25 +424,20 @@ CRAWLER_CANDIDATE_POOL_TARGET_SIZE=5000
 CRAWLER_CANDIDATE_POOL_LOW_WATERMARK=1000
 ```
 
-#### 2.5. Start the Crawler Microservice
+##### 2.5. Start the Crawler Microservice
 ```bash
 python -m uvicorn app.api.routes:app --host 0.0.0.0 --port 8001
 ```
 *The crawler service is now listening at **`http://localhost:8001`**.*
 
-#### 2.6. Verify Crawler Health
-Open your browser and navigate to:
-- Interactive API Documentation (Swagger): **[http://localhost:8001/docs](http://localhost:8001/docs)**
-- Health Probe: **[http://localhost:8001/health](http://localhost:8001/health)**
-
 ---
 
-### Step 3: Accessing the Application & Default Credentials
+### Default System Credentials & Access URLs
 
-With both services running:
 - **CMS Administration Portal**: **[http://localhost:8000/admin](http://localhost:8000/admin)**
 - **Interactive Documentation Guideline**: **[http://localhost:8000/guideline](http://localhost:8000/guideline)**
 - **CMS Health Probe**: **[http://localhost:8000/api/health](http://localhost:8000/api/health)**
+- **Crawler Swagger API Docs**: **[http://localhost:8001/docs](http://localhost:8001/docs)**
 
 #### Pre-seeded Default Accounts:
 | Email Address | Default Password | Assigned Role | Capabilities & Scope |
@@ -421,7 +449,7 @@ With both services running:
 
 ---
 
-### Step 4: Troubleshooting Common Issues
+### Troubleshooting Common Issues
 
 <details>
 <summary><b>1. Error: "401 Unauthorized" on Webhooks or Progress Bar Stuck at 0%</b></summary>
@@ -466,7 +494,7 @@ With both services running:
 
 ## 🧪 Quality Gates & Automated Verification
 
-The monorepo enforces automated testing across all architectural layers. Run these commands to verify codebase integrity:
+The monorepo enforces automated testing across all architectural layers:
 
 ### 1. Frontend TypeScript Validation
 Ensures 100% strict type safety with zero compilation errors:
@@ -497,18 +525,110 @@ powershell -ExecutionPolicy Bypass -File scripts/verify-workflow.ps1
 
 ---
 
-## 🐳 Production Deployment & Docker
+## 🐳 Docker Containerization & Image Build Guide
 
-The repository includes production-ready container configurations:
+### Architecture & Colocated Structure
 
-- **Web Service (`docker/Dockerfile.web`)**: Multi-stage build compiling React 19 SPA assets, served by Nginx and PHP 8.3 FPM.
-- **Crawler Service (`docker/Dockerfile.crawler`)**: Lightweight Python 3.10+ container running FastAPI with persistent SQLite WAL volume storage.
-- **Queue Worker (`docker/Dockerfile.worker`)**: Runs background Laravel event queue workers (`php artisan queue:work`).
-- **Render.com Blueprint (`render.yaml`)**: Cloud infrastructure blueprint specifying automatic deployment with health check probes at `/api/health`.
+The platform uses a **decentralized, service-colocated Docker architecture**. Dockerfiles are located directly within their respective service repositories rather than grouped in a monolithic legacy directory:
 
-### Running with Docker Compose:
+| Service | Dockerfile Location | Base Image | Role & Components |
+|---|---|---|---|
+| **`cms-app`** | `cms-tiktok-crawler/Dockerfile` | `php:8.3-fpm-alpine` + `node:20-alpine` | **All-in-One Container**: Compiles React 19 SPA, runs Nginx on Port 80, PHP 8.3 FPM, auto-runs migrations on startup, and embeds background Queue Workers & Scheduler Daemons. |
+| **`crawler-service`** | `tiktok-crawler-service/Dockerfile` | `python:3.12-slim` | **Scraping Engine**: Runs FastAPI on Port 8001 with SQLite WAL persistent volume storage. |
+| **`mysql`** | Official Image | `mysql:8.0` | **Relational Database**: Pre-configured with automatic health checks on Port 3306. |
+
+All services communicate over the internal bridge network `tiktok_network`.
+
+---
+
+### Building Docker Images (Total & Individual)
+
+#### Option 1: Building All Images Together (Unified Docker Compose)
+
+Execute from the monorepo root directory:
+
 ```bash
+# Build all service images defined in docker-compose.yml
+docker compose build
+
+# Clean rebuild (forces downloading fresh packages and ignores layer cache)
+docker compose build --no-cache
+```
+
+#### Option 2: Building Individual Service Images Separately
+
+##### 1. CMS Web, API, Queue & Scheduler (`cms-tiktok-crawler`)
+```bash
+# Method A: Build via Docker Compose target
+docker compose build cms-app
+
+# Method B: Build using standalone Docker from monorepo root
+docker build -t cms-tiktok-crawler ./cms-tiktok-crawler
+
+# Method C: Build from within the service directory
+cd cms-tiktok-crawler
+docker build -t cms-tiktok-crawler .
+```
+
+##### 2. Python Crawler Microservice (`tiktok-crawler-service`)
+```bash
+# Method A: Build via Docker Compose target
+docker compose build crawler-service
+
+# Method B: Build using standalone Docker from monorepo root
+docker build -t tiktok-crawler-service ./tiktok-crawler-service
+
+# Method C: Build from within the service directory
+cd tiktok-crawler-service
+docker build -t tiktok-crawler-service .
+```
+
+---
+
+### Stack Orchestration & Management Commands
+
+#### Starting the Containers
+```bash
+# Start all containers in detached background mode
+docker compose up -d
+
+# Build images and start all containers in a single command
 docker compose up -d --build
+```
+
+#### Viewing Container Logs
+```bash
+# Stream live logs for all running services
+docker compose logs -f
+
+# Stream logs for a specific service only
+docker compose logs -f cms-app
+docker compose logs -f crawler-service
+docker compose logs -f mysql
+```
+
+#### Executing Commands Inside Containers
+```bash
+# Seed initial demo accounts and role permissions
+docker compose exec cms-app php artisan db:seed --force
+
+# Manually trigger database migrations
+docker compose exec cms-app php artisan migrate --force
+
+# Open interactive shell in the CMS container
+docker compose exec cms-app sh
+
+# Open interactive bash in the Crawler container
+docker compose exec crawler-service bash
+```
+
+#### Stopping the Stack
+```bash
+# Stop all containers (preserves database and cache volumes)
+docker compose down
+
+# Stop all containers AND wipe all persistent volumes (fresh reset)
+docker compose down -v
 ```
 
 ---
