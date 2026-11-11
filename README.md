@@ -318,29 +318,35 @@ cd cms-tiktok-crawler
 - **Windows (PowerShell)**: `Copy-Item .env.example .env`
 
 ##### 1.2. Configure `.env` Settings
-Open `.env` in any text editor. For quick local setup using **SQLite** (no MySQL installation required):
+Open `.env` in any text editor. For quick local setup using **MYSQL**:
 
 ```ini
-APP_NAME="CMS Tiktok Crawler"
-APP_ENV=local
-APP_DEBUG=true
-APP_URL=http://localhost:8000
+# Quick setup with MYSQL:
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=cms_tiktok_crawler
+DB_USERNAME=root
+DB_PASSWORD=
 
-# Quick setup with SQLite:
-DB_CONNECTION=sqlite
-DB_DATABASE=database/database.sqlite
-
-# Shared token matching the Python crawler service:
-CRAWLER_SERVICE_URL=http://127.0.0.1:8001
-CRAWLER_SERVICE_TOKEN=your_shared_crawler_secret_token
-CRAWLER_HMAC_SECRET=your_shared_crawler_secret_token
-
-# Security toggles:
+# Two-Factor Authentication (Google Authenticator)
 AUTH_2FA_ENABLED=true
 AUTH_EMAIL_OTP_ENABLED=false
-```
 
-*(If using SQLite, create the empty file: `touch database/database.sqlite` on Linux/macOS or `New-Item -ItemType File -Path database/database.sqlite` on PowerShell).*
+# Google OAuth
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+GOOGLE_REDIRECT_URI="${APP_URL}/admin/api/auth/google/callback"
+
+# Crawler service
+CRAWLER_SERVICE_URL=YOUR_CRAWLER_SERVICE_URL
+CRAWLER_SERVICE_TOKEN=
+CRAWLER_HMAC_SECRET=
+
+# fontend env
+VITE_APP_NAME="${APP_NAME}"
+VITE_API_URL="${APP_URL}/admin/api"
+```
 
 ##### 1.3. Install PHP Dependencies & Generate Key
 ```bash
@@ -358,13 +364,27 @@ php artisan storage:link
 php artisan migrate --seed
 ```
 
-##### 1.6. Install Frontend Dependencies & Compile Assets
+##### 1.6. Run Queue
 ```bash
-npm install
-npm run mix
+php artisan queue:work
 ```
 
-##### 1.7. Start the Laravel CMS Server
+##### 1.7. Run Schedule
+```bash
+php artisan schedule:work
+```
+
+##### 1.8. Install Frontend Dependencies & Compile Assets
+```bash
+npm install
+npm run mix:prod
+# Build only module
+npm run mix:module module_name
+# Watch
+npm run mix:watch
+```
+
+##### 1.9. Start the Laravel CMS Server
 ```bash
 php artisan serve --port=8000
 ```
@@ -412,8 +432,8 @@ WORKER_COUNT=10
 QUEUE_DB_PATH=data/queue.db
 
 # CMS Integration (MUST match cms-tiktok-crawler/.env):
-LARAVEL_BASE_URL=http://127.0.0.1:8000
-LARAVEL_API_URL=http://127.0.0.1:8000/admin/api/public/crawler
+LARAVEL_BASE_URL=YOUR_LARAVEL_URL
+LARAVEL_API_URL={YOUR_LARAVEL_URL}/admin/api/public/crawler
 CRAWLER_TOKEN=your_shared_crawler_secret_token
 CRAWLER_HMAC_SECRET=your_shared_crawler_secret_token
 
