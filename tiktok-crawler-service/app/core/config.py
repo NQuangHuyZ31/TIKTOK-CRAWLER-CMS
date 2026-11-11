@@ -7,7 +7,7 @@ SERVICE_ROOT = Path(__file__).resolve().parent.parent.parent
 try:
     from dotenv import load_dotenv
 
-    load_dotenv(SERVICE_ROOT / ".env", override=True)
+    load_dotenv(SERVICE_ROOT / ".env", override=False)
 except ImportError:
     env_file = SERVICE_ROOT / ".env"
     if env_file.is_file():
@@ -154,9 +154,14 @@ USER_AGENT_POOL = [
 
 
 def normalize_callback_url(callback_url: str | None) -> str:
-    """Normalize backend callback URL and ensure localhost uses port 8000 by default."""
+    """Normalize backend callback URL and ensure Docker internal hostname is used when applicable."""
     url = (callback_url or LARAVEL_API_URL).rstrip("/")
     parsed = urlparse(url)
+
+    # Remap stale localhost/127.0.0.1 callbacks to LARAVEL_API_URL when running in Docker network
+    if parsed.hostname in {"localhost", "127.0.0.1"} and "cms-app" in LARAVEL_API_URL:
+        return LARAVEL_API_URL.rstrip("/")
+
     if parsed.hostname in {"localhost", "127.0.0.1"} and parsed.port is None:
         parsed = parsed._replace(netloc=f"{parsed.hostname}:8000")
     return urlunparse(parsed).rstrip("/")
