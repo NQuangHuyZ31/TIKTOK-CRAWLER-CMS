@@ -516,6 +516,15 @@ python -m uvicorn app.api.routes:app --host 0.0.0.0 --port 8001
   ```
 </details>
 
+<details>
+<summary><b>5. Error: "net::ERR_SSL_PROTOCOL_ERROR" when accessing localhost:8000</b></summary>
+
+- **Cause**: The browser or a redirect is attempting to connect via `https://localhost:8000`. Local Docker containers listen on plain HTTP (port 80 inside container mapped to port 8000), not HTTPS.
+- **Solution**:
+  1. Open the URL explicitly with **`http://`**: **`http://localhost:8000/admin`** (or `http://localhost:8000/admin/dashboard`).
+  2. Ensure `FORCE_HTTPS=false` and `APP_URL=http://localhost:8000` in `.env.docker` or `docker-compose.yml`. HTTPS is automatically activated only when `APP_URL` starts with `https://` or when `FORCE_HTTPS=true` is set behind an SSL-terminating reverse proxy.
+</details>
+
 ---
 
 ## 🧪 Quality Gates & Automated Verification

@@ -41,7 +41,7 @@ RUN apk add --no-cache \
     oniguruma-dev \
     icu-dev \
     linux-headers \
-    mysql-client
+    mariadb-client
 
 RUN docker-php-ext-install pdo pdo_mysql mbstring bcmath zip intl pcntl opcache gd
 
