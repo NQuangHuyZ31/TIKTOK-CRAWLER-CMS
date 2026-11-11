@@ -88,7 +88,7 @@ const systemSlice = createSlice({
 			})
 			.addCase(fetchSystemDiagnostic.fulfilled, (state, action) => {
 				state.diagnosticLoading = false;
-				state.diagnostic = (action.payload as any)?.data ?? null;
+				state.diagnostic = action.payload as any ?? null;
 			})
 			.addCase(fetchSystemDiagnostic.rejected, (state) => {
 				state.diagnosticLoading = false;
