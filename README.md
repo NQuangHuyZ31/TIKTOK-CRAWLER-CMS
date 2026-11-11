@@ -67,18 +67,19 @@ flowchart TB
 
     TikTok["TikTok Network<br>(tiktok.com)"]
 
-    UI <-->|REST API + Bearer Sanctum Token| Laravel
-    Laravel -->|Store accounts, videos, logs| DB
-    Laravel -->|Cache metrics & session locks| Redis
-    Laravel -->|Download & serve avatars locally| AvatarStore
-    Laravel -->|POST /api/crawl-jobs/start (Bearer Auth)| FastAPI
-    FastAPI --> QueueMgr --> WorkerPool
+    UI <-->|"REST API + Bearer Sanctum Token"| Laravel
+    Laravel -->|"Store accounts, videos, logs"| DB
+    Laravel -->|"Cache metrics & session locks"| Redis
+    Laravel -->|"Download & serve avatars locally"| AvatarStore
+    Laravel -->|"POST /api/crawl-jobs/start (Bearer Auth)"| FastAPI
+    FastAPI --> QueueMgr
+    QueueMgr --> WorkerPool
     FastAPI --> DiscoveryMgr
-    WorkerPool <-->|Acquire Permit (4 Profile : 1 Discovery)| RateLimiter
-    DiscoveryMgr <-->|Acquire Permit| RateLimiter
-    WorkerPool -->|HTTP GET / JSON Rehydration| TikTok
-    DiscoveryMgr -->|Scan seed mentions & comments| TikTok
-    WorkerPool -->|Streaming Event Webhook (HMAC / Bearer)| Laravel
+    WorkerPool <-->|"Acquire Permit (4 Profile : 1 Discovery)"| RateLimiter
+    DiscoveryMgr <-->|"Acquire Permit"| RateLimiter
+    WorkerPool -->|"HTTP GET / JSON Rehydration"| TikTok
+    DiscoveryMgr -->|"Scan seed mentions & comments"| TikTok
+    WorkerPool -->|"Streaming Event Webhook (HMAC / Bearer)"| Laravel
 ```
 
 ### Core Technology Stack:
