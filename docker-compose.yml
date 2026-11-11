@@ -40,8 +40,6 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
-      crawler-service:
-        condition: service_started
     ports:
       - "${CMS_PORT:-8000}:80"
     environment:
