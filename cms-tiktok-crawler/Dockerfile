@@ -56,17 +56,51 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html
 
-# Copy application source files
+# Pre-install PHP dependencies for layer caching
+COPY composer.json composer.lock ./
+RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist --no-interaction
+
+# Copy full application source files
 COPY . /var/www/html
 
 # Copy compiled frontend assets from builder stage
 COPY --from=frontend-builder /app/public /var/www/html/public
 
-# Install production PHP dependencies
-RUN composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
+# Generate optimized autoload classmap
+RUN composer dump-autoload --optimize --no-dev
+
+# Copy .env from host if present, fallback to .env.example
+RUN if [ ! -f /var/www/html/.env ]; then \
+        if [ -f /var/www/html/.env.example ]; then \
+            cp /var/www/html/.env.example /var/www/html/.env; \
+        fi; \
+    fi
+
+# Build-time overwrite of required Docker container fields in .env
+RUN if [ -f /var/www/html/.env ]; then \
+        sed -i 's|^APP_ENV=.*|APP_ENV=local|g' /var/www/html/.env || true; \
+        sed -i 's|^APP_DEBUG=.*|APP_DEBUG=true|g' /var/www/html/.env || true; \
+        sed -i 's|^APP_URL=.*|APP_URL=http://localhost:8000|g' /var/www/html/.env || true; \
+        if grep -q "^FORCE_HTTPS=" /var/www/html/.env; then \
+            sed -i 's|^FORCE_HTTPS=.*|FORCE_HTTPS=false|g' /var/www/html/.env; \
+        else \
+            echo "FORCE_HTTPS=false" >> /var/www/html/.env; \
+        fi; \
+        sed -i 's|^DB_CONNECTION=.*|DB_CONNECTION=mysql|g' /var/www/html/.env || true; \
+        sed -i 's|^DB_HOST=.*|DB_HOST=mysql|g' /var/www/html/.env || true; \
+        sed -i 's|^DB_PORT=.*|DB_PORT=3306|g' /var/www/html/.env || true; \
+        sed -i 's|^DB_DATABASE=.*|DB_DATABASE=tiktok_crawler|g' /var/www/html/.env || true; \
+        sed -i 's|^DB_USERNAME=.*|DB_USERNAME=tiktok_user|g' /var/www/html/.env || true; \
+        sed -i 's|^DB_PASSWORD=.*|DB_PASSWORD=secret_password|g' /var/www/html/.env || true; \
+        if grep -q "^CRAWLER_SERVICE_URL=" /var/www/html/.env; then \
+            sed -i 's|^CRAWLER_SERVICE_URL=.*|CRAWLER_SERVICE_URL=http://crawler-service:8001|g' /var/www/html/.env; \
+        else \
+            echo "CRAWLER_SERVICE_URL=http://crawler-service:8001" >> /var/www/html/.env; \
+        fi; \
+    fi
 
 # Default environment configuration
-ENV APP_ENV=production
+ENV APP_ENV=local
 ENV LOG_CHANNEL=stderr
 
 # Copy Nginx & PHP configuration

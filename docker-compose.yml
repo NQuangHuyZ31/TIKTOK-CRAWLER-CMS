@@ -6,6 +6,10 @@ services:
     image: mysql:8.0
     container_name: tiktok_mysql
     restart: unless-stopped
+    command:
+      - --default-authentication-plugin=mysql_native_password
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
     environment:
       MYSQL_DATABASE: ${DB_DATABASE:-tiktok_crawler}
       MYSQL_USER: ${DB_USERNAME:-tiktok_user}
@@ -40,9 +44,9 @@ services:
       - "${CMS_PORT:-8000}:80"
     environment:
       APP_NAME: "${APP_NAME:-CMS TikTok Crawler}"
-      APP_ENV: ${APP_ENV:-production}
+      APP_ENV: ${APP_ENV:-local}
       APP_KEY: "${APP_KEY:-base64:GkS35gLq8gM+9UvH2lA5jD1vE4kF7mO0pQ2rS4tU6w8=}"
-      APP_DEBUG: "${APP_DEBUG:-false}"
+      APP_DEBUG: "${APP_DEBUG:-true}"
       APP_URL: "${APP_URL:-http://localhost:8000}"
       FORCE_HTTPS: ${FORCE_HTTPS:-false}
       DB_CONNECTION: mysql
@@ -52,7 +56,7 @@ services:
       DB_USERNAME: ${DB_USERNAME:-tiktok_user}
       DB_PASSWORD: ${DB_PASSWORD:-secret_password}
       RUN_MIGRATIONS: ${RUN_MIGRATIONS:-true}
-      RUN_SEEDER: ${RUN_SEEDER:-false}
+      RUN_SEEDER: ${RUN_SEEDER:-true}
       CRAWLER_SERVICE_URL: ${CRAWLER_SERVICE_URL:-http://crawler-service:8001}
       CRAWLER_AUTH_TOKEN: ${CRAWLER_AUTH_TOKEN:-}
       LARAVEL_API_SECRET: ${LARAVEL_API_SECRET:-}

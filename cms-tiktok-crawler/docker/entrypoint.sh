@@ -15,6 +15,42 @@ chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache /
 chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache /var/www/html/public/tiktok-accounts
 php /var/www/html/artisan storage:link --force || true
 
+# Synchronize /var/www/html/.env with required Docker container settings
+if [ ! -f /var/www/html/.env ]; then
+    if [ -f /var/www/html/.env.example ]; then
+        cp /var/www/html/.env.example /var/www/html/.env
+    fi
+fi
+
+set_env_val() {
+    key="$1"
+    val="$2"
+    file="/var/www/html/.env"
+    if [ -f "$file" ] && [ -n "$val" ]; then
+        if grep -q "^${key}=" "$file"; then
+            sed -i "s|^${key}=.*|${key}=${val}|g" "$file"
+        else
+            echo "${key}=${val}" >> "$file"
+        fi
+    fi
+}
+
+set_env_val "APP_ENV" "${APP_ENV:-local}"
+set_env_val "APP_DEBUG" "${APP_DEBUG:-true}"
+set_env_val "APP_URL" "${APP_URL:-http://localhost:8000}"
+set_env_val "FORCE_HTTPS" "${FORCE_HTTPS:-false}"
+set_env_val "DB_CONNECTION" "${DB_CONNECTION:-mysql}"
+set_env_val "DB_HOST" "${DB_HOST:-mysql}"
+set_env_val "DB_PORT" "${DB_PORT:-3306}"
+set_env_val "DB_DATABASE" "${DB_DATABASE:-tiktok_crawler}"
+set_env_val "DB_USERNAME" "${DB_USERNAME:-tiktok_user}"
+set_env_val "DB_PASSWORD" "${DB_PASSWORD:-secret_password}"
+set_env_val "CRAWLER_SERVICE_URL" "${CRAWLER_SERVICE_URL:-http://crawler-service:8001}"
+if [ -n "$CRAWLER_AUTH_TOKEN" ]; then
+    set_env_val "CRAWLER_SERVICE_TOKEN" "$CRAWLER_AUTH_TOKEN"
+    set_env_val "CRAWLER_HMAC_SECRET" "$CRAWLER_AUTH_TOKEN"
+fi
+
 # Support Render dynamic $PORT binding (defaults to port 80)
 TARGET_PORT="${PORT:-80}"
 if [ "$TARGET_PORT" != "80" ]; then
@@ -50,12 +86,18 @@ if [ "${RUN_MIGRATIONS:-true}" = "true" ]; then
     fi
 fi
 
-# Cache configuration, routes, and views if APP_ENV is production
-if [ "${APP_ENV:-production}" = "production" ]; then
-    echo "[CMS] Caching configuration, routes, and views..."
+# Handle Laravel cache according to APP_ENV
+if [ "${APP_ENV:-local}" = "production" ]; then
+    echo "[CMS] Production mode: Caching configuration, routes, and views..."
     php /var/www/html/artisan config:cache || true
     php /var/www/html/artisan route:cache || true
     php /var/www/html/artisan view:cache || true
+else
+    echo "[CMS] Local/Development mode: Purging stale view and configuration caches..."
+    php /var/www/html/artisan config:clear || true
+    php /var/www/html/artisan route:clear || true
+    php /var/www/html/artisan view:clear || true
+    php /var/www/html/artisan cache:clear || true
 fi
 
 # Start background Queue Worker with auto-restart supervisor loop
