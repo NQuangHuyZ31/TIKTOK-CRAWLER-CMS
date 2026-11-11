@@ -585,12 +585,13 @@ class CrawlerWebhookIngestionService
     {
         $signature = $request->header('X-Crawler-Signature');
         if (empty($signature)) {
-            // Fallback to Bearer token if configured
+            // Require Bearer token in request header matching configured token
             $configuredToken = (string) config('services.crawler.token', '');
-            if ($configuredToken === '') {
-                return true; // No token configured
+            $bearerToken = (string) $request->bearerToken();
+            if ($configuredToken === '' || $bearerToken === '') {
+                return false; // Header must always provide a non-empty, matching token
             }
-            return hash_equals($configuredToken, (string) $request->bearerToken());
+            return hash_equals($configuredToken, $bearerToken);
         }
 
         $timestamp = (string) $request->header('X-Crawler-Timestamp');

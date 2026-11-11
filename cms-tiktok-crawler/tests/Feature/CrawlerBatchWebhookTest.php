@@ -15,6 +15,13 @@ class CrawlerBatchWebhookTest extends TestCase
 
     private string $endpoint = '/admin/api/public/crawler/webhook/batch';
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        config(['services.crawler.token' => 'test-crawler-secret-token']);
+        $this->withToken('test-crawler-secret-token');
+    }
+
     public function test_ingests_batch_webhook_with_accounts_and_videos(): void
     {
         $events = [];
@@ -479,5 +486,16 @@ class CrawlerBatchWebhookTest extends TestCase
         } finally {
             CrawlerWebhookIngestionService::setTestingExecutionHook(null);
         }
+    }
+
+    public function test_webhook_rejects_requests_missing_or_invalid_token(): void
+    {
+        // 1. Request without token header -> 401 Unauthorized
+        $resWithoutToken = $this->flushHeaders()->postJson($this->endpoint, ['batch_id' => 'b_no_token', 'events' => []]);
+        $resWithoutToken->assertStatus(401);
+
+        // 2. Request with wrong token -> 401 Unauthorized
+        $resWrongToken = $this->withToken('wrong-crawler-token-xyz')->postJson($this->endpoint, ['batch_id' => 'b_wrong_token', 'events' => []]);
+        $resWrongToken->assertStatus(401);
     }
 }

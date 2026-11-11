@@ -33,7 +33,19 @@ export const FOLLOW_ARTICLES: DocArticle[] = [
       },
       {
         "type": "paragraph",
-        "text": "This quickstart walkthrough demonstrates how to extract creator profile metadata and latest published videos from TikTok accounts into the CMS database in under five minutes using the automated Crawler worker pool."
+        "text": "This quickstart walkthrough demonstrates how to extract creator profile metadata and latest published videos from TikTok accounts into the CMS repository in under five minutes using the automated Crawler worker pool."
+      },
+      {
+        "type": "callout",
+        "variant": "tip",
+        "title": "Beginner Handbook (3 Simple Steps)",
+        "text": "If this is your first time using the platform, the end-to-end workflow takes just 3 simple steps:\n1. Step 1: Open 'Crawl Jobs' on the left menu -> Enter TikTok creators to monitor (e.g. @vtv24news).\n2. Step 2: Click the green 'Create & Start Crawl' button to initiate automatic profile and video extraction.\n3. Step 3: Open 'TikTok Accounts' on the menu to inspect follower metrics and view the captured video catalog."
+      },
+      {
+        "type": "callout",
+        "variant": "note",
+        "title": "CMS Workspace Layout",
+        "text": "- Left Sidebar (Dark Menu): Access all functional modules (Dashboard, Crawl Jobs, TikTok Accounts, User Management, Roles & Permissions, System Diagnostics).\n- Top Header: Shows your signed-in profile, language switcher (EN/VI), and Sign Out button.\n- Central Workspace: Area displaying data tables, statistics cards, charts, and input forms."
       },
       {
         "type": "procedure",
@@ -333,7 +345,7 @@ export const FOLLOW_ARTICLES: DocArticle[] = [
             "stepNumber": 2,
             "title": "Verify Initial 6-Digit Passcode",
             "instruction": "Enter the 6-digit code currently visible in your authenticator app and click 'Verify Code'.",
-            "expectedResult": "System sets google2fa_enabled = 1, binds the secret key to your user record, and logs you into the CMS."
+            "expectedResult": "System verifies two-factor authentication, binds security credentials, and logs you into the CMS."
           }
         ]
       },
@@ -428,12 +440,12 @@ export const FOLLOW_ARTICLES: DocArticle[] = [
             "screenshot": {
               "src": "/images/guideline/user/figure-user-reset-authen.png",
               "alt": "Reset 2FA Authentication Popconfirm",
-              "caption": "Figure 2.7: Confirming 2FA reset to clear google2fa_secret and allow user to rescan QR code",
+              "caption": "Figure 2.7: Confirming 2FA reset to clear security credentials and allow user to rescan QR code",
               "location": "/admin/user",
               "targetArea": "User Actions Popconfirm",
               "captureInstruction": "2FA Reset popconfirm"
             },
-            "expectedResult": "google2fa_secret is purged; user will be prompted to scan a fresh QR code on next login."
+            "expectedResult": "Two-factor credentials are reset; user will be prompted to scan a fresh QR code on next login."
           },
           {
             "stepNumber": 2,
@@ -871,15 +883,20 @@ export const FOLLOW_ARTICLES: DocArticle[] = [
                 "description": "Display name of creator (e.g. VTV24 Tin Tức)"
               },
               {
-                "name": "Region",
-                "required": false,
-                "description": "Two-letter ISO country code (e.g. VN, US)"
+                "name": "Following",
+                "required": true,
+                "description": "Number of users this creator is following"
               },
               {
-                "name": "Language",
-                "required": false,
-                "description": "Primary language code (e.g. vi, en)"
-              }
+                "name": "Followers",
+                "required": true,
+                "description": "Number of users this creator is followers"
+              },
+              {
+                "name": "Likes",
+                "required": true,
+                "description": "Number of users this creator is likes"
+              },
             ],
             "expectedResult": "New creator profile is saved and appears in the accounts directory."
           },
@@ -1053,7 +1070,7 @@ export const FOLLOW_ARTICLES: DocArticle[] = [
               "targetArea": "User Action Column Popconfirm",
               "captureInstruction": "2FA Reset popconfirm"
             },
-            "expectedResult": "User's google2fa_secret is cleared; they will scan a fresh QR code on next login."
+            "expectedResult": "User's two-factor credentials are cleared; they will scan a fresh QR code on next login."
           },
           {
             "stepNumber": 8,
