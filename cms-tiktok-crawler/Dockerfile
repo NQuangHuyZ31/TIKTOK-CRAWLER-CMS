@@ -42,9 +42,10 @@ RUN npx vite build
 # ==============================================================================
 FROM composer:2 AS composer-builder
 
-WORKDIR /app
+WORKDIR /var/www/html
 
 COPY composer.json composer.lock ./
+COPY modules ./modules
 
 RUN composer install \
     --no-dev \
@@ -130,13 +131,7 @@ COPY --chown=www-data:www-data . .
 # Composer dependencies
 # ------------------------------------------------------------------------------
 COPY --from=composer-builder --chown=www-data:www-data \
-    /app/vendor ./vendor
-
-# Generate optimized autoload files
-RUN composer dump-autoload \
-    --no-dev \
-    --optimize \
-    --no-interaction
+    /var/www/html/vendor ./vendor
 
 # ------------------------------------------------------------------------------
 # Frontend production assets (Vite bundles, Mix modules, entrypoints manifest)
@@ -148,7 +143,7 @@ COPY --from=frontend-builder --chown=www-data:www-data \
 # Runtime directories and permissions
 # ------------------------------------------------------------------------------
 RUN mkdir -p \
-    storage/framework/cache \
+    storage/framework/cache/data \
     storage/framework/sessions \
     storage/framework/views \
     storage/logs \
@@ -164,6 +159,14 @@ RUN mkdir -p \
         storage \
         bootstrap/cache \
         public/tiktok-accounts
+
+# ------------------------------------------------------------------------------
+# Generate optimized autoload files
+# ------------------------------------------------------------------------------
+RUN composer dump-autoload \
+    --no-dev \
+    --optimize \
+    --no-interaction
 
 # ------------------------------------------------------------------------------
 # PHP configuration
