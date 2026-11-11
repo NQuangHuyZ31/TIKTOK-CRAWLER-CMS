@@ -209,7 +209,7 @@ export const LEARN_ARTICLES_VI: DocArticle[] = [
 			},
 			{
 				type: 'paragraph',
-				text: 'Tài khoản TikTok được lưu trong bảng tiktok_accounts. Khóa định danh vĩnh viễn là SecUID do máy chủ TikTok ban hành, giúp dữ liệu luôn toàn vẹn ngay cả khi chủ kênh đổi tên hoặc đổi handle.',
+				text: 'Thông tin tài khoản TikTok được quản lý theo mô hình định danh chuẩn hóa của hệ thống. Khóa định danh vĩnh viễn là SecUID do máy chủ TikTok ban hành, giúp dữ liệu luôn toàn vẹn ngay cả khi chủ kênh đổi tên hoặc đổi handle.',
 			},
 			{
 				type: 'heading',
@@ -267,7 +267,7 @@ export const LEARN_ARTICLES_VI: DocArticle[] = [
 			},
 			{
 				type: 'paragraph',
-				text: 'Mọi thao tác tạo crawl job, chỉnh sửa quyền hạn hay cập nhật cấu hình đều được liên kết chặt chẽ với ID của người dùng đăng nhập thông qua Sanctum token và ghi nhật ký trong bảng activity_logs.',
+				text: 'Mọi thao tác tạo crawl job, chỉnh sửa quyền hạn hay cập nhật cấu hình đều được liên kết chặt chẽ với tài khoản quản trị viên đăng nhập và ghi nhận vào hệ thống nhật ký kiểm toán (Audit Trail Logs) phục vụ truy vết vận hành.',
 			},
 			{
 				type: 'image',
@@ -363,7 +363,7 @@ export const LEARN_ARTICLES_VI: DocArticle[] = [
 			},
 			{
 				type: 'paragraph',
-				text: 'Bảng điều khiển System Diagnostic thực thi các đầu đo kiểm tra trực tiếp tới Python Crawler Worker (cổng 8001), kết nối cơ sở dữ liệu MySQL và bộ nhớ đệm Cache, đảm bảo phát hiện sự cố sớm.',
+				text: 'Bảng điều khiển System Diagnostic thực thi các đầu đo kiểm tra trực tiếp tới dịch vụ Crawler Worker, kết nối cơ sở dữ liệu lưu trữ và bộ nhớ đệm Cache, đảm bảo phát hiện sự cố sớm.',
 			},
 			{
 				type: 'image',

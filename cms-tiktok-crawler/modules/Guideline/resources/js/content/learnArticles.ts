@@ -296,11 +296,11 @@ export const LEARN_ARTICLES: DocArticle[] = [
 			},
 			{
 				type: 'table',
-				headers: ['Entity', 'Relationship', 'Database Table', 'Key Fields'],
+				headers: ['Domain Entity', 'Association', 'Functional Role', 'Core Business Attributes'],
 				rows: [
-					['TiktokAccount', 'hasMany(TiktokVideo)', 'tiktok_accounts', 'sec_uid, username, nickname, avatar_url, follower_count, like_count'],
-					['TiktokVideo', 'belongsTo(TiktokAccount)', 'tiktok_videos', 'video_id, sec_uid, desc, play_count, digg_count, duration, cover_url'],
-					['CrawlResult', 'belongsTo(TiktokAccount)', 'crawl_results', 'job_id, sec_uid, status, snapshot_followers, snapshot_videos'],
+					['TikTok Creator Profile', '1 : N (Published Videos)', 'Creator Identity & Metric Store', 'SecUID, Username, Nickname, Follower & Like Metrics'],
+					['TikTok Video', 'N : 1 (Creator Profile)', 'Media Catalog & Play Statistics', 'Video ID, Description, Play Count, Like Count, Duration'],
+					['Crawl Execution Result', 'N : 1 (Creator Profile)', 'Batch Audit & Snapshot Registry', 'Job Reference, Status, Captured Snapshot Metrics'],
 				],
 			},
 			{
@@ -349,7 +349,7 @@ export const LEARN_ARTICLES: DocArticle[] = [
 			},
 			{
 				type: 'paragraph',
-				text: 'The User module manages administrative personnel, operators, and analysts. Every crawl job and system mutation is attributed to an authenticated user ID through internal foreign key relationships and activity logs.',
+				text: 'The User module manages administrative personnel, operators, and analysts. Every crawl job and system mutation is attributed to an authenticated user ID through domain associations and audit trail logs.',
 			},
 			{
 				type: 'heading',

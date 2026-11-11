@@ -28,12 +28,24 @@ export const FOLLOW_ARTICLES_VI: DocArticle[] = [
       {
         "type": "heading",
         "level": 2,
-        "text": "Mục tiêu",
+        "text": "Mục tiêu & Tóm tắt Quy trình",
         "anchorId": "quickstart-objective"
       },
       {
         "type": "paragraph",
         "text": "Tài liệu này hướng dẫn bạn cách đăng nhập, thiết lập tài khoản mục tiêu, áp dụng bộ lọc ngày, khởi chạy tiến trình crawl và kiểm tra thông tin kênh TikTok cùng video vừa thu thập trong vòng 5 phút."
+      },
+      {
+        "type": "callout",
+        "variant": "tip",
+        "title": "Cẩm nang Cho Người Mới Bắt Đầu (3 Bước Cơ Bản)",
+        "text": "Nếu đây là lần đầu tiên bạn sử dụng hệ thống, quy trình vận hành chỉ gồm 3 bước siêu đơn giản:\n1. Bước 1: Mở mục 'Crawl Jobs' trên menu bên trái -> Nhập nick TikTok bạn muốn theo dõi (ví dụ: @vtv24news).\n2. Bước 2: Bấm nút 'Create & Start Crawl' màu xanh lá để hệ thống tự động bóc tách dữ liệu và video.\n3. Bước 3: Mở mục 'TikTok Accounts' trên menu để xem số liệu kênh và danh sách video đã thu thập."
+      },
+      {
+        "type": "callout",
+        "variant": "note",
+        "title": "Bố cục Giao diện Làm Việc",
+        "text": "- Thanh menu bên trái (màu tối): Nơi truy cập các chức năng chính (Dashboard, Crawl Jobs, TikTok Accounts, Quản lý người dùng, Phân quyền, Cài đặt hệ thống).\n- Thanh tiêu đề trên cùng: Hiển thị tên tài khoản đang đăng nhập, nút chuyển ngôn ngữ Anh/Việt và nút Đăng xuất.\n- Khu vực chính giữa: Nơi hiển thị các bảng dữ liệu, nút bấm thao tác và form nhập liệu."
       },
       {
         "type": "procedure",
@@ -42,7 +54,7 @@ export const FOLLOW_ARTICLES_VI: DocArticle[] = [
           {
             "stepNumber": 1,
             "title": "Đăng nhập vào Hệ thống CMS",
-            "instruction": "Mở trình duyệt và truy cập /admin/auth/login. Nhập email và mật khẩu quản trị viên, sau đó nhấn 'Sign in'.",
+            "instruction": "Mở trình duyệt web (Google Chrome, Cốc Cốc hoặc Microsoft Edge) và truy cập địa chỉ đăng nhập (/admin/auth/login). Nhập địa chỉ Email và Mật khẩu của bạn, tích chọn ô 'Ghi nhớ phiên (Remember Me)' để không phải đăng nhập lại lần sau, sau đó nhấn nút màu xanh 'Sign in'.",
             "screenshot": {
               "src": "/images/guideline/auth/figure-auth-login.png",
               "alt": "Màn hình Đăng nhập CMS",
@@ -73,7 +85,7 @@ export const FOLLOW_ARTICLES_VI: DocArticle[] = [
           {
             "stepNumber": 2,
             "title": "Điều hướng đến Danh sách Crawl Jobs",
-            "instruction": "Tại menu thanh bên trái, chọn 'Crawl Jobs'. Sau đó nhấn nút màu xanh '+ Create Job' ở góc trên bên phải.",
+            "instruction": "Nhìn sang thanh menu dọc màu tối bên tay trái màn hình, nhấn vào dòng có chữ 'Crawl Jobs' (có biểu tượng mũi tên tải xuống). Bảng danh sách các đợt crawl sẽ hiện ra. Tiếp theo, nhìn lên góc trên cùng bên phải màn hình và nhấn vào nút màu xanh dương '+ Create Job'.",
             "screenshot": {
               "src": "/images/guideline/crawler/figure-crawl-job-table.png",
               "alt": "Danh mục Crawl Jobs",
@@ -89,7 +101,7 @@ export const FOLLOW_ARTICLES_VI: DocArticle[] = [
           {
             "stepNumber": 3,
             "title": "Cấu hình Tài khoản Mục tiêu & Chế độ Crawl",
-            "instruction": "Nhập danh sách handle TikTok vào ô Data Crawl. Chọn chế độ 'Account With Videos' để lấy cả profile lẫn video. Tại mục 'Date Filter', chọn 'Today' để chỉ lấy video đăng trong ngày hôm nay.",
+            "instruction": "Tại form tạo job:\n1. Chọn tab 'Usernames' (mặc định đã chọn).\n2. Tại ô 'Dữ liệu Crawl (Data Crawl)': Gõ hoặc dán danh sách nick TikTok bạn muốn lấy (ví dụ: @vtv24news hoặc vtv24news). Nếu có nhiều kênh, mỗi kênh bạn xuống một dòng riêng biệt.\n3. Tại mục 'Chế độ Crawl (Crawl Mode)': Chọn 'Account With Videos' để lấy cả thông tin kênh lẫn danh sách video.\n4. Tại mục 'Bộ lọc Ngày (Date Filter)': Chọn 'Today' nếu bạn chỉ muốn lấy video đăng trong ngày hôm nay.",
             "screenshot": {
               "src": "/images/guideline/crawler/figure-crawl-job-create-filled.png",
               "alt": "Điền Thông tin Crawl Job",
@@ -125,7 +137,7 @@ export const FOLLOW_ARTICLES_VI: DocArticle[] = [
           {
             "stepNumber": 4,
             "title": "Kiểm tra Múi giờ & Preset Ngày",
-            "instruction": "Mở dropdown Date Filter kiểm tra preset đã chọn và xác nhận múi giờ vận hành là Asia/Ho_Chi_Minh (UTC+7).",
+            "instruction": "Nhấn vào ô chọn Date Filter để kiểm tra lại: preset là 'Today' và múi giờ đang chọn là Asia/Ho_Chi_Minh (UTC+7, giờ Việt Nam).",
             "screenshot": {
               "src": "/images/guideline/crawler/figure-crawl-job-date-filter.png",
               "alt": "Dropdown Chọn Bộ lọc Ngày và Múi giờ",
@@ -139,7 +151,7 @@ export const FOLLOW_ARTICLES_VI: DocArticle[] = [
           {
             "stepNumber": 5,
             "title": "Xác nhận và Bắt đầu Tiến trình Crawl",
-            "instruction": "Nhấn nút 'Create & Start Crawl'. Hộp thoại popconfirm xuất hiện hỏi xác nhận, nhấn 'Yes' để điều phối job ngay tới Worker Engine.",
+            "instruction": "Cuộn xuống cuối trang, nhấn vào nút màu xanh lá 'Create & Start Crawl'. Một hộp thoại nhỏ sẽ hiện lên hỏi: 'Bạn có chắc chắn muốn khởi chạy ngay không?', hãy nhấn 'Yes'.",
             "screenshot": {
               "src": "/images/guideline/crawler/figure-crawl-job-start-confirm.png",
               "alt": "Xác nhận Khởi chạy Job",
@@ -153,7 +165,7 @@ export const FOLLOW_ARTICLES_VI: DocArticle[] = [
           {
             "stepNumber": 6,
             "title": "Theo dõi Tiến độ Thực thi Chi tiết",
-            "instruction": "Nhấn vào hàng của Job hoặc biểu tượng con mắt để xem màn hình chi tiết, thanh tiến độ, tỷ lệ thành công và số video đã bóc tách.",
+            "instruction": "Hệ thống tự động đưa bạn về bảng Crawl Jobs. Bấm vào dòng của Job bạn vừa tạo để mở trang chi tiết. Bạn sẽ thấy thanh tiến độ phần trăm (%) chạy tăng dần, cùng danh sách chi tiết từng kênh đang được bóc tách.",
             "screenshot": {
               "src": "/images/guideline/crawler/figure-crawl-job-detail-summary.png",
               "alt": "Chi tiết Tiến trình Crawl",
@@ -167,7 +179,7 @@ export const FOLLOW_ARTICLES_VI: DocArticle[] = [
           {
             "stepNumber": 7,
             "title": "Kiểm tra Dữ liệu Kênh & Video Đã Thu Thập",
-            "instruction": "Truy cập 'TikTok Accounts' trên menu. Bấm vào tài khoản vừa crawl để mở drawer và chọn tab 'Videos' xem danh mục video.",
+            "instruction": "Để xem dữ liệu đã thu thập: Nhìn sang menu bên trái, nhấn vào mục 'TikTok Accounts'. Tìm tên kênh bạn vừa crawl trong bảng và bấm vào dòng đó. Một ngăn kéo chi tiết trượt ra từ bên phải màn hình. Nhấn sang tab 'Videos', toàn bộ các video sẽ hiện ra dạng lưới với ảnh bìa thumbnail, số lượt xem mắt, số lượt tim và nút mở xem trực tiếp trên TikTok!",
             "screenshot": {
               "src": "/images/guideline/tiktok-account/figure-account-detail-videos.png",
               "alt": "Showcase Video TikTok Đã Crawl",
@@ -179,6 +191,30 @@ export const FOLLOW_ARTICLES_VI: DocArticle[] = [
             "expectedResult": "Video hiển thị đầy đủ thông số tương tác và liên kết trực tiếp tới TikTok."
           }
         ]
+      },
+      {
+        "type": "heading",
+        "level": 2,
+        "text": "Câu hỏi Thường Gặp & Xử lý Khi Gặp Lỗi (FAQ)",
+        "anchorId": "quickstart-faqs"
+      },
+      {
+        "type": "callout",
+        "variant": "tip",
+        "title": "Khi nào nên chọn 'Account Only' thay vì 'Account With Videos'?",
+        "text": "- Account Only: Chỉ lấy thông tin kênh (ảnh đại diện avatar, số người theo dõi follower, số tim tích lũy, tiểu sử bio). Tốc độ cực nhanh, chỉ mất khoảng 2-3 giây cho mỗi kênh. Thích hợp khi bạn chỉ muốn theo dõi biến động số lượng người theo dõi.\n- Account With Videos: Lấy thông tin kênh VÀ bóc tách toàn bộ danh sách video cùng lượt xem, lượt like và bình luận. Thích hợp khi bạn cần nghiên cứu nội dung và xem video."
+      },
+      {
+        "type": "callout",
+        "variant": "warning",
+        "title": "Tại sao có tài khoản bị báo trạng thái Thất bại (Failed)?",
+        "text": "Nếu một tài khoản trong danh sách bị báo đỏ Failed, thông thường do 1 trong 3 lý do sau:\n1. Gõ sai tên handle (ví dụ thừa khoảng trắng, sai chữ cái).\n2. Tài khoản đã bị chủ kênh đổi tên hoặc xóa khỏi TikTok.\n3. Tài khoản đang được cài đặt ở chế độ Riêng tư (Private), người ngoài không thể xem được video."
+      },
+      {
+        "type": "callout",
+        "variant": "note",
+        "title": "Tại sao Job vừa tạo lại ở trạng thái 'Pending'?",
+        "text": "Trạng thái Pending (màu vàng/xám) có nghĩa là lệnh cào của bạn đã được xếp hàng thành công vào hệ thống. Sau khoảng 2 đến 5 giây, worker sẽ tự động tiếp nhận việc và chuyển trạng thái sang Running (màu xanh dương)."
       }
     ]
   },
@@ -333,7 +369,7 @@ export const FOLLOW_ARTICLES_VI: DocArticle[] = [
             "stepNumber": 2,
             "title": "Nhập Mã 6 Số Xác nhận Kích hoạt",
             "instruction": "Nhập mã 6 chữ số đang hiển thị trên điện thoại và bấm 'Verify Code'.",
-            "expectedResult": "Hệ thống ghi nhận google2fa_enabled = 1 và đăng nhập thành công."
+            "expectedResult": "Hệ thống ghi nhận kích hoạt bảo mật 2 lớp thành công và tự động chuyển hướng vào Dashboard."
           }
         ]
       },
@@ -429,7 +465,7 @@ export const FOLLOW_ARTICLES_VI: DocArticle[] = [
               "targetArea": "Cột Thao tác Bảng User",
               "captureInstruction": "Reset 2FA popconfirm"
             },
-            "expectedResult": "Hệ thống xóa google2fa_secret; người dùng sẽ được yêu cầu quét mã QR mới ở lần đăng nhập kế tiếp."
+            "expectedResult": "Hệ thống xóa khóa bảo mật cũ; người dùng sẽ được yêu cầu quét mã QR mới ở lần đăng nhập kế tiếp."
           },
           {
             "stepNumber": 2,
@@ -842,15 +878,20 @@ export const FOLLOW_ARTICLES_VI: DocArticle[] = [
                 "description": "Tên hiển thị của creator (ví dụ: VTV24 Tin Tức)"
               },
               {
-                "name": "Quốc gia (Region)",
-                "required": false,
-                "description": "Mã quốc gia ISO 2 chữ cái (VN, US)"
+                "name": "Following",
+                "required": true,
+                "description": "Số lượng người đã theo dõi"
               },
               {
-                "name": "Ngôn ngữ (Language)",
-                "required": false,
-                "description": "Mã ngôn ngữ chính (vi, en)"
-              }
+                "name": "Followers",
+                "required": true,
+                "description": "Số lượng người theo dõi"
+              },
+              {
+                "name": "Likes",
+                "required": true,
+                "description": "Số lượng lượt yêu thích"
+              },
             ],
             "expectedResult": "Kênh mới được lưu vào danh mục quản lý."
           },
