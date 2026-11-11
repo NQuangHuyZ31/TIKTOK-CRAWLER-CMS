@@ -204,9 +204,8 @@ As scraping progress occurs in Python, results are streamed incrementally to Lar
 - **Showcase Video Grid**: Visual grid display with video cover thumbnails, duration format (mm:ss), play views, like hearts, comment counts, and direct deep-links to original TikTok videos.
 - **Crawl History Tab**: Comprehensive historical log of previous crawl executions and metric snapshots for each creator.
 
-### 3. Universal OpenXML Excel (.xlsx) & CSV Export
+### 3. Universal CSV Export
 - Built into the shared infrastructure layer (`@core`) and available across all modules:
-  - **OpenXML Excel Workbook (`.xlsx`)**: Native PHP `ZipArchive` engine with **zero Composer dependencies**. Fully supports Unicode, Vietnamese diacritics, Arabic/Urdu scripts, and **all TikTok Emojis** (👑, 🥀, 🔥) without character corruption in Microsoft Excel.
   - **Standard CSV (`.csv`)**: Export with UTF-8 BOM encoding.
   - **Interactive Export Modal**: Configure date ranges, row limits (All, 100, 500, 1,000, 5,000), and preserve active table filters.
 
@@ -267,6 +266,12 @@ Ensure your host environment meets the following requirements before installatio
 > *If the tokens do not match, the CMS will reject all webhook updates with `401 Unauthorized`, and crawl progress bars will remain stuck at 0%.*
 
 ---
+
+## Clone source code
+  ```bash
+  git init
+  git clone https://github.com/NQuangHuyZ31/TIKTOK-CRAWLER-CMS.git
+  ```
 
 ### Method A: Quickstart with Docker Compose (Recommended for Beginners)
 
