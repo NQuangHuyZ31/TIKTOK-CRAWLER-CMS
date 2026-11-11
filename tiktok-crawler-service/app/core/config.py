@@ -7,7 +7,7 @@ SERVICE_ROOT = Path(__file__).resolve().parent.parent.parent
 try:
     from dotenv import load_dotenv
 
-    load_dotenv(SERVICE_ROOT / ".env", override=True)
+    load_dotenv(SERVICE_ROOT / ".env", override=False)
 except ImportError:
     env_file = SERVICE_ROOT / ".env"
     if env_file.is_file():
