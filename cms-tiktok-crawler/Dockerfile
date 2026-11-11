@@ -69,35 +69,8 @@ COPY --from=frontend-builder /app/public /var/www/html/public
 # Generate optimized autoload classmap
 RUN composer dump-autoload --optimize --no-dev
 
-# Copy .env from host if present, fallback to .env.example
-RUN if [ ! -f /var/www/html/.env ]; then \
-        if [ -f /var/www/html/.env.example ]; then \
-            cp /var/www/html/.env.example /var/www/html/.env; \
-        fi; \
-    fi
-
-# Build-time overwrite of required Docker container fields in .env
-RUN if [ -f /var/www/html/.env ]; then \
-        sed -i 's|^APP_ENV=.*|APP_ENV=local|g' /var/www/html/.env || true; \
-        sed -i 's|^APP_DEBUG=.*|APP_DEBUG=true|g' /var/www/html/.env || true; \
-        sed -i 's|^APP_URL=.*|APP_URL=http://localhost:8000|g' /var/www/html/.env || true; \
-        if grep -q "^FORCE_HTTPS=" /var/www/html/.env; then \
-            sed -i 's|^FORCE_HTTPS=.*|FORCE_HTTPS=false|g' /var/www/html/.env; \
-        else \
-            echo "FORCE_HTTPS=false" >> /var/www/html/.env; \
-        fi; \
-        sed -i 's|^DB_CONNECTION=.*|DB_CONNECTION=mysql|g' /var/www/html/.env || true; \
-        sed -i 's|^DB_HOST=.*|DB_HOST=mysql|g' /var/www/html/.env || true; \
-        sed -i 's|^DB_PORT=.*|DB_PORT=3306|g' /var/www/html/.env || true; \
-        sed -i 's|^DB_DATABASE=.*|DB_DATABASE=tiktok_crawler|g' /var/www/html/.env || true; \
-        sed -i 's|^DB_USERNAME=.*|DB_USERNAME=tiktok_user|g' /var/www/html/.env || true; \
-        sed -i 's|^DB_PASSWORD=.*|DB_PASSWORD=secret_password|g' /var/www/html/.env || true; \
-        if grep -q "^CRAWLER_SERVICE_URL=" /var/www/html/.env; then \
-            sed -i 's|^CRAWLER_SERVICE_URL=.*|CRAWLER_SERVICE_URL=http://crawler-service:8001|g' /var/www/html/.env; \
-        else \
-            echo "CRAWLER_SERVICE_URL=http://crawler-service:8001" >> /var/www/html/.env; \
-        fi; \
-    fi
+# Ensure .env exists (fallback to .env.example if not present)
+RUN cp -n .env.example .env 2>/dev/null || true
 
 # Default environment configuration
 ENV APP_ENV=local
