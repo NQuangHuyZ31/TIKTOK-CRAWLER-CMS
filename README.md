@@ -515,7 +515,6 @@ python -m uvicorn app.api.routes:app --host 0.0.0.0 --port 8001
   Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
   ```
 </details>
-
 ---
 
 ## 🧪 Quality Gates & Automated Verification

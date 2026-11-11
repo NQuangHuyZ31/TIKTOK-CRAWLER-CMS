@@ -304,19 +304,24 @@ class ModuleRegistry
      * Resolve asset URL with mix-manifest cache-busting (?id=...) if not already present.
      */
     public function resolveAssetUrl(string $file): string {
-        // If file already has query string (e.g. ?id=... from entrypoints.json), respect it
-        if (str_contains($file, '?')) {
-            return asset(ltrim($file, '/'));
+        $path = $file;
+
+        if (!str_contains($path, '?')) {
+            $manifest = $this->getMixManifest();
+            $cleanPath = '/' . ltrim($path, '/');
+            if (isset($manifest[$cleanPath])) {
+                $path = $manifest[$cleanPath];
+            }
         }
 
-        // Check if mix-manifest has versioned asset
-        $manifest = $this->getMixManifest();
-        $cleanPath = '/' . ltrim($file, '/');
-        if (isset($manifest[$cleanPath])) {
-            return asset(ltrim($manifest[$cleanPath], '/'));
+        // If a CDN or custom asset URL is explicitly configured, use Laravel's asset()
+        if (config('app.asset_url')) {
+            return asset(ltrim($path, '/'));
         }
 
-        return asset(ltrim($file, '/'));
+        // Return root-relative path (e.g. /modules/Core/app.css?id=...)
+        // This is protocol-agnostic and host-agnostic, preventing net::ERR_SSL_PROTOCOL_ERROR
+        return '/' . ltrim($path, '/');
     }
 
     /**

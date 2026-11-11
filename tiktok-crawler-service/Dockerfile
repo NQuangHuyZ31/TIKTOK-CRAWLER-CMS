@@ -19,6 +19,9 @@ COPY . /app
 # Ensure data and dataset directories exist
 RUN mkdir -p /app/data /app/datasets
 
+# Ensure .env exists (fallback to .env.example if not present)
+RUN cp -n .env.example .env 2>/dev/null || true
+
 EXPOSE 8001
 
 CMD ["python", "app/main.py"]

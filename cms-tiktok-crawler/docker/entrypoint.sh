@@ -50,12 +50,18 @@ if [ "${RUN_MIGRATIONS:-true}" = "true" ]; then
     fi
 fi
 
-# Cache configuration, routes, and views if APP_ENV is production
-if [ "${APP_ENV:-production}" = "production" ]; then
-    echo "[CMS] Caching configuration, routes, and views..."
+# Handle Laravel cache according to APP_ENV
+if [ "${APP_ENV:-local}" = "production" ]; then
+    echo "[CMS] Production mode: Caching configuration, routes, and views..."
     php /var/www/html/artisan config:cache || true
     php /var/www/html/artisan route:cache || true
     php /var/www/html/artisan view:cache || true
+else
+    echo "[CMS] Local/Development mode: Purging stale view and configuration caches..."
+    php /var/www/html/artisan config:clear || true
+    php /var/www/html/artisan route:clear || true
+    php /var/www/html/artisan view:clear || true
+    php /var/www/html/artisan cache:clear || true
 fi
 
 # Start background Queue Worker with auto-restart supervisor loop

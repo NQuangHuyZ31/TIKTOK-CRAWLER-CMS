@@ -1,84 +1,196 @@
+
 # ==============================================================================
-# Stage 1: Build Frontend Assets (React 19 SPA with Vite & Laravel Mix)
+# Stage 1: Frontend Dependencies
 # ==============================================================================
-FROM node:20-alpine AS frontend-builder
+FROM node:20-alpine AS frontend-deps
+
 WORKDIR /app
 
-# Install Node dependencies first for Docker caching
-COPY package*.json ./
+COPY package.json package-lock.json ./
+
 RUN npm ci
 
-# Copy application sources
-COPY . ./
 
-# Type check TypeScript modules
-RUN npm run check-types
+# ==============================================================================
+# Stage 2: Frontend Production Build
+# ==============================================================================
+FROM frontend-deps AS frontend-builder
 
-# Provide build-time environment variables
+WORKDIR /app
+
+COPY . .
+
 ARG VITE_API_URL=/admin/api
 ARG VITE_APP_NAME="CMS TikTok Crawler"
-ENV NODE_ENV=production
-ENV VITE_API_URL=$VITE_API_URL
-ENV VITE_APP_NAME=$VITE_APP_NAME
 
-# Compile production bundles for modular React SPA
-RUN npm run mix:prod && npx vite build
+ENV NODE_ENV=production \
+    VITE_API_URL=${VITE_API_URL} \
+    VITE_APP_NAME=${VITE_APP_NAME}
+
+# TypeScript validation
+RUN npm run check-types
+
+# Laravel Mix / Webpack build
+RUN npm run mix:prod
+
+# React SPA / Vite build
+RUN npx vite build
+
 
 # ==============================================================================
-# Stage 2: PHP 8.3 FPM + Nginx All-in-One Runtime
+# Stage 3: PHP Dependencies
 # ==============================================================================
-FROM php:8.3-fpm-alpine
+FROM composer:2 AS composer-builder
 
-# Install system dependencies & PHP extensions
+WORKDIR /var/www/html
+
+COPY composer.json composer.lock ./
+COPY modules ./modules
+
+RUN composer install \
+    --no-dev \
+    --no-scripts \
+    --no-autoloader \
+    --prefer-dist \
+    --no-interaction \
+    --no-progress
+
+
+# ==============================================================================
+# Stage 4: Production Runtime
+# ==============================================================================
+FROM php:8.3-fpm-alpine AS production
+
+WORKDIR /var/www/html
+
+# ------------------------------------------------------------------------------
+# System dependencies
+# ------------------------------------------------------------------------------
 RUN apk add --no-cache \
     nginx \
     curl \
     git \
-    libpng-dev \
-    libzip-dev \
     zip \
     unzip \
+    libpng \
+    libjpeg-turbo \
+    freetype \
+    libzip \
+    oniguruma \
+    icu-libs \
+    mariadb-client \
+    su-exec
+
+# ------------------------------------------------------------------------------
+# PHP extension build dependencies
+# ------------------------------------------------------------------------------
+RUN apk add --no-cache --virtual .php-build-deps \
+    $PHPIZE_DEPS \
+    libpng-dev \
+    libjpeg-turbo-dev \
+    freetype-dev \
+    libzip-dev \
     oniguruma-dev \
     icu-dev \
-    linux-headers \
-    mysql-client
+    linux-headers
 
-RUN docker-php-ext-install pdo pdo_mysql mbstring bcmath zip intl pcntl opcache gd
+# GD configuration
+RUN docker-php-ext-configure gd \
+    --with-freetype \
+    --with-jpeg
+
+# Install PHP extensions
+RUN docker-php-ext-install -j$(nproc) \
+    pdo_mysql \
+    mbstring \
+    bcmath \
+    zip \
+    intl \
+    pcntl \
+    opcache \
+    gd
 
 # Install Redis extension
-RUN apk add --no-cache --virtual .build-deps $PHPIZE_DEPS \
-    && pecl install redis \
-    && docker-php-ext-enable redis \
-    && apk del .build-deps
+RUN pecl install redis \
+    && docker-php-ext-enable redis
 
-# Get latest official Composer
-COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+# Remove build dependencies
+RUN apk del .php-build-deps
 
-WORKDIR /var/www/html
+# ------------------------------------------------------------------------------
+# Composer
+# ------------------------------------------------------------------------------
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
-# Copy application source files
-COPY . /var/www/html
+# ------------------------------------------------------------------------------
+# Application source
+# ------------------------------------------------------------------------------
+COPY --chown=www-data:www-data . .
 
-# Copy compiled frontend assets from builder stage
-COPY --from=frontend-builder /app/public /var/www/html/public
+# ------------------------------------------------------------------------------
+# Composer dependencies
+# ------------------------------------------------------------------------------
+COPY --from=composer-builder --chown=www-data:www-data \
+    /var/www/html/vendor ./vendor
 
-# Install production PHP dependencies
-RUN composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
+# ------------------------------------------------------------------------------
+# Frontend production assets (Vite bundles, Mix modules, entrypoints manifest)
+# ------------------------------------------------------------------------------
+COPY --from=frontend-builder --chown=www-data:www-data \
+    /app/public ./public
 
-# Default environment configuration
-ENV APP_ENV=production
-ENV LOG_CHANNEL=stderr
+# ------------------------------------------------------------------------------
+# Runtime directories and permissions
+# ------------------------------------------------------------------------------
+RUN mkdir -p \
+    storage/framework/cache/data \
+    storage/framework/sessions \
+    storage/framework/views \
+    storage/logs \
+    bootstrap/cache \
+    public/tiktok-accounts/avatars \
+    /run/nginx \
+    /var/log/nginx \
+    && chown -R www-data:www-data \
+        storage \
+        bootstrap/cache \
+        public/tiktok-accounts \
+    && chmod -R 775 \
+        storage \
+        bootstrap/cache \
+        public/tiktok-accounts
 
-# Copy Nginx & PHP configuration
-COPY docker/nginx.conf /etc/nginx/http.d/default.conf
+# ------------------------------------------------------------------------------
+# Generate optimized autoload files
+# ------------------------------------------------------------------------------
+RUN composer dump-autoload \
+    --no-dev \
+    --optimize \
+    --no-interaction
+
+# ------------------------------------------------------------------------------
+# PHP configuration
+# ------------------------------------------------------------------------------
 COPY docker/php.ini /usr/local/etc/php/conf.d/custom.ini
+
+# ------------------------------------------------------------------------------
+# Nginx configuration
+# ------------------------------------------------------------------------------
+COPY docker/nginx.conf /etc/nginx/http.d/default.conf
+
+# ------------------------------------------------------------------------------
+# Container entrypoint
+# ------------------------------------------------------------------------------
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
+
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
-# Storage, Cache & Public Avatars permissions
-RUN mkdir -p /var/www/html/public/tiktok-accounts/avatars \
-    && chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache /var/www/html/public/tiktok-accounts \
-    && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache /var/www/html/public/tiktok-accounts
+# ------------------------------------------------------------------------------
+# Runtime environment
+# ------------------------------------------------------------------------------
+ENV APP_ENV=production \
+    LOG_CHANNEL=stderr \
+    PHP_OPCACHE_ENABLE=1
 
 EXPOSE 80
 
