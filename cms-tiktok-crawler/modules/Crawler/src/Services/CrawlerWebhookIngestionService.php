@@ -588,7 +588,7 @@ class CrawlerWebhookIngestionService
             // Fallback to Bearer token if configured
             $configuredToken = (string) config('services.crawler.token', '');
             if ($configuredToken === '') {
-                return true; // No token configured
+                return false; // No token configured
             }
             return hash_equals($configuredToken, (string) $request->bearerToken());
         }
