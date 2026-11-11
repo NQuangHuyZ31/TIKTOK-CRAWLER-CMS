@@ -29,7 +29,7 @@ services:
       start_period: 15s
 
   # ----------------------------------------------------------------------------
-  # 2. Main Web App: Laravel 13 + React SPA + Nginx + Queue + Schedule (All-in-One)
+  # 2. Main Web App: Laravel 13 + React SPA + Nginx + Queue Worker (All-in-One)
   # ----------------------------------------------------------------------------
   cms-app:
     build:
@@ -40,15 +40,15 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
+      crawler-service:
+        condition: service_started
     ports:
       - "${CMS_PORT:-8000}:80"
     environment:
       APP_NAME: "${APP_NAME:-CMS TikTok Crawler}"
       APP_ENV: ${APP_ENV:-local}
-      APP_KEY: "${APP_KEY:-base64:GkS35gLq8gM+9UvH2lA5jD1vE4kF7mO0pQ2rS4tU6w8=}"
-      APP_DEBUG: "${APP_DEBUG:-true}"
-      APP_URL: "${APP_URL:-http://localhost:8000}"
-      FORCE_HTTPS: ${FORCE_HTTPS:-false}
+      APP_URL: ${APP_URL:-http://localhost:8000}
+      FORCE_HTTPS: "false"
       DB_CONNECTION: mysql
       DB_HOST: mysql
       DB_PORT: 3306
@@ -57,14 +57,26 @@ services:
       DB_PASSWORD: ${DB_PASSWORD:-secret_password}
       RUN_MIGRATIONS: ${RUN_MIGRATIONS:-true}
       RUN_SEEDER: ${RUN_SEEDER:-true}
+      AUTH_2FA_ENABLED: ${AUTH_2FA_ENABLED:-true}
+      AUTH_EMAIL_OTP_ENABLED: ${AUTH_EMAIL_OTP_ENABLED:-false}
+      # Internal communication to crawler-service via Docker Network
       CRAWLER_SERVICE_URL: ${CRAWLER_SERVICE_URL:-http://crawler-service:8001}
-      CRAWLER_AUTH_TOKEN: ${CRAWLER_AUTH_TOKEN:-}
-      LARAVEL_API_SECRET: ${LARAVEL_API_SECRET:-}
+      CRAWLER_TOKEN: ${CRAWLER_TOKEN:-2703ac97eb897aacbf1235f5e608bf93d2ca7e0c2fe9d09a35e44f6ad6ab410c}
+      CRAWLER_SERVICE_TOKEN: ${CRAWLER_SERVICE_TOKEN:-2703ac97eb897aacbf1235f5e608bf93d2ca7e0c2fe9d09a35e44f6ad6ab410c}
+      CRAWLER_HMAC_SECRET: ${CRAWLER_HMAC_SECRET:-2703ac97eb897aacbf1235f5e608bf93d2ca7e0c2fe9d09a35e44f6ad6ab410c}
     volumes:
       - cms_storage:/var/www/html/storage
       - cms_avatars:/var/www/html/public/tiktok-accounts
     networks:
       - tiktok_network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 25s
 
   # ----------------------------------------------------------------------------
   # 3. Crawler Engine: Python FastAPI + SQLite WAL
@@ -80,14 +92,24 @@ services:
     environment:
       CRAWLER_HOST: "0.0.0.0"
       CRAWLER_PORT: 8001
-      BACKEND_CALLBACK_URL: ${BACKEND_CALLBACK_URL:-http://cms-app/admin/api/public/crawler}
-      CRAWLER_AUTH_TOKEN: ${CRAWLER_AUTH_TOKEN:-}
-      LARAVEL_API_SECRET: ${LARAVEL_API_SECRET:-}
+      # Internal communication to cms-app via Docker Network
+      LARAVEL_BASE_URL: ${LARAVEL_BASE_URL:-http://cms-app:80}
+      LARAVEL_API_URL: ${LARAVEL_API_URL:-http://cms-app:80/admin/api/public/crawler}
+      CRAWLER_TOKEN: ${CRAWLER_TOKEN:-2703ac97eb897aacbf1235f5e608bf93d2ca7e0c2fe9d09a35e44f6ad6ab410c}
+      CRAWLER_HMAC_SECRET: ${CRAWLER_HMAC_SECRET:-2703ac97eb897aacbf1235f5e608bf93d2ca7e0c2fe9d09a35e44f6ad6ab410c}
     volumes:
       - crawler_data:/app/data
       - crawler_datasets:/app/datasets
     networks:
       - tiktok_network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
 networks:
   tiktok_network:
