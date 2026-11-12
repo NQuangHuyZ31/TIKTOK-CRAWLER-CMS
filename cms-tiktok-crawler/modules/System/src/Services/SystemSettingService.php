@@ -57,6 +57,14 @@ class SystemSettingService
         if (isset($settings['cleanup_chunk_size'])) {
             $settings['cleanup_chunk_size'] = max(50, min(5000, (int) $settings['cleanup_chunk_size']));
         }
+        if (array_key_exists('hidden_modules', $settings)) {
+            $protected = ['core', 'auth', 'system'];
+            $hidden = is_array($settings['hidden_modules']) ? $settings['hidden_modules'] : [];
+            $settings['hidden_modules'] = array_values(array_unique(array_filter(
+                array_map(static fn ($item) => strtolower(trim((string) $item)), $hidden),
+                static fn (string $item) => $item !== '' && !in_array($item, $protected, true)
+            )));
+        }
 
         $this->settingRepository->setMany($settings, $group);
 

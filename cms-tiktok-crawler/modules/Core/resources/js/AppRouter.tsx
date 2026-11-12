@@ -2,6 +2,7 @@ import { App as AntdApp, ConfigProvider, theme } from 'antd';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Suspense } from 'react';
 import { useAdminRoutes, useBareRoutes } from './routes/registry';
+import { isModuleHidden, useHiddenModules } from './routes/moduleVisibility';
 import './routes/autoRegister';
 import AdminLayout from './layouts/AdminLayout';
 import SpinComponent from './components/SpinComponent';
@@ -14,6 +15,7 @@ import { useTheme } from './contexts/ThemeContext';
 export default function AppRouter() {
 	const adminRoutes = useAdminRoutes();
 	const bareRoutes = useBareRoutes();
+	const hiddenModules = useHiddenModules();
 	const { isAuthenticated } = useSelector((state: any) => state.auth);
 	const { isDark } = useTheme();
 
@@ -40,14 +42,19 @@ export default function AppRouter() {
 							<Route element={<AdminLayout />}>
 								{adminRoutes.map((route) => {
 									const Component = route.component;
+									const disabled = isModuleHidden(route.module, hiddenModules);
 									return (
 										<Route
 											key={route.path}
 											path={route.path}
 											element={
-												<PermissionGate module={route.module} action={route.action} slug={route.slug} roles={route.roles} fallback={<AccessDeny />}>
-													<Component />
-												</PermissionGate>
+												disabled ? (
+													<NotFound />
+												) : (
+													<PermissionGate module={route.module} action={route.action} slug={route.slug} roles={route.roles} fallback={<AccessDeny />}>
+														<Component />
+													</PermissionGate>
+												)
 											}
 										/>
 									);
@@ -57,6 +64,9 @@ export default function AppRouter() {
 							{/* Bare / Standalone / Public Routes */}
 							{bareRoutes.map((route) => {
 								const Component = route.component;
+								if (isModuleHidden(route.module, hiddenModules)) {
+									return <Route key={route.path} path={route.path} element={<NotFound />} />;
+								}
 								if (route.guestOnly && isAuthenticated) {
 									return <Route key={route.path} path={route.path} element={<Navigate to={rootRedirect} replace />} />;
 								}

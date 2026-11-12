@@ -28,6 +28,8 @@ class UpdateSystemSettingRequest extends FormRequest
             'settings.login_log_retention_days' => 'nullable|integer|min:14',
             'settings.cleanup_chunk_size' => 'nullable|integer|min:50|max:5000',
             'settings.cleanup_sleep_between_batches_ms' => 'nullable|integer|min:0|max:2000',
+            'settings.hidden_modules' => 'nullable|array',
+            'settings.hidden_modules.*' => 'string|max:50',
         ];
     }
 }

@@ -109,6 +109,11 @@ class DynamicRouteResovle {
         $permissionModule = property_exists($controllerInstance, 'permissionModule') && !empty($controllerInstance->permissionModule)
             ? $controllerInstance->permissionModule
             : str_replace('-', '_', $module);
+
+        if ($this->isModuleHidden((string) $permissionModule)) {
+            abort(404, "Module [{$permissionModule}] is currently disabled.");
+        }
+
         $request->attributes->set('module', $permissionModule);
         $request->attributes->set('permission_action', $permissionAction);
 
@@ -328,5 +333,28 @@ class DynamicRouteResovle {
         }
 
         return false;
+    }
+
+    private function isModuleHidden(string $module): bool
+    {
+        $normalized = strtolower(str_replace('-', '_', $module));
+        if (in_array($normalized, ['core', 'auth', 'system'], true)) {
+            return false;
+        }
+
+        try {
+            $serviceClass = \Modules\System\Services\SystemSettingService::class;
+            if (!class_exists($serviceClass)) {
+                return false;
+            }
+            $hidden = app($serviceClass)->getSetting('hidden_modules', []);
+            if (!is_array($hidden)) {
+                return false;
+            }
+
+            return in_array($normalized, array_map('strtolower', $hidden), true);
+        } catch (\Throwable) {
+            return false;
+        }
     }
 }

@@ -34,14 +34,18 @@ export interface CleanupResult {
 	duration_sec: number;
 }
 
-export const getSystemSettings = (group: string = 'worker') =>
-	api<{ status: string; data: { group: string; settings: WorkerSettings } }>(
+export interface ModuleVisibilitySettingsData {
+	hidden_modules?: string[];
+}
+
+export const getSystemSettings = <T = WorkerSettings>(group: string = 'worker') =>
+	api<{ status: string; data: { group: string; settings: T } }>(
 		'/system/system-setting',
 		{ params: { group } }
 	);
 
-export const updateSystemSettings = (settings: Partial<WorkerSettings>, group: string = 'worker') =>
-	api<{ status: string; data: { group: string; settings: WorkerSettings } }>(
+export const updateSystemSettings = (settings: Record<string, any>, group: string = 'worker') =>
+	api<{ status: string; data: { group: string; settings: Record<string, any> } }>(
 		'/system/system-setting/update-settings',
 		{
 			method: 'POST',

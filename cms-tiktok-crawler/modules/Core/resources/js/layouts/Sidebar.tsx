@@ -3,6 +3,7 @@ import { Flex, Layout, Menu, theme } from 'antd';
 import type { MenuProps } from 'antd';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useMenuRoutes, useCurrentRoute, type RouteDef } from '../routes/registry';
+import { useHiddenModules } from '../routes/moduleVisibility';
 import { useLayout } from '../contexts/LayoutContext';
 import { useTheme } from '../contexts/ThemeContext';
 import usePermission from '../hooks/usePermission';
@@ -19,10 +20,11 @@ export default function Sidebar() {
 	const currentRoute = useCurrentRoute();
 	const { collapsed, toggleCollapsed } = useLayout();
 	const { isAdmin, can } = usePermission();
+	const hiddenModules = useHiddenModules();
 
 	const [openKeys, setOpenKeys] = useState<string[]>([]);
 
-	const menuItems = useMemo(() => buildSidebarMenuItems({ routes: menuRoutes, isAdmin, can, pathname, collapsed, navigate, setOpenKeys }), [menuRoutes, isAdmin, can, pathname, collapsed, navigate]);
+	const menuItems = useMemo(() => buildSidebarMenuItems({ routes: menuRoutes, isAdmin, can, hiddenModules, pathname, collapsed, navigate, setOpenKeys }), [menuRoutes, isAdmin, can, hiddenModules, pathname, collapsed, navigate]);
 
 	const selectedKey = useMemo(() => {
 		if (currentRoute?.label && currentRoute.path) return currentRoute.path;
