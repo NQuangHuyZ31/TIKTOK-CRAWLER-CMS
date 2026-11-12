@@ -1,11 +1,12 @@
 import React from 'react';
-import { Row, Col, Card, Typography, Space, Tooltip } from 'antd';
+import { Row, Col, Card, Typography, Space, theme } from 'antd';
 import {
     TeamOutlined,
     CheckCircleOutlined,
     StopOutlined,
     CrownOutlined,
 } from '@ant-design/icons';
+import { useTheme } from '@core/contexts/ThemeContext';
 import type { UserStatistics } from '../Action/user';
 
 const { Text, Title } = Typography;
@@ -16,6 +17,8 @@ interface UserKpiCardsProps {
 }
 
 export default function UserKpiCards({ statistics, loading = false }: UserKpiCardsProps) {
+    const { token } = theme.useToken();
+    const { isDark } = useTheme();
     const total = statistics.total_users || 0;
     const active = statistics.active_users || 0;
     const inactive = (statistics.inactive_users || 0) + (statistics.blocked_users || 0);
@@ -27,10 +30,10 @@ export default function UserKpiCards({ statistics, loading = false }: UserKpiCar
         {
             title: 'Total Users',
             value: total,
-            icon: <TeamOutlined style={{ fontSize: 22, color: '#1677ff' }} />,
-            bg: '#f0f5ff',
+            icon: <TeamOutlined style={{ fontSize: 22, color: '#EC008C' }} />,
+            bg: '#fff0f7',
             badge: `${total} registered`,
-            badgeColor: '#1677ff',
+            badgeColor: '#EC008C',
             subtext: 'Across all system roles',
         },
         {
@@ -72,7 +75,7 @@ export default function UserKpiCards({ statistics, loading = false }: UserKpiCar
                         style={{
                             borderRadius: 12,
                             boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-                            border: '1px solid #edf0f5',
+                            border: `1px solid ${token.colorBorderSecondary}`,
                             transition: 'transform 0.2s, box-shadow 0.2s',
                         }}
                     >
@@ -85,7 +88,7 @@ export default function UserKpiCards({ statistics, loading = false }: UserKpiCar
                                     width: 40,
                                     height: 40,
                                     borderRadius: 10,
-                                    background: c.bg,
+                                    background: isDark ? `${c.badgeColor}20` : c.bg,
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
@@ -106,7 +109,7 @@ export default function UserKpiCards({ statistics, loading = false }: UserKpiCar
                                     fontSize: 11,
                                     fontWeight: 600,
                                     color: c.badgeColor,
-                                    background: c.bg,
+                                    background: isDark ? `${c.badgeColor}20` : c.bg,
                                 }}
                             >
                                 {c.badge}

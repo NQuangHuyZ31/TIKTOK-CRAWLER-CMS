@@ -85,7 +85,7 @@ export default function UserListPage() {
 				pagination={pagination}
 				onPageChange={(page, per_page) => dispatch(setParams({ page, per_page }))}
 				renderColumns={{
-					id: (id) => <span style={{ fontWeight: 600, color: '#1677ff' }}>#{id}</span>,
+					id: (id) => <span style={{ fontWeight: 600, color: '#EC008C' }}>#{id}</span>,
 					name: (_, record: UserItem) => <UserColumn id={record.id} name={record.name} email={record.email} avatarUrl={record.avatar_url} />,
 					roles: (_, record: UserItem) => <UserRoleTags roles={record.roles} permissionType={record.permission_type} />,
 					status: (status: string, record: UserItem) => (

@@ -66,7 +66,7 @@ export default function ActivityLogsPage() {
 		<div>
 			<Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
 				<Col span={24} sm={12} lg={6}>
-					<CardKPI title="Total Activities" value={activityStats?.total_activities ?? 0} icon={<UnorderedListOutlined />} color="#1677ff" subtext="All recorded audit entries" />
+					<CardKPI title="Total Activities" value={activityStats?.total_activities ?? 0} icon={<UnorderedListOutlined />} color="#EC008C" subtext="All recorded audit entries" />
 				</Col>
 				<Col span={24} sm={12} lg={6}>
 					<CardKPI title="Successful Actions" value={activityStats?.success_activities ?? 0} icon={<CheckCircleOutlined />} color="#52c41a" subtext="Completed without failure" />

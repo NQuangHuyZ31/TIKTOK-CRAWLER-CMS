@@ -1,4 +1,4 @@
-import { App as AntdApp, ConfigProvider } from 'antd';
+import { App as AntdApp, ConfigProvider, theme } from 'antd';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Suspense } from 'react';
 import { useAdminRoutes, useBareRoutes } from './routes/registry';
@@ -9,11 +9,13 @@ import NotFound from './pages/NotFound';
 import PermissionGate from './components/PermissionGate';
 import AccessDeny from './components/AccessDeny';
 import { useSelector } from './store';
+import { useTheme } from './contexts/ThemeContext';
 
 export default function AppRouter() {
 	const adminRoutes = useAdminRoutes();
 	const bareRoutes = useBareRoutes();
 	const { isAuthenticated } = useSelector((state: any) => state.auth);
+	const { isDark } = useTheme();
 
 	const hasAdminPrefix = typeof window !== 'undefined' && window.location.pathname.startsWith('/admin');
 	const basename = hasAdminPrefix ? '/admin' : '';
@@ -22,8 +24,9 @@ export default function AppRouter() {
 	return (
 		<ConfigProvider
 			theme={{
+				algorithm: isDark ? theme.darkAlgorithm : theme.defaultAlgorithm,
 				token: {
-					colorPrimary: '#1677ff',
+					colorPrimary: '#EC008C',
 					borderRadius: 8,
 					fontSize: 14,
 				},

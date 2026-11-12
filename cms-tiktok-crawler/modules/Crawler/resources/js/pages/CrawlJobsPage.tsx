@@ -95,7 +95,7 @@ export default function CrawlJobsPage() {
 			pagination={pagination}
 			onPageChange={(page, per_page) => dispatch(setParams({ page, per_page }))}
 			renderColumns={{
-				id: (id) => <span style={{ fontWeight: 500, color: '#1677ff' }}>#{id}</span>,
+				id: (id) => <span style={{ fontWeight: 500, color: '#EC008C' }}>#{id}</span>,
 				status: (status) => <StatusTag status={status} />,
 				crawl_mode: (mode, record) => (
 					<Tag color={mode === 'account_only' ? 'default' : 'purple'}>

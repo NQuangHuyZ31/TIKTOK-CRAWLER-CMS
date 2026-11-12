@@ -1,5 +1,5 @@
 import React from 'react';
-import { Checkbox, Space, Tag, Typography } from 'antd';
+import { Checkbox, Space, Tag, Typography, theme } from 'antd';
 import { CheckSquareOutlined } from '@ant-design/icons';
 
 const { Text } = Typography;
@@ -25,6 +25,8 @@ export default function PermissionMatrixToolbar({
 	isAllSelected,
 	onSelectAll,
 }: PermissionMatrixToolbarProps) {
+	const { token } = theme.useToken();
+
 	return (
 		<div
 			style={{
@@ -35,13 +37,13 @@ export default function PermissionMatrixToolbar({
 				gap: 12,
 				marginBottom: 12,
 				padding: '10px 14px',
-				background: '#f8fafc',
+				background: token.colorFillAlter,
 				borderRadius: 8,
-				border: '1px solid #e2e8f0',
+				border: `1px solid ${token.colorBorderSecondary}`,
 			}}
 		>
 			<Space wrap>
-				<CheckSquareOutlined style={{ color: '#1677ff', fontSize: 16 }} />
+				<CheckSquareOutlined style={{ color: token.colorPrimary, fontSize: 16 }} />
 				<Text strong style={{ fontSize: 14 }}>
 					{title}
 				</Text>

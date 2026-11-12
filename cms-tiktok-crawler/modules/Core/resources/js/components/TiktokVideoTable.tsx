@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Card } from 'antd';
+import { Card, theme } from 'antd';
 import TableComponent, { PaginationInfo } from './Table';
 import { createVideoTableColumns, VideoTableColumnOptions } from '../configs/videoTableConfig';
 import TiktokVideoFilterBar from './tiktokVideoTable/TiktokVideoFilterBar';
@@ -56,6 +56,7 @@ export default function TiktokVideoTable({
 	bordered = false,
 	wrapInCard = true,
 }: TiktokVideoTableProps) {
+	const { token } = theme.useToken();
 	const columnOptions: VideoTableColumnOptions = useMemo(
 		() => ({ showAccount, showVideoId, showMusic, showDeltas }),
 		[showAccount, showVideoId, showMusic, showDeltas]
@@ -101,8 +102,8 @@ export default function TiktokVideoTable({
 			styles={{ body: { padding: 0 } }}
 			style={{
 				borderRadius: 12,
-				border: '1px solid #edf0f5',
-				boxShadow: '0 2px 10px rgba(23, 32, 51, 0.03)',
+				border: `1px solid ${token.colorBorderSecondary}`,
+				boxShadow: '0 2px 10px rgba(0, 0, 0, 0.03)',
 			}}
 		>
 			{content}

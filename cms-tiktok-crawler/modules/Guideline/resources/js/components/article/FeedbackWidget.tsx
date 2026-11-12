@@ -23,7 +23,7 @@ export default function FeedbackWidget() {
 						border: 'none',
 						cursor: 'pointer',
 						fontSize: 20,
-						color: feedback === 'liked' ? '#1677ff' : '#8c8c8c',
+						color: feedback === 'liked' ? '#EC008C' : '#8c8c8c',
 						padding: 4,
 						display: 'flex',
 						alignItems: 'center',

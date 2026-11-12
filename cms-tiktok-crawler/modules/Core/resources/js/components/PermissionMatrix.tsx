@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Table, Alert } from 'antd';
+import { Table, Alert, theme } from 'antd';
 import type { PermissionItem, PermissionInputType, ModuleRow } from './permissionMatrix/permissionMatrixTypes';
 import { normalizePermissions } from './permissionMatrix/permissionMatrixHelpers';
 import PermissionMatrixToolbar from './permissionMatrix/PermissionMatrixToolbar';
@@ -28,6 +28,7 @@ export default function PermissionMatrix({
 	isAdmin = false,
 	title = 'Module Permission Matrix',
 }: PermissionMatrixProps) {
+	const { token } = theme.useToken();
 	const moduleRows = useMemo(() => normalizePermissions(permissions), [permissions]);
 	const allItems = useMemo(() => moduleRows.flatMap((r) => r.items), [moduleRows]);
 
@@ -138,7 +139,7 @@ export default function PermissionMatrix({
 				pagination={false}
 				bordered
 				size="small"
-				style={{ background: '#fff', borderRadius: 8, overflow: 'hidden', border: '1px solid #edf0f5' }}
+				style={{ background: token.colorBgContainer, borderRadius: 8, overflow: 'hidden', border: `1px solid ${token.colorBorderSecondary}` }}
 			/>
 		</div>
 	);

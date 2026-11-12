@@ -81,7 +81,7 @@ export default function RoleFormModal({ open, onClose, onSuccess, role, availabl
 		<Modal
 			title={
 				<span>
-					<SafetyCertificateOutlined style={{ color: '#1677ff', marginRight: 8 }} />
+					<SafetyCertificateOutlined style={{ color: '#EC008C', marginRight: 8 }} />
 					{isEdit ? `Edit Role: ${role?.name}` : 'Create New System Role'}
 				</span>
 			}

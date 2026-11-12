@@ -1,5 +1,5 @@
 import React from 'react';
-import { Popover } from 'antd';
+import { Popover, theme } from 'antd';
 import { FilterOutlined, CloseCircleFilled, DownOutlined } from '@ant-design/icons';
 import NumericRangePopoverContent from './numericRangeFilter/NumericRangePopoverContent';
 import { useNumericRangeFilter } from './numericRangeFilter/useNumericRangeFilter';
@@ -32,6 +32,7 @@ export default function NumericRangeFilter({
 	minPlaceholder = 'Min',
 	maxPlaceholder = 'Max',
 }: NumericRangeFilterProps) {
+	const { token } = theme.useToken();
 	const {
 		open,
 		setOpen,
@@ -80,8 +81,8 @@ export default function NumericRangeFilter({
 					minWidth: width,
 					height: 32,
 					padding: '4px 11px',
-					background: '#fff',
-					border: hasValue ? '1px solid #1677ff' : '1px solid #d9d9d9',
+					background: token.colorBgContainer,
+					border: hasValue ? `1px solid ${token.colorPrimary}` : `1px solid ${token.colorBorder}`,
 					borderRadius: 6,
 					cursor: 'pointer',
 					userSelect: 'none',
@@ -92,10 +93,10 @@ export default function NumericRangeFilter({
 				}}
 			>
 				<div style={{ display: 'flex', alignItems: 'center', gap: 6, overflow: 'hidden' }}>
-					<FilterOutlined style={{ fontSize: 12, color: hasValue ? '#1677ff' : '#8c8c8c' }} />
+					<FilterOutlined style={{ fontSize: 12, color: hasValue ? token.colorPrimary : token.colorTextSecondary }} />
 					<span
 						style={{
-							color: hasValue ? '#1677ff' : '#8c8c8c',
+							color: hasValue ? token.colorPrimary : token.colorTextSecondary,
 							fontWeight: hasValue ? 500 : 400,
 							whiteSpace: 'nowrap',
 							overflow: 'hidden',

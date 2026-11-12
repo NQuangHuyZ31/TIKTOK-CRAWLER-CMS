@@ -1,5 +1,5 @@
 import React, { useId } from 'react';
-import { Card, Flex, Segmented, Skeleton, Space, Tag, Typography } from 'antd';
+import { Card, Flex, Segmented, Skeleton, Space, Tag, Typography, theme } from 'antd';
 import { CaretDownOutlined, CaretUpOutlined } from '@ant-design/icons';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { formatCompactNumber, formatNumber, formatPercent } from '../utils/formatNumber';
@@ -26,7 +26,7 @@ export default function GrowthChart({
 	subtitle,
 	data,
 	loading = false,
-	color = '#1677ff',
+	color = '#EC008C',
 	icon,
 	height = 240,
 	selectedPeriod = 30,
@@ -37,6 +37,7 @@ export default function GrowthChart({
 		{ label: '90D', value: 90 },
 	],
 }: GrowthChartProps) {
+	const { token } = theme.useToken();
 	const gradientId = useId().replace(/:/g, '_');
 	const points = data?.points || [];
 	const growthRate = data?.growth_rate ?? 0;
@@ -48,8 +49,8 @@ export default function GrowthChart({
 		<Card
 			style={{
 				borderRadius: 14,
-				border: '1px solid #edf0f5',
-				boxShadow: '0 4px 16px rgba(23, 32, 51, 0.04)',
+				border: `1px solid ${token.colorBorderSecondary}`,
+				boxShadow: '0 4px 16px rgba(0, 0, 0, 0.04)',
 				height: '100%',
 			}}
 			styles={{ body: { padding: '20px 24px 16px' } }}
@@ -59,7 +60,7 @@ export default function GrowthChart({
 					{icon && <span style={{ fontSize: 20, color }}>{icon}</span>}
 					<div>
 						<Space size={8} align="center">
-							<Text strong style={{ fontSize: 16, color: '#141414' }}>
+							<Text strong style={{ fontSize: 16, color: token.colorText }}>
 								{title}
 							</Text>
 							<Tag color={isPositiveGrowth ? 'success' : 'error'} icon={isPositiveGrowth ? <CaretUpOutlined /> : <CaretDownOutlined />} style={{ borderRadius: 12, fontWeight: 600, padding: '0 8px', margin: 0 }}>
@@ -110,7 +111,7 @@ export default function GrowthChart({
 									<stop offset="95%" stopColor={color} stopOpacity={0} />
 								</linearGradient>
 							</defs>
-							<CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f2f5" />
+							<CartesianGrid strokeDasharray="3 3" vertical={false} stroke={token.colorBorderSecondary} />
 							<XAxis dataKey="label" stroke="#8c8c8c" fontSize={11} tickLine={false} axisLine={false} />
 							<YAxis stroke="#8c8c8c" fontSize={11} tickLine={false} axisLine={false} tickFormatter={formatCompactNumber} />
 							<Tooltip content={(props) => <GrowthChartTooltip {...props} title={title} />} />

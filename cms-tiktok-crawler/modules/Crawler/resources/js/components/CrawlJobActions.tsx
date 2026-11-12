@@ -24,7 +24,7 @@ export default function CrawlJobActions({
 			<PermissionGate module="crawler" action="view">
 				<Tooltip title="Detail">
 					<Link to={`/crawler/crawl-job/${record.id}`}>
-						<Button size="small" type="text" icon={<EyeOutlined style={{ color: '#1677ff' }} />} />
+						<Button size="small" type="text" icon={<EyeOutlined style={{ color: '#EC008C' }} />} />
 					</Link>
 				</Tooltip>
 			</PermissionGate>
@@ -44,7 +44,7 @@ export default function CrawlJobActions({
 							cancelText="Cancel"
 						>
 							<Tooltip title="Start">
-								<Button size="small" type="text" icon={<PlayCircleOutlined style={{ color: '#1677ff' }} />} />
+								<Button size="small" type="text" icon={<PlayCircleOutlined style={{ color: '#EC008C' }} />} />
 							</Tooltip>
 						</Popconfirm>
 					</>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Breadcrumb, Tag, Typography } from 'antd';
+import { Breadcrumb, Tag, Typography, theme } from 'antd';
 import { ArrowLeftOutlined, ArrowRightOutlined } from '@ant-design/icons';
 import { Link } from 'react-router-dom';
 import type { DocArticle } from '../../types/docSchema';
@@ -14,6 +14,7 @@ interface DocArticleRendererProps {
 }
 
 export default function DocArticleRenderer({ article }: DocArticleRendererProps) {
+	const { token } = theme.useToken();
 	const { language, t } = useDocLanguage();
 
 	return (
@@ -28,7 +29,7 @@ export default function DocArticleRenderer({ article }: DocArticleRendererProps)
 			</div>
 
 			{/* Article Header */}
-			<div style={{ marginBottom: 24, paddingBottom: 16, borderBottom: '1px solid #f0f0f0' }}>
+			<div style={{ marginBottom: 24, paddingBottom: 16, borderBottom: `1px solid ${token.colorBorderSecondary}` }}>
 				<div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
 					<Tag color={article.pillar === 'learn' ? 'blue' : 'green'} style={{ textTransform: 'uppercase', fontSize: 11 }}>
 						{article.pillar === 'learn'
@@ -42,7 +43,7 @@ export default function DocArticleRenderer({ article }: DocArticleRendererProps)
 					)}
 				</div>
 
-				<Title level={1} style={{ margin: '0 0 8px', fontSize: 26, fontWeight: 700, color: '#141414' }}>
+				<Title level={1} style={{ margin: '0 0 8px', fontSize: 26, fontWeight: 700, color: token.colorText }}>
 					{article.title}
 				</Title>
 
@@ -68,7 +69,7 @@ export default function DocArticleRenderer({ article }: DocArticleRendererProps)
 						gap: 16,
 						marginTop: 24,
 						paddingTop: 24,
-						borderTop: '1px solid #f0f0f0',
+						borderTop: `1px solid ${token.colorBorderSecondary}`,
 						flexWrap: 'wrap',
 					}}
 				>
@@ -77,22 +78,22 @@ export default function DocArticleRenderer({ article }: DocArticleRendererProps)
 							to={`/guideline/${article.prevArticle.pillar}/${article.prevArticle.slug}`}
 							style={{
 								flex: '1 1 240px',
-								border: '1px solid #e8e8e8',
+								border: `1px solid ${token.colorBorderSecondary}`,
 								borderRadius: 8,
 								padding: '14px 18px',
 								display: 'flex',
 								alignItems: 'center',
 								gap: 12,
-								backgroundColor: '#ffffff',
+								backgroundColor: token.colorBgContainer,
 								textDecoration: 'none',
 							}}
 						>
-							<ArrowLeftOutlined style={{ fontSize: 14, color: '#1677ff' }} />
+							<ArrowLeftOutlined style={{ fontSize: 14, color: token.colorPrimary }} />
 							<div style={{ minWidth: 0 }}>
 								<Text type="secondary" style={{ fontSize: 11, display: 'block', textTransform: 'uppercase' }}>
 									{t('article.prev', 'Previous', 'Bài trước')}
 								</Text>
-								<Text strong ellipsis style={{ fontSize: 13, color: '#1677ff', display: 'block' }}>
+								<Text strong ellipsis style={{ fontSize: 13, color: token.colorPrimary, display: 'block' }}>
 									{article.prevArticle.title}
 								</Text>
 							</div>
@@ -106,14 +107,14 @@ export default function DocArticleRenderer({ article }: DocArticleRendererProps)
 							to={`/guideline/${article.nextArticle.pillar}/${article.nextArticle.slug}`}
 							style={{
 								flex: '1 1 240px',
-								border: '1px solid #e8e8e8',
+								border: `1px solid ${token.colorBorderSecondary}`,
 								borderRadius: 8,
 								padding: '14px 18px',
 								display: 'flex',
 								alignItems: 'center',
 								justifyContent: 'space-between',
 								gap: 12,
-								backgroundColor: '#ffffff',
+								backgroundColor: token.colorBgContainer,
 								textDecoration: 'none',
 								textAlign: 'right',
 							}}
@@ -122,11 +123,11 @@ export default function DocArticleRenderer({ article }: DocArticleRendererProps)
 								<Text type="secondary" style={{ fontSize: 11, display: 'block', textTransform: 'uppercase' }}>
 									{t('article.next', 'Next', 'Bài tiếp')}
 								</Text>
-								<Text strong ellipsis style={{ fontSize: 13, color: '#1677ff', display: 'block' }}>
+								<Text strong ellipsis style={{ fontSize: 13, color: token.colorPrimary, display: 'block' }}>
 									{article.nextArticle.title}
 								</Text>
 							</div>
-							<ArrowRightOutlined style={{ fontSize: 14, color: '#1677ff' }} />
+							<ArrowRightOutlined style={{ fontSize: 14, color: token.colorPrimary }} />
 						</Link>
 					) : (
 						<div style={{ flex: '1 1 240px' }} />

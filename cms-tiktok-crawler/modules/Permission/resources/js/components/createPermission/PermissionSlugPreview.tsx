@@ -1,5 +1,5 @@
 import React from 'react';
-import { Space, Typography } from 'antd';
+import { Space, Typography, theme } from 'antd';
 import { CheckCircleOutlined } from '@ant-design/icons';
 
 const { Text } = Typography;
@@ -10,6 +10,8 @@ export interface PermissionSlugPreviewProps {
 }
 
 export default function PermissionSlugPreview({ watchedModule, watchedAction }: PermissionSlugPreviewProps) {
+	const { token } = theme.useToken();
+
 	if (!watchedModule || !watchedAction) return null;
 
 	const cleanModule = watchedModule.trim().toLowerCase().replace(/[^a-z0-9_]+/g, '_');
@@ -18,10 +20,10 @@ export default function PermissionSlugPreview({ watchedModule, watchedAction }: 
 	return (
 		<div
 			style={{
-				background: '#fafafa',
+				background: token.colorFillAlter,
 				padding: '10px 14px',
 				borderRadius: 6,
-				border: '1px solid #f0f0f0',
+				border: `1px solid ${token.colorBorderSecondary}`,
 			}}
 		>
 			<Space>

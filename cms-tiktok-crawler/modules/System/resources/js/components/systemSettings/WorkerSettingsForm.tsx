@@ -1,5 +1,5 @@
 import React from 'react';
-import { Form, Row, Col, Typography, Switch, Select, Input, InputNumber, Button, Divider, Card, Alert, Space, Popconfirm } from 'antd';
+import { Form, Row, Col, Typography, Switch, Select, Input, InputNumber, Button, Divider, Card, Alert, Space, Popconfirm, theme } from 'antd';
 import { SaveOutlined, ClearOutlined } from '@ant-design/icons';
 import type { FormInstance } from 'antd';
 
@@ -33,6 +33,8 @@ export default function WorkerSettingsForm({
 	settingsSaving,
 	cleanupLoading,
 }: WorkerSettingsFormProps) {
+	const { token } = theme.useToken();
+
 	return (
 		<Row gutter={[24, 24]}>
 			<Col xs={24} lg={15}>
@@ -114,8 +116,8 @@ export default function WorkerSettingsForm({
 				<Card
 					title="On-Demand Maintenance"
 					style={{
-						background: '#fafcff',
-						borderColor: '#d6e4ff',
+						background: token.colorFillAlter,
+						borderColor: token.colorBorderSecondary,
 						borderRadius: 8,
 					}}
 				>

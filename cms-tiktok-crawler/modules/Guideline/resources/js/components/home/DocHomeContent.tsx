@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card, Col, Row, Space, Typography } from 'antd';
+import { Card, Col, Row, Space, Typography, theme } from 'antd';
 import {
 	BookOutlined,
 	CheckCircleOutlined,
@@ -15,6 +15,7 @@ interface DocHomeContentProps {
 }
 
 export default function DocHomeContent({ onOpenSearch }: DocHomeContentProps) {
+	const { token } = theme.useToken();
 	const { language, t } = useDocLanguage();
 
 	const quickLinks = language === 'vi' ? [
@@ -53,9 +54,9 @@ export default function DocHomeContent({ onOpenSearch }: DocHomeContentProps) {
 							hoverable
 							style={{
 								borderRadius: 10,
-								borderColor: '#d6e4ff',
+								borderColor: token.colorBorderSecondary,
 								height: '100%',
-								backgroundColor: '#fafcff',
+								backgroundColor: token.colorFillAlter,
 							}}
 							bodyStyle={{ padding: 22 }}
 						>
@@ -65,7 +66,7 @@ export default function DocHomeContent({ onOpenSearch }: DocHomeContentProps) {
 										width: 34,
 										height: 34,
 										borderRadius: 8,
-										backgroundColor: '#1677ff',
+										backgroundColor: '#EC008C',
 										color: '#fff',
 										display: 'flex',
 										alignItems: 'center',
@@ -75,11 +76,11 @@ export default function DocHomeContent({ onOpenSearch }: DocHomeContentProps) {
 								>
 									<BookOutlined />
 								</div>
-								<Title level={4} style={{ margin: 0, color: '#1677ff', fontSize: 17 }}>
+								<Title level={4} style={{ margin: 0, color: token.colorPrimary, fontSize: 17 }}>
 									{t('home.pillar.learn.tag', 'LEARN', 'TÌM HIỂU')}
 								</Title>
 							</Space>
-							<Text strong style={{ display: 'block', fontSize: 14, color: '#262626', marginBottom: 6 }}>
+							<Text strong style={{ display: 'block', fontSize: 14, color: token.colorText, marginBottom: 6 }}>
 								{t('home.pillar.learn.title', 'Knowledge & Architecture', 'Kiến Thức & Nền Tảng')}
 							</Text>
 							<Paragraph type="secondary" style={{ fontSize: 13, margin: '0 0 14px', lineHeight: 1.6 }}>
@@ -89,7 +90,7 @@ export default function DocHomeContent({ onOpenSearch }: DocHomeContentProps) {
 									'Tìm hiểu nguyên lý hoạt động: Cấu trúc monorepo, kiến trúc 3 lớp DDD, 3 chế độ cào dữ liệu, định danh SecUID và luồng dữ liệu webhook.'
 								)}
 							</Paragraph>
-							<Text strong style={{ color: '#1677ff', fontSize: 12, display: 'flex', alignItems: 'center', gap: 4 }}>
+							<Text strong style={{ color: token.colorPrimary, fontSize: 12, display: 'flex', alignItems: 'center', gap: 4 }}>
 								{t('home.pillar.learn.link', 'Explore System Foundations', 'Khám Phá Nền Tảng Hệ Thống')}{' '}
 								<RightOutlined style={{ fontSize: 10 }} />
 							</Text>
@@ -103,9 +104,9 @@ export default function DocHomeContent({ onOpenSearch }: DocHomeContentProps) {
 							hoverable
 							style={{
 								borderRadius: 10,
-								borderColor: '#d9f7be',
+								borderColor: token.colorSuccessBorder,
 								height: '100%',
-								backgroundColor: '#f6ffed',
+								backgroundColor: token.colorFillAlter,
 							}}
 							bodyStyle={{ padding: 22 }}
 						>
@@ -129,7 +130,7 @@ export default function DocHomeContent({ onOpenSearch }: DocHomeContentProps) {
 									{t('home.pillar.follow.tag', 'FOLLOW', 'THỰC HÀNH')}
 								</Title>
 							</Space>
-							<Text strong style={{ display: 'block', fontSize: 14, color: '#262626', marginBottom: 6 }}>
+							<Text strong style={{ display: 'block', fontSize: 14, color: token.colorText, marginBottom: 6 }}>
 								{t('home.pillar.follow.title', 'Guides & Operational SOPs', 'Hướng Dẫn & Quy Trình Vận Hành')}
 							</Text>
 							<Paragraph type="secondary" style={{ fontSize: 13, margin: '0 0 14px', lineHeight: 1.6 }}>
@@ -150,7 +151,7 @@ export default function DocHomeContent({ onOpenSearch }: DocHomeContentProps) {
 
 			{/* Quick Shortcuts */}
 			<div>
-				<Title level={4} style={{ margin: '0 0 14px', fontSize: 15, color: '#595959', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+				<Title level={4} style={{ margin: '0 0 14px', fontSize: 15, color: token.colorTextSecondary, textTransform: 'uppercase', letterSpacing: 0.5 }}>
 					{t('home.quickLinks', 'Quick Links', 'Liên Kết Nhanh')}
 				</Title>
 				<Row gutter={[12, 12]}>
@@ -161,15 +162,15 @@ export default function DocHomeContent({ onOpenSearch }: DocHomeContentProps) {
 									style={{
 										padding: '12px 14px',
 										borderRadius: 8,
-										border: '1px solid #f0f0f0',
-										backgroundColor: '#ffffff',
+										border: `1px solid ${token.colorBorderSecondary}`,
+										backgroundColor: token.colorBgContainer,
 										display: 'flex',
 										flexDirection: 'column',
 										gap: 4,
 										transition: 'all 0.15s ease',
 									}}
 								>
-									<Text strong style={{ fontSize: 13, color: '#1677ff' }}>
+									<Text strong style={{ fontSize: 13, color: token.colorPrimary }}>
 										{link.title}
 									</Text>
 									<Text type="secondary" style={{ fontSize: 12 }}>

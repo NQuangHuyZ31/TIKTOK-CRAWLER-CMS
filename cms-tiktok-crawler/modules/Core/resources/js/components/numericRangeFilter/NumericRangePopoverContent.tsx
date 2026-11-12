@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button, InputNumber, Space, Tag, Typography } from 'antd';
+import { Button, InputNumber, Space, Tag, Typography, theme } from 'antd';
 import type { NumericPreset } from '../NumericRangeFilter';
 
 const { Text } = Typography;
@@ -33,6 +33,8 @@ export default function NumericRangePopoverContent({
 	onClear,
 	onCancel,
 }: NumericRangePopoverContentProps) {
+	const { token } = theme.useToken();
+
 	return (
 		<div style={{ width: 280, padding: '4px 2px' }}>
 			{presets.length > 0 && (
@@ -52,8 +54,8 @@ export default function NumericRangePopoverContent({
 										padding: '2px 8px',
 										fontSize: 12,
 										borderRadius: 4,
-										border: isActive ? '1px solid #1677ff' : '1px solid #d9d9d9',
-										background: isActive ? '#e6f4ff' : '#fafafa',
+										border: isActive ? `1px solid ${token.colorPrimary}` : `1px solid ${token.colorBorder}`,
+										background: isActive ? token.colorPrimaryBg : token.colorFillAlter,
 									}}
 								>
 									{preset.label}

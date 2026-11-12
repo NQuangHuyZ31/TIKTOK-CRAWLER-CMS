@@ -1,7 +1,8 @@
 import React, { useMemo } from 'react';
-import { Card, Space, Typography } from 'antd';
+import { Card, Space, Typography, theme } from 'antd';
 import { ThunderboltOutlined, PlusOutlined, ArrowRightOutlined, RobotOutlined, UserOutlined, TeamOutlined } from '@ant-design/icons';
 import usePermission, { type PermissionAction } from '../../hooks/usePermission';
+import { useTheme } from '../../contexts/ThemeContext';
 import SystemHealthCard from './SystemHealthCard';
 
 const { Text } = Typography;
@@ -26,8 +27,8 @@ const shortcuts: ShortcutItem[] = [
 		title: 'Create New Crawl Job',
 		description: 'Collect by username or profile link',
 		icon: <PlusOutlined />,
-		color: '#1677ff',
-		bgHover: '#e6f4ff',
+		color: '#EC008C',
+		bgHover: '#fff0f7',
 		path: '/crawler/crawl-job/form',
 		module: 'crawler',
 		action: 'create',
@@ -65,6 +66,8 @@ const shortcuts: ShortcutItem[] = [
 ];
 
 export default function DashboardQuickShortcuts({ onNavigate }: DashboardQuickShortcutsProps) {
+	const { token } = theme.useToken();
+	const { isDark } = useTheme();
 	const { canDoModule } = usePermission();
 
 	const visibleShortcuts = useMemo(() => {
@@ -86,8 +89,8 @@ export default function DashboardQuickShortcuts({ onNavigate }: DashboardQuickSh
 					}
 					style={{
 						borderRadius: 14,
-						border: '1px solid #edf0f5',
-						boxShadow: '0 4px 16px rgba(23, 32, 51, 0.04)',
+						border: `1px solid ${token.colorBorderSecondary}`,
+						boxShadow: '0 4px 16px rgba(0, 0, 0, 0.04)',
 					}}
 					styles={{ body: { padding: '16px 20px' } }}
 				>
@@ -99,16 +102,16 @@ export default function DashboardQuickShortcuts({ onNavigate }: DashboardQuickSh
 								style={{
 									padding: '12px 14px',
 									borderRadius: 10,
-									border: '1px solid #edf0f5',
-									background: '#fafbfd',
+									border: `1px solid ${token.colorBorderSecondary}`,
+									background: token.colorFillQuaternary,
 									cursor: 'pointer',
 									display: 'flex',
 									alignItems: 'center',
 									justifyContent: 'space-between',
 									transition: 'all 0.2s',
 								}}
-								onMouseEnter={(e) => (e.currentTarget.style.background = item.bgHover)}
-								onMouseLeave={(e) => (e.currentTarget.style.background = '#fafbfd')}
+								onMouseEnter={(e) => (e.currentTarget.style.background = isDark ? token.colorFillTertiary : item.bgHover)}
+								onMouseLeave={(e) => (e.currentTarget.style.background = token.colorFillQuaternary)}
 							>
 								<Space size={12}>
 									<div
@@ -126,7 +129,7 @@ export default function DashboardQuickShortcuts({ onNavigate }: DashboardQuickSh
 										{item.icon}
 									</div>
 									<div>
-										<div style={{ fontWeight: 600, fontSize: 14, color: '#172033' }}>{item.title}</div>
+										<div style={{ fontWeight: 600, fontSize: 14, color: token.colorText }}>{item.title}</div>
 										<Text type="secondary" style={{ fontSize: 12 }}>
 											{item.description}
 										</Text>

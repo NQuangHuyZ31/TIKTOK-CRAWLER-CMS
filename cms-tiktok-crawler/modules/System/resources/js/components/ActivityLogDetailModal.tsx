@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card, Col, Descriptions, Modal, Row, Space, Tag, Typography } from 'antd';
+import { Card, Col, Descriptions, Modal, Row, Space, Tag, Typography, theme } from 'antd';
 import { CheckCircleOutlined, CloseCircleOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import { getActivityActionConfig } from '../configs/activityLogConfig';
 import type { ActivityLogItem } from '../Action/activityLog';
@@ -13,6 +13,8 @@ interface ActivityLogDetailModalProps {
 }
 
 export default function ActivityLogDetailModal({ open, onClose, activity }: ActivityLogDetailModalProps) {
+	const { token } = theme.useToken();
+
 	if (!activity) return null;
 
 	const isSuccess = activity.status === 'SUCCESS';
@@ -26,7 +28,7 @@ export default function ActivityLogDetailModal({ open, onClose, activity }: Acti
 		<Modal
 			title={
 				<Space>
-					<InfoCircleOutlined style={{ color: '#1677ff' }} />
+					<InfoCircleOutlined style={{ color: token.colorPrimary }} />
 					<span>Activity Log Details #{activity.id}</span>
 				</Space>
 			}
@@ -73,7 +75,7 @@ export default function ActivityLogDetailModal({ open, onClose, activity }: Acti
 				{(activity.old_data || activity.new_data) && (
 					<Row gutter={[16, 16]}>
 						<Col span={12}>
-							<Card size="small" title={<Text type="secondary">Previous State (old_data)</Text>} style={{ height: '100%', background: '#fafafa' }}>
+							<Card size="small" title={<Text type="secondary">Previous State (old_data)</Text>} style={{ height: '100%', background: token.colorFillAlter }}>
 								{activity.old_data ? (
 									<Paragraph style={{ margin: 0 }}>
 										<pre style={{ margin: 0, fontSize: 12, maxHeight: 220, overflow: 'auto' }}>{JSON.stringify(activity.old_data, null, 2)}</pre>
@@ -93,7 +95,7 @@ export default function ActivityLogDetailModal({ open, onClose, activity }: Acti
 										Modified State (new_data)
 									</Text>
 								}
-								style={{ height: '100%', background: '#f6ffed' }}
+								style={{ height: '100%', background: token.colorSuccessBg }}
 							>
 								{activity.new_data ? (
 									<Paragraph style={{ margin: 0 }}>

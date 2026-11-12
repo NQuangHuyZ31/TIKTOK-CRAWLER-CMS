@@ -16,7 +16,7 @@ export default function AccountTableActions({ record, onDelete }: AccountTableAc
 			<PermissionGate module="tiktok_account" action="view">
 				<Tooltip title="View Detail">
 					<Link to={`/tiktok-account/${record.id}`}>
-						<Button size="small" type="text" icon={<EyeOutlined style={{ color: '#1677ff' }} />} />
+						<Button size="small" type="text" icon={<EyeOutlined style={{ color: '#EC008C' }} />} />
 					</Link>
 				</Tooltip>
 			</PermissionGate>

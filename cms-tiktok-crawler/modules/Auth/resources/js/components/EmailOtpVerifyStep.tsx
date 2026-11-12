@@ -34,7 +34,7 @@ export default function EmailOtpVerifyStep({ tempToken, email, loading, error, o
 	const header = (
 		<div style={{ textAlign: 'center', marginBottom: 20 }}>
 			<div style={{ padding: '8px 0' }}>
-				<MailOutlined style={{ fontSize: 44, color: '#1677ff', marginBottom: 8 }} />
+				<MailOutlined style={{ fontSize: 44, color: '#EC008C', marginBottom: 8 }} />
 				<Paragraph type="secondary" style={{ fontSize: 13, margin: '0 0 4px' }}>
 					We sent a 6-digit verification code to
 				</Paragraph>

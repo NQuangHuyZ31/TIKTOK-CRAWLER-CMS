@@ -1,5 +1,5 @@
 import React from 'react';
-import { Typography } from 'antd';
+import { Typography, theme } from 'antd';
 import { CheckOutlined } from '@ant-design/icons';
 
 const { Text } = Typography;
@@ -10,6 +10,8 @@ export interface ModulePermissionsPreviewProps {
 }
 
 export default function ModulePermissionsPreview({ watchedModule, watchedActions = [] }: ModulePermissionsPreviewProps) {
+	const { token } = theme.useToken();
+
 	if (!watchedModule || watchedActions.length === 0) return null;
 
 	const cleanModule = watchedModule.trim().toLowerCase().replace(/[^a-z0-9_]+/g, '_');
@@ -17,10 +19,10 @@ export default function ModulePermissionsPreview({ watchedModule, watchedActions
 	return (
 		<div
 			style={{
-				background: '#fafafa',
+				background: token.colorFillAlter,
 				padding: '12px 16px',
 				borderRadius: 6,
-				border: '1px solid #f0f0f0',
+				border: `1px solid ${token.colorBorderSecondary}`,
 			}}
 		>
 			<Text type="secondary" style={{ fontSize: 12 }}>
@@ -31,8 +33,8 @@ export default function ModulePermissionsPreview({ watchedModule, watchedActions
 					<span
 						key={act}
 						style={{
-							background: '#e6f4ff',
-							color: '#0958d9',
+							background: token.colorPrimaryBg,
+							color: token.colorPrimary,
 							padding: '2px 8px',
 							borderRadius: 4,
 							fontFamily: 'monospace',

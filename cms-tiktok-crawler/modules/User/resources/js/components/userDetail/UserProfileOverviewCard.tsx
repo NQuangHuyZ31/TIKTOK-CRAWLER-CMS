@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card, Avatar, Typography, Space, Tag } from 'antd';
+import { Card, Avatar, Typography, Space, Tag, theme } from 'antd';
 import { CrownOutlined, SafetyCertificateOutlined, MailOutlined, PhoneOutlined, CalendarOutlined, KeyOutlined } from '@ant-design/icons';
 import StatusTag from '@core/components/StatusTag';
 import { formatDateTime } from '@core/utils/formatDate';
@@ -14,11 +14,13 @@ export interface UserProfileOverviewCardProps {
 }
 
 export default function UserProfileOverviewCard({ user, roleCfg }: UserProfileOverviewCardProps) {
+	const { token } = theme.useToken();
+
 	return (
 		<Card
 			style={{
 				borderRadius: 12,
-				border: '1px solid #edf0f5',
+				border: `1px solid ${token.colorBorderSecondary}`,
 				marginBottom: 20,
 				boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
 			}}

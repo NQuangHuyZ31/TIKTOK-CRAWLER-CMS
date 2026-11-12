@@ -74,7 +74,7 @@ export default function CreateModuleModal({ open, onClose, onSuccess }: CreateMo
 		<Modal
 			title={
 				<Space>
-					<AppstoreAddOutlined style={{ color: '#1677ff' }} />
+					<AppstoreAddOutlined style={{ color: '#EC008C' }} />
 					<Text strong style={{ fontSize: 16 }}>
 						Create Module & Basic Permissions
 					</Text>

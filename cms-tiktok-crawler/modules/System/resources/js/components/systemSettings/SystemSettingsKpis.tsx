@@ -26,8 +26,8 @@ export default function SystemSettingsKpis({ workerSettings, loading = false }: 
 				<CardKPI
 					title="Retention Policies"
 					value={`${workerSettings?.activity_log_retention_days || 30}d / ${workerSettings?.login_log_retention_days || 60}d`}
-					color="#1677ff"
-					icon={<SafetyCertificateOutlined style={{ fontSize: 24, color: '#1677ff' }} />}
+					color="#EC008C"
+					icon={<SafetyCertificateOutlined style={{ fontSize: 24, color: '#EC008C' }} />}
 					subtext="Activity (min: 7d) & Login (min: 14d) retention"
 					loading={loading}
 				/>

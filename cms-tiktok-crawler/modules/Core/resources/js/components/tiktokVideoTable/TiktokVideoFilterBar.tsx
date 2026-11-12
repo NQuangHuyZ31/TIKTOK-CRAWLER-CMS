@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button, DatePicker, Flex, Input, Space } from 'antd';
+import { Button, DatePicker, Flex, Input, Space, theme } from 'antd';
 import { ClearOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import NumericRangeFilter from '../NumericRangeFilter';
@@ -23,6 +23,8 @@ export default function TiktokVideoFilterBar({
 	loading = false,
 	searchPlaceholder = 'Search by caption, ID...',
 }: TiktokVideoFilterBarProps) {
+	const { token } = theme.useToken();
+
 	return (
 		<Flex
 			justify="space-between"
@@ -31,8 +33,8 @@ export default function TiktokVideoFilterBar({
 			gap={10}
 			style={{
 				padding: '12px 16px',
-				background: '#fafafa',
-				borderBottom: '1px solid #f0f0f0',
+				background: token.colorFillAlter,
+				borderBottom: `1px solid ${token.colorBorderSecondary}`,
 			}}
 		>
 			<Flex align="center" wrap="wrap" gap={8} style={{ flex: 1 }}>

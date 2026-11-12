@@ -24,7 +24,7 @@ export default function DashboardKpiCards({ crawlerStats, tiktokStats, loading }
 					title="Total Crawl Jobs"
 					value={crawlerStats?.total_jobs ?? 0}
 					icon={<RobotOutlined />}
-					color="#1677ff"
+					color="#EC008C"
 					loading={loading}
 					subtext={
 						<Flex justify="space-between" align="center" style={{ fontSize: 12 }}>
@@ -79,7 +79,7 @@ export default function DashboardKpiCards({ crawlerStats, tiktokStats, loading }
 					loading={loading}
 					subtext={
 						<Flex justify="space-between" align="center" style={{ fontSize: 12 }}>
-							<span style={{ color: '#1677ff', fontWeight: 500 }}>👥 {formatCurrency(tiktokStats?.total_followers ?? 0)} followers</span>
+							<span style={{ color: '#EC008C', fontWeight: 500 }}>👥 {formatCurrency(tiktokStats?.total_followers ?? 0)} followers</span>
 							<span style={{ color: '#52c41a', fontWeight: 500 }}>🔗 {formatCurrency(tiktokStats?.total_following ?? 0)} following</span>
 						</Flex>
 					}

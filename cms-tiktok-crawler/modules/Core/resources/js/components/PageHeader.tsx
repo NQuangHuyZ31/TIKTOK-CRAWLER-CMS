@@ -1,5 +1,5 @@
 import React, { ReactNode } from 'react';
-import { Breadcrumb, Button, Flex, Typography } from 'antd';
+import { Breadcrumb, Button, Flex, Typography, theme } from 'antd';
 import { ArrowLeftOutlined } from '@ant-design/icons';
 import type { BreadcrumbProps } from 'antd';
 
@@ -19,6 +19,7 @@ export interface PageHeaderProps {
 }
 
 export default function PageHeader({ title, subtitle, description, onBack, breadcrumbs, extra, style, className }: PageHeaderProps) {
+	const { token } = theme.useToken();
 	const subText = subtitle ?? description;
 
 	return (
@@ -35,7 +36,7 @@ export default function PageHeader({ title, subtitle, description, onBack, bread
 					{onBack && <Button icon={<ArrowLeftOutlined />} onClick={onBack} style={{ borderRadius: 8 }} />}
 					<div>
 						{typeof title === 'string' ? (
-							<Title level={3} style={{ margin: 0, fontWeight: 700, color: '#172033' }}>
+							<Title level={3} style={{ margin: 0, fontWeight: 700, color: token.colorText }}>
 								{title}
 							</Title>
 						) : (

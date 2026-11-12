@@ -9,6 +9,23 @@
 	--font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
 }
 
+:root,
+html[data-theme='dark'] {
+	--cms-bg-layout: #000000;
+	--cms-scrollbar-thumb: #303030;
+	--cms-scrollbar-thumb-hover: #424242;
+	--cms-menu-active-bg: rgba(236, 0, 140, 0.16);
+	--cms-menu-active-color: #ff66b8;
+}
+
+html[data-theme='light'] {
+	--cms-bg-layout: #f5f7fb;
+	--cms-scrollbar-thumb: #eaecf0;
+	--cms-scrollbar-thumb-hover: #d0d5dd;
+	--cms-menu-active-bg: #fff0f7;
+	--cms-menu-active-color: #c40074;
+}
+
 html,
 body,
 #root,
@@ -16,12 +33,12 @@ body,
 	margin: 0;
 	height: auto;
 	min-height: 100vh;
-	background: #f5f7fb;
+	background: var(--cms-bg-layout);
 	font-family: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
 }
 
 .ant-layout {
-	background: #f5f7fb;
+	background: var(--cms-bg-layout);
 }
 
 .ant-table-wrapper {
@@ -54,13 +71,13 @@ body,
 
 .cms-sidebar-menu::-webkit-scrollbar-thumb,
 .cms-mobile-menu::-webkit-scrollbar-thumb {
-	background: #eaecf0;
+	background: var(--cms-scrollbar-thumb);
 	border-radius: 4px;
 }
 
 .cms-sidebar-menu::-webkit-scrollbar-thumb:hover,
 .cms-mobile-menu::-webkit-scrollbar-thumb:hover {
-	background: #d0d5dd;
+	background: var(--cms-scrollbar-thumb-hover);
 }
 
 .cms-sidebar .ant-menu-item,
@@ -82,15 +99,15 @@ body,
 
 .cms-sidebar .ant-menu-item-selected,
 .cms-mobile-drawer .ant-menu-item-selected {
-	background-color: #eff8ff !important;
-	color: #175cd3 !important;
+	background-color: var(--cms-menu-active-bg) !important;
+	color: var(--cms-menu-active-color) !important;
 	font-weight: 600 !important;
 }
 
 /* Parent SubMenu Active State (e.g. When on /user parent route) */
 .cms-sidebar .ant-menu-submenu.cms-parent-active > .ant-menu-submenu-title {
-	background-color: #eff8ff !important;
-	color: #175cd3 !important;
+	background-color: var(--cms-menu-active-bg) !important;
+	color: var(--cms-menu-active-color) !important;
 	font-weight: 600 !important;
 }
 
@@ -98,5 +115,5 @@ body,
 .cms-sidebar .ant-menu-submenu.cms-parent-active > .ant-menu-submenu-title .ant-menu-title-content,
 .cms-sidebar .ant-menu-submenu.cms-parent-active > .ant-menu-submenu-title .ant-menu-title-content a,
 .cms-sidebar .ant-menu-submenu.cms-parent-active > .ant-menu-submenu-title .ant-menu-submenu-arrow {
-	color: #175cd3 !important;
+	color: var(--cms-menu-active-color) !important;
 }

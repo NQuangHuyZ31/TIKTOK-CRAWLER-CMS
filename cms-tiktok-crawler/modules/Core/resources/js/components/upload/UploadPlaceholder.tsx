@@ -31,10 +31,10 @@ export default function UploadPlaceholder({
 				}}
 			>
 				{loading ? (
-					<LoadingOutlined style={{ fontSize: 20, color: '#1677ff' }} />
+					<LoadingOutlined style={{ fontSize: 20, color: '#EC008C' }} />
 				) : (
 					<>
-						<PlusOutlined style={{ fontSize: 18, color: '#1677ff', marginBottom: 4 }} />
+						<PlusOutlined style={{ fontSize: 18, color: '#EC008C', marginBottom: 4 }} />
 						<Text style={{ fontSize: 12, color: '#595959' }}>Upload</Text>
 					</>
 				)}

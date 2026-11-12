@@ -6,6 +6,7 @@ import { Provider } from 'react-redux';
 import store from './store';
 import AppRouter from './AppRouter';
 import { AuthProvider } from './contexts/AuthContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 
 function mount(): void {
 	const container = document.getElementById('root') || document.getElementById('app');
@@ -15,9 +16,11 @@ function mount(): void {
 		root.render(
 			<React.StrictMode>
 				<Provider store={store}>
-					<AuthProvider>
-						<AppRouter />
-					</AuthProvider>
+					<ThemeProvider>
+						<AuthProvider>
+							<AppRouter />
+						</AuthProvider>
+					</ThemeProvider>
 				</Provider>
 			</React.StrictMode>,
 		);

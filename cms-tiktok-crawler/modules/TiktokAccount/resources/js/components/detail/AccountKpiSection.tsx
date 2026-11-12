@@ -21,7 +21,7 @@ export default function AccountKpiSection({ account }: AccountKpiSectionProps) {
 					title="Followers"
 					value={formatNumber(account?.followers_count || 0)}
 					icon={<UserAddOutlined />}
-					color="#1677ff"
+					color="#EC008C"
 				/>
 			</Col>
 			<Col xs={24} sm={12} md={6}>

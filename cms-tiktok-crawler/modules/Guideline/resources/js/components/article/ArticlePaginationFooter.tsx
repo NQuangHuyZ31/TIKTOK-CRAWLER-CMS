@@ -1,6 +1,6 @@
 import React from 'react';
 import { ArrowLeftOutlined, ArrowRightOutlined } from '@ant-design/icons';
-import { Typography } from 'antd';
+import { Typography, theme } from 'antd';
 
 const { Text } = Typography;
 
@@ -21,6 +21,8 @@ export default function ArticlePaginationFooter({
 	nextArticle,
 	onSelectArticle,
 }: ArticlePaginationFooterProps) {
+	const { token } = theme.useToken();
+
 	if (!prevArticle && !nextArticle) return null;
 
 	return (
@@ -41,23 +43,23 @@ export default function ArticlePaginationFooter({
 					onClick={() => onSelectArticle(prevArticle.id)}
 					style={{
 						flex: '1 1 280px',
-						border: '1px solid #e8e8e8',
+						border: `1px solid ${token.colorBorderSecondary}`,
 						borderRadius: 10,
 						padding: '16px 20px',
 						cursor: 'pointer',
 						display: 'flex',
 						alignItems: 'center',
 						gap: 16,
-						backgroundColor: '#ffffff',
+						backgroundColor: token.colorBgContainer,
 						transition: 'all 0.2s ease',
 					}}
 				>
-					<ArrowLeftOutlined style={{ fontSize: 18, color: '#1677ff' }} />
+					<ArrowLeftOutlined style={{ fontSize: 18, color: token.colorPrimary }} />
 					<div style={{ flex: 1, minWidth: 0 }}>
 						<Text type="secondary" style={{ fontSize: 11, display: 'block', textTransform: 'uppercase' }}>
 							Previous
 						</Text>
-						<Text strong ellipsis style={{ fontSize: 14, color: '#1677ff', display: 'block' }}>
+						<Text strong ellipsis style={{ fontSize: 14, color: token.colorPrimary, display: 'block' }}>
 							{prevArticle.title}
 						</Text>
 					</div>
@@ -72,7 +74,7 @@ export default function ArticlePaginationFooter({
 					onClick={() => onSelectArticle(nextArticle.id)}
 					style={{
 						flex: '1 1 280px',
-						border: '1px solid #e8e8e8',
+						border: `1px solid ${token.colorBorderSecondary}`,
 						borderRadius: 10,
 						padding: '16px 20px',
 						cursor: 'pointer',
@@ -80,7 +82,7 @@ export default function ArticlePaginationFooter({
 						alignItems: 'center',
 						justifyContent: 'space-between',
 						gap: 16,
-						backgroundColor: '#ffffff',
+						backgroundColor: token.colorBgContainer,
 						transition: 'all 0.2s ease',
 						textAlign: 'right',
 					}}
@@ -89,11 +91,11 @@ export default function ArticlePaginationFooter({
 						<Text type="secondary" style={{ fontSize: 11, display: 'block', textTransform: 'uppercase' }}>
 							Next
 						</Text>
-						<Text strong ellipsis style={{ fontSize: 14, color: '#1677ff', display: 'block' }}>
+						<Text strong ellipsis style={{ fontSize: 14, color: token.colorPrimary, display: 'block' }}>
 							{nextArticle.title}
 						</Text>
 					</div>
-					<ArrowRightOutlined style={{ fontSize: 18, color: '#1677ff' }} />
+					<ArrowRightOutlined style={{ fontSize: 18, color: token.colorPrimary }} />
 				</div>
 			) : (
 				<div style={{ flex: '1 1 280px' }} />

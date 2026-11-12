@@ -69,7 +69,7 @@ export default function ExportModal({ open, onClose, endpoint, currentParams = {
 		<Modal
 			title={
 				<Space>
-					<DownloadOutlined style={{ color: '#1677ff' }} />
+					<DownloadOutlined style={{ color: '#EC008C' }} />
 					<span>{title}</span>
 				</Space>
 			}

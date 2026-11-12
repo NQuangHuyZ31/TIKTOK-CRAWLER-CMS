@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Button, Card, Form } from 'antd';
+import { Button, Card, Form, theme } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import PageHeader from './PageHeader';
@@ -59,6 +59,7 @@ export default function ListLayout<T = any>({
 	children,
 }: ListLayoutProps<T>) {
 	const navigate = useNavigate();
+	const { token } = theme.useToken();
 	const [form] = Form.useForm();
 	const [localSearch, setLocalSearch] = useState<string>(searchValue ?? '');
 
@@ -97,7 +98,7 @@ export default function ListLayout<T = any>({
 			{topContent}
 			<Card
 				title={cardTitle}
-				style={{ borderRadius: 12, border: '1px solid #edf0f5', boxShadow: '0 2px 12px rgba(23, 32, 51, 0.04)' }}
+				style={{ borderRadius: 12, border: `1px solid ${token.colorBorderSecondary}`, boxShadow: '0 2px 12px rgba(0, 0, 0, 0.04)' }}
 				styles={{ body: { padding: columns && data !== undefined ? 0 : 20 } }}
 			>
 				{hasToolbar && (

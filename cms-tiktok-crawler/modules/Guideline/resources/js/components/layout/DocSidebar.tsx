@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Typography } from 'antd';
+import { Typography, theme } from 'antd';
 import { BookOutlined, CheckCircleOutlined, DownOutlined, RightOutlined } from '@ant-design/icons';
 import { Link, useLocation } from 'react-router-dom';
 import { getNavigationTree } from '../../navigation/docTree';
@@ -8,6 +8,7 @@ import { useDocLanguage } from '../../context/DocLanguageContext';
 const { Text } = Typography;
 
 export default function DocSidebar() {
+	const { token } = theme.useToken();
 	const location = useLocation();
 	const currentPath = location.pathname;
 	const { language } = useDocLanguage();
@@ -24,8 +25,8 @@ export default function DocSidebar() {
 			style={{
 				width: 280,
 				flexShrink: 0,
-				borderRight: '1px solid #e8e8e8',
-				backgroundColor: '#ffffff',
+				borderRight: `1px solid ${token.colorBorderSecondary}`,
+				backgroundColor: token.colorBgContainer,
 				height: 'calc(100vh - 56px)',
 				position: 'sticky',
 				top: 56,
@@ -43,17 +44,17 @@ export default function DocSidebar() {
 								display: 'flex',
 								alignItems: 'center',
 								gap: 8,
-								color: '#8c8c8c',
+								color: token.colorTextSecondary,
 								fontSize: 11,
 								fontWeight: 700,
 								letterSpacing: 0.8,
 								textTransform: 'uppercase',
-								borderBottom: '1px solid #f0f0f0',
+								borderBottom: `1px solid ${token.colorBorderSecondary}`,
 								marginBottom: 8,
 							}}
 						>
 							{pillarGroup.pillar === 'learn' ? (
-								<BookOutlined style={{ color: '#1677ff' }} />
+								<BookOutlined style={{ color: '#EC008C' }} />
 							) : (
 								<CheckCircleOutlined style={{ color: '#52c41a' }} />
 							)}
@@ -78,14 +79,14 @@ export default function DocSidebar() {
 												cursor: 'pointer',
 												fontSize: 12,
 												fontWeight: 600,
-												color: '#595959',
+												color: token.colorTextSecondary,
 											}}
 										>
 											<span>{cat.category}</span>
 											{isCollapsed ? (
-												<RightOutlined style={{ fontSize: 9, color: '#bfbfbf' }} />
+												<RightOutlined style={{ fontSize: 9, color: token.colorTextTertiary }} />
 											) : (
-												<DownOutlined style={{ fontSize: 9, color: '#bfbfbf' }} />
+												<DownOutlined style={{ fontSize: 9, color: token.colorTextTertiary }} />
 											)}
 										</div>
 
@@ -103,8 +104,8 @@ export default function DocSidebar() {
 																padding: '6px 10px 6px 20px',
 																borderRadius: 6,
 																fontSize: 13,
-																color: isActive ? '#1677ff' : '#434343',
-																backgroundColor: isActive ? '#e6f4ff' : 'transparent',
+																color: isActive ? token.colorPrimary : token.colorText,
+																backgroundColor: isActive ? token.colorPrimaryBg : 'transparent',
 																fontWeight: isActive ? 600 : 400,
 																textDecoration: 'none',
 																display: 'block',
