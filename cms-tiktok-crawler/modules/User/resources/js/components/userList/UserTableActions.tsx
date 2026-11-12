@@ -52,7 +52,7 @@ export default function UserTableActions({ record, currentUserId, onDelete, onRe
 					okButtonProps={{ danger: true }}
 				>
 					<Tooltip title="Reset Password">
-						<Button type="text" size="small" icon={<KeyOutlined />} disabled={isSelf} />
+						<Button type="text" size="small" icon={<KeyOutlined />} disabled={isSelf || !record.google2fa_enabled} />
 					</Tooltip>
 				</Popconfirm>
 			</PermissionGate>

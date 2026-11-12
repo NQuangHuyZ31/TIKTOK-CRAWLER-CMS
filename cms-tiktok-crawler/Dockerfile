@@ -33,9 +33,6 @@ RUN npm run check-types
 # Laravel Mix / Webpack build
 RUN npm run mix:prod
 
-# React SPA / Vite build
-RUN npx vite build
-
 
 # ==============================================================================
 # Stage 3: PHP Dependencies
