@@ -14,14 +14,14 @@ export interface AdminLayoutProps {
 
 function AdminLayoutInner({ children }: AdminLayoutProps) {
 	const {
-		token: { colorBgContainer, borderRadiusLG },
+		token: { colorBgContainer, colorBgLayout, colorBorderSecondary, borderRadiusLG },
 	} = theme.useToken();
 	const { isMobile } = useLayout();
 
 	return (
-		<Layout hasSider style={{ height: '100vh', overflow: 'hidden', background: '#f5f7fb' }}>
+		<Layout hasSider style={{ height: '100vh', overflow: 'hidden', background: colorBgLayout }}>
 			<Sidebar />
-			<Layout style={{ minWidth: 0, height: '100vh', overflow: 'hidden', background: '#f5f7fb' }}>
+			<Layout style={{ minWidth: 0, height: '100vh', overflow: 'hidden', background: colorBgLayout }}>
 				<Header />
 				<Content
 					style={{
@@ -38,8 +38,8 @@ function AdminLayoutInner({ children }: AdminLayoutProps) {
 							padding: isMobile ? 16 : 24,
 							background: colorBgContainer,
 							borderRadius: borderRadiusLG,
-							boxShadow: '0 2px 8px rgba(23, 32, 51, 0.03)',
-							border: '1px solid #edf0f5',
+							boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
+							border: `1px solid ${colorBorderSecondary}`,
 							display: 'flex',
 							flexDirection: 'column',
 						}}

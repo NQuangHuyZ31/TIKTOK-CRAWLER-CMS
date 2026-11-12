@@ -40,7 +40,7 @@ export default function PermissionTableList({ data, loading = false, pagination,
 	const renderColumns = {
 		name: (val: string) => (
 			<Space size={6}>
-				<KeyOutlined style={{ color: '#1677ff', fontSize: 13 }} />
+				<KeyOutlined style={{ color: '#EC008C', fontSize: 13 }} />
 				<Text strong>{val || '-'}</Text>
 			</Space>
 		),

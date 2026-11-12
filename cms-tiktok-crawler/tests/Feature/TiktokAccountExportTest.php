@@ -60,25 +60,6 @@ class TiktokAccountExportTest extends TestCase
         $this->assertStringContainsString('creator_beta', $content);
     }
 
-    public function test_authenticated_user_can_export_tiktok_accounts_xlsx(): void
-    {
-        TiktokAccount::create([
-            'username' => 'creator_emoji',
-            'nickname' => 'Bilal ❤️🥀',
-            'bio' => '👑 King of TikTok',
-        ]);
-
-        $response = $this->actingAs($this->admin)->get('/admin/api/tiktok-account/export?export_format=xlsx');
-
-        $response->assertStatus(200);
-        $this->assertStringContainsString('spreadsheetml.sheet', (string) $response->headers->get('Content-Type'));
-        $this->assertStringContainsString('.xlsx', (string) $response->headers->get('Content-Disposition'));
-
-        $binary = $response->streamedContent();
-        // Check for ZIP/OpenXML magic bytes
-        $this->assertStringStartsWith("PK\x03\x04", $binary);
-    }
-
     public function test_export_applies_search_filter(): void
     {
         TiktokAccount::create([

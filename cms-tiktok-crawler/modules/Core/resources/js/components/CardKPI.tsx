@@ -1,5 +1,5 @@
 import React, { ReactNode } from 'react';
-import { Card, Flex, Statistic, Typography } from 'antd';
+import { Card, Flex, Statistic, Typography, theme } from 'antd';
 
 const { Text } = Typography;
 
@@ -17,7 +17,9 @@ export interface CardKPIProps {
 	className?: string;
 }
 
-export default function CardKPI({ title, value, icon, color = '#1677ff', prefix, suffix, precision, subtext, loading = false, style, className }: CardKPIProps) {
+export default function CardKPI({ title, value, icon, color = '#EC008C', prefix, suffix, precision, subtext, loading = false, style, className }: CardKPIProps) {
+	const { token } = theme.useToken();
+
 	return (
 		<Card
 			styles={{ body: { padding: 20 } }}
@@ -25,8 +27,8 @@ export default function CardKPI({ title, value, icon, color = '#1677ff', prefix,
 			className={className}
 			style={{
 				height: '100%',
-				border: '1px solid #edf0f5',
-				boxShadow: '0 4px 16px rgba(23, 32, 51, 0.04)',
+				border: `1px solid ${token.colorBorderSecondary}`,
+				boxShadow: '0 4px 16px rgba(0, 0, 0, 0.04)',
 				...style,
 			}}
 		>
@@ -68,7 +70,7 @@ export default function CardKPI({ title, value, icon, color = '#1677ff', prefix,
 						valueStyle={{
 							fontSize: 24,
 							fontWeight: 700,
-							color: '#172033',
+							color: token.colorText,
 						}}
 					/>
 					{subtext && <div style={{ marginTop: 4 }}>{subtext}</div>}

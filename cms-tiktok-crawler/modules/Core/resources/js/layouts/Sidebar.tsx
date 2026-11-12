@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Flex, Layout, Menu, Tag, Tooltip } from 'antd';
+import { Flex, Layout, Menu, theme } from 'antd';
 import type { MenuProps } from 'antd';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useMenuRoutes, useCurrentRoute, type RouteDef } from '../routes/registry';
 import { useLayout } from '../contexts/LayoutContext';
+import { useTheme } from '../contexts/ThemeContext';
 import usePermission from '../hooks/usePermission';
 import { buildSidebarMenuItems } from './sidebar/sidebarMenuBuilder';
 
@@ -12,6 +13,8 @@ const { Sider } = Layout;
 export default function Sidebar() {
 	const navigate = useNavigate();
 	const { pathname } = useLocation();
+	const { token } = theme.useToken();
+	const { isDark } = useTheme();
 	const menuRoutes = useMenuRoutes();
 	const currentRoute = useCurrentRoute();
 	const { collapsed, toggleCollapsed } = useLayout();
@@ -61,11 +64,12 @@ export default function Sidebar() {
 			collapsed={collapsed}
 			onCollapse={toggleCollapsed}
 			trigger={null}
-			theme="light"
+			theme={isDark ? 'dark' : 'light'}
+			className="cms-sidebar"
 			style={{
 				height: '100vh',
-				background: '#ffffff',
-				borderRight: '1px solid #edf0f5',
+				background: token.colorBgContainer,
+				borderRight: `1px solid ${token.colorBorderSecondary}`,
 				boxShadow: '2px 0 10px rgba(0, 0, 0, 0.02)',
 			}}
 		>
@@ -76,7 +80,7 @@ export default function Sidebar() {
 				style={{
 					height: 64,
 					padding: collapsed ? '0' : '0 20px',
-					borderBottom: '1px solid #edf0f5',
+					borderBottom: `1px solid ${token.colorBorderSecondary}`,
 					cursor: 'pointer',
 				}}
 				onClick={() => navigate('/dashboard')}
@@ -86,22 +90,22 @@ export default function Sidebar() {
 						width: 34,
 						height: 34,
 						borderRadius: 8,
-						background: 'linear-gradient(135deg, #1677ff 0%, #0958d9 100%)',
+						background: 'linear-gradient(135deg, #EC008C 0%, #6B217F 100%)',
 						display: 'flex',
 						alignItems: 'center',
 						justifyContent: 'center',
 						color: '#fff',
 						fontWeight: 800,
 						fontSize: 16,
-						boxShadow: '0 4px 10px rgba(22, 119, 255, 0.3)',
+						boxShadow: '0 4px 10px rgba(236, 0, 140, 0.3)',
 					}}
 				>
 					T
 				</div>
 				{!collapsed && (
 					<Flex vertical>
-						<span style={{ fontWeight: 700, fontSize: 15, color: '#141414', lineHeight: 1.2 }}>TikTok Crawler</span>
-						<span style={{ fontSize: 11, color: '#8c8c8c' }}>CMS Management</span>
+						<span style={{ fontWeight: 700, fontSize: 15, color: token.colorText, lineHeight: 1.2 }}>TikTok Crawler</span>
+						<span style={{ fontSize: 11, color: token.colorTextSecondary }}>CMS Management</span>
 					</Flex>
 				)}
 			</Flex>

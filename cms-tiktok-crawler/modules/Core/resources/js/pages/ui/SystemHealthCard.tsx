@@ -1,15 +1,17 @@
 import React from 'react';
-import { Badge, Card, Flex, Space, Tag, Typography } from 'antd';
+import { Badge, Card, Flex, Space, Tag, Typography, theme } from 'antd';
 
 const { Text } = Typography;
 
 export default function SystemHealthCard() {
+	const { token } = theme.useToken();
+
 	return (
 		<Card
 			style={{
 				borderRadius: 14,
-				border: '1px solid #edf0f5',
-				boxShadow: '0 4px 16px rgba(23, 32, 51, 0.04)',
+				border: `1px solid ${token.colorBorderSecondary}`,
+				boxShadow: '0 4px 16px rgba(0, 0, 0, 0.04)',
 			}}
 			styles={{ body: { padding: '16px 20px' } }}
 		>

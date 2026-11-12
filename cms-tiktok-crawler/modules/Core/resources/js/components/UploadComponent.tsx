@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Typography, message, Upload } from 'antd';
+import { Typography, message, Upload, theme } from 'antd';
 import UploadPreviewOverlay from './upload/UploadPreviewOverlay';
 import UploadPlaceholder from './upload/UploadPlaceholder';
 
@@ -35,6 +35,7 @@ export default function UploadComponent({
 	className,
 	style,
 }: UploadComponentProps) {
+	const { token } = theme.useToken();
 	const previewUrl = useMemo(() => {
 		if (!value) return null;
 		if (typeof value === 'string' && value.trim()) return value;
@@ -70,8 +71,8 @@ export default function UploadComponent({
 					height,
 					borderRadius,
 					overflow: 'hidden',
-					border: '1px dashed #d9d9d9',
-					backgroundColor: '#fafafa',
+					border: `1px dashed ${token.colorBorder}`,
+					backgroundColor: token.colorFillAlter,
 					display: 'flex',
 					alignItems: 'center',
 					justifyContent: 'center',

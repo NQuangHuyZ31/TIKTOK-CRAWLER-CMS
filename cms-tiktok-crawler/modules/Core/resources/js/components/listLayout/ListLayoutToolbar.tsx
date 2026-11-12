@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, Flex, Form, Input, Tooltip } from 'antd';
+import { Button, Flex, Form, Input, Tooltip, theme } from 'antd';
 import { ClearOutlined, DownOutlined, ReloadOutlined, UpOutlined } from '@ant-design/icons';
 import ListLayoutFilterField from './ListLayoutFilterField';
 import type { DynamicFilterField } from './listLayoutTypes';
@@ -31,12 +31,13 @@ export default function ListLayoutToolbar({
 	onRefresh,
 	refreshing = false,
 }: ListLayoutToolbarProps) {
+	const { token } = theme.useToken();
 	const [expandFilters, setExpandFilters] = useState<boolean>(false);
 	const primaryFilters = expandFilters ? filters : filters.slice(0, 3);
 	const hasCollapsibleFilters = filters.length > 3;
 
 	return (
-		<div style={{ padding: '16px 20px', borderBottom: '1px solid #f0f2f5', background: '#fafbfc', borderRadius: '12px 12px 0 0' }}>
+		<div style={{ padding: '16px 20px', borderBottom: `1px solid ${token.colorBorderSecondary}`, background: token.colorFillAlter, borderRadius: '12px 12px 0 0' }}>
 			<Flex justify="space-between" align="center" wrap="wrap" gap={12}>
 				<Flex align="center" wrap="wrap" gap={12} style={{ flex: 1 }}>
 					{showSearch && onSearch && (

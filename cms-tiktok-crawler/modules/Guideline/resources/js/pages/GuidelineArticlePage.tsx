@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { theme } from 'antd';
 import { useParams } from 'react-router-dom';
 import DocNavbar from '../components/layout/DocNavbar';
 import DocSidebar from '../components/layout/DocSidebar';
@@ -10,6 +11,7 @@ import { findArticleBySlug } from '../navigation/docTree';
 import { DocLanguageProvider, useDocLanguage } from '../context/DocLanguageContext';
 
 function GuidelineArticlePageContent() {
+	const { token } = theme.useToken();
 	const { pillar, slug } = useParams<{ pillar: string; slug: string }>();
 	const { language } = useDocLanguage();
 	const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -22,7 +24,7 @@ function GuidelineArticlePageContent() {
 	}, [pillar, slug, language]);
 
 	return (
-		<div style={{ minHeight: '100vh', backgroundColor: '#fcfcfc', display: 'flex', flexDirection: 'column' }}>
+		<div style={{ minHeight: '100vh', backgroundColor: token.colorBgLayout, display: 'flex', flexDirection: 'column' }}>
 			<DocNavbar onOpenSearch={() => setIsSearchOpen(true)} />
 
 			<div style={{ display: 'flex', flex: 1, minHeight: 0 }}>

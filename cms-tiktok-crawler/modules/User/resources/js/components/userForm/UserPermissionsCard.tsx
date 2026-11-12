@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card, Form, Radio, Divider, Alert, Space } from 'antd';
+import { Card, Form, Radio, Divider, Alert, Space, theme } from 'antd';
 import { SafetyCertificateOutlined, KeyOutlined } from '@ant-design/icons';
 import type { FormInstance } from 'antd';
 import RoleSelector from '../RoleSelector';
@@ -13,6 +13,7 @@ export interface UserPermissionsCardProps {
 }
 
 export default function UserPermissionsCard({ form, permissionType, rolesCatalog }: UserPermissionsCardProps) {
+    const { token } = theme.useToken();
     const handleModeChange = (e: any) => {
         const nextType = e.target.value;
         if (nextType === 'role') {
@@ -35,7 +36,7 @@ export default function UserPermissionsCard({ form, permissionType, rolesCatalog
             bordered={false}
             style={{
                 borderRadius: 12,
-                border: '1px solid #edf0f5',
+                border: `1px solid ${token.colorBorderSecondary}`,
                 marginBottom: 20,
                 boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
             }}

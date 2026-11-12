@@ -1,13 +1,13 @@
 {
-    "/modules/Core/index.js": "/modules/Core/index.js?id=10cae8f50e35ba7c28fa13ba4d656198",
-    "/modules/Core/vendor.js": "/modules/Core/vendor.js?id=eb05ef62c42e934c0626e30e8ecd5646",
-    "/modules/Core/app.css": "/modules/Core/app.css?id=4027c48bdbb60481a524b1d677939bd0",
-    "/modules/Auth/index.js": "/modules/Auth/index.js?id=0ec63bd49475a166981c6d21f9c4c97e",
-    "/modules/Crawler/index.js": "/modules/Crawler/index.js?id=dcd0ad82711271246a66fd17d07f3748",
-    "/modules/Permission/index.js": "/modules/Permission/index.js?id=fbd18cb3ff100184e46edc93b022fec1",
-    "/modules/Role/index.js": "/modules/Role/index.js?id=1c5b29c1d37f14965b9f4e6b8fcb1719",
-    "/modules/System/index.js": "/modules/System/index.js?id=5689817182e5f02940cfb35210caf88c",
-    "/modules/TiktokAccount/index.js": "/modules/TiktokAccount/index.js?id=e17bb33cc761b9d78cdf428b861e06df",
-    "/modules/User/index.js": "/modules/User/index.js?id=db8bd528ea81cff4477a2544a71119d0",
-    "/modules/Guideline/index.js": "/modules/Guideline/index.js?id=70193a4920d168f2a1865d5432603808"
+    "/modules/Core/index.js": "/modules/Core/index.js",
+    "/modules/Core/vendor.js": "/modules/Core/vendor.js",
+    "/modules/Core/app.css": "/modules/Core/app.css",
+    "/modules/Auth/index.js": "/modules/Auth/index.js",
+    "/modules/Crawler/index.js": "/modules/Crawler/index.js",
+    "/modules/Permission/index.js": "/modules/Permission/index.js",
+    "/modules/Role/index.js": "/modules/Role/index.js",
+    "/modules/System/index.js": "/modules/System/index.js",
+    "/modules/TiktokAccount/index.js": "/modules/TiktokAccount/index.js",
+    "/modules/User/index.js": "/modules/User/index.js",
+    "/modules/Guideline/index.js": "/modules/Guideline/index.js"
 }

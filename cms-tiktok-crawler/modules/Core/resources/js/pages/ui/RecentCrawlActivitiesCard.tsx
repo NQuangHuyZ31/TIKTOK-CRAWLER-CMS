@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button, Card, Flex, Space, Tag, Tooltip } from 'antd';
+import { Button, Card, Flex, Space, Tag, Tooltip, theme } from 'antd';
 import { ArrowRightOutlined, EyeOutlined, HistoryOutlined } from '@ant-design/icons';
 import { Link, useNavigate } from 'react-router-dom';
 import TableComponent, { TableColumn } from '../../components/Table';
@@ -31,27 +31,28 @@ export default function RecentCrawlActivitiesCard({
 	canViewCrawler,
 	canCreateCrawler,
 }: RecentCrawlActivitiesCardProps) {
+	const { token } = theme.useToken();
 	const navigate = useNavigate();
 
 	return (
 		<Card
 			title={
 				<Space align="center">
-					<HistoryOutlined style={{ color: '#1677ff', fontSize: 18 }} />
+					<HistoryOutlined style={{ color: token.colorPrimary, fontSize: 18 }} />
 					<span style={{ fontWeight: 600, fontSize: 16 }}>Recent Crawl Activities</span>
 				</Space>
 			}
 			extra={
 				canViewCrawler ? (
-					<Link to="/crawler/crawl-job" style={{ fontSize: 13, color: '#1677ff' }}>
+					<Link to="/crawler/crawl-job" style={{ fontSize: 13, color: token.colorPrimary }}>
 						View all ({totalJobs}) <ArrowRightOutlined />
 					</Link>
 				) : null
 			}
 			style={{
 				borderRadius: 14,
-				border: '1px solid #edf0f5',
-				boxShadow: '0 4px 16px rgba(23, 32, 51, 0.04)',
+				border: `1px solid ${token.colorBorderSecondary}`,
+				boxShadow: '0 4px 16px rgba(0, 0, 0, 0.04)',
 			}}
 			styles={{ body: { padding: 0 } }}
 		>
@@ -65,7 +66,7 @@ export default function RecentCrawlActivitiesCard({
 				renderColumns={{
 					id: (id) =>
 						canViewCrawler ? (
-							<Link to={`/crawler/crawl-job/${id}`} style={{ fontWeight: 600, color: '#1677ff' }}>
+							<Link to={`/crawler/crawl-job/${id}`} style={{ fontWeight: 600, color: token.colorPrimary }}>
 								#{id}
 							</Link>
 						) : (
@@ -105,7 +106,7 @@ export default function RecentCrawlActivitiesCard({
 						canViewCrawler ? (
 							<Tooltip title="View Details">
 								<Link to={`/crawler/crawl-job/${record.id}`}>
-									<Button size="small" type="text" icon={<EyeOutlined style={{ color: '#1677ff' }} />} />
+									<Button size="small" type="text" icon={<EyeOutlined style={{ color: token.colorPrimary }} />} />
 								</Link>
 							</Tooltip>
 						) : (

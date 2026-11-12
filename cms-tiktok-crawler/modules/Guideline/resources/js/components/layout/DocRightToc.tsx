@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Typography } from 'antd';
+import { Typography, theme } from 'antd';
 import type { DocBlock } from '../../types/docSchema';
 import { useDocLanguage } from '../../context/DocLanguageContext';
 
@@ -10,6 +10,7 @@ interface DocRightTocProps {
 }
 
 export default function DocRightToc({ blocks }: DocRightTocProps) {
+	const { token } = theme.useToken();
 	const { t } = useDocLanguage();
 	const headings = blocks.filter(
 		(b): b is Extract<DocBlock, { type: 'heading' }> => b.type === 'heading'
@@ -56,7 +57,7 @@ export default function DocRightToc({ blocks }: DocRightTocProps) {
 				height: 'calc(100vh - 80px)',
 				overflowY: 'auto',
 				padding: '8px 0 20px 16px',
-				borderLeft: '1px solid #f0f0f0',
+				borderLeft: `1px solid ${token.colorBorderSecondary}`,
 			}}
 		>
 			<Text
@@ -64,7 +65,7 @@ export default function DocRightToc({ blocks }: DocRightTocProps) {
 				style={{
 					fontSize: 11,
 					textTransform: 'uppercase',
-					color: '#8c8c8c',
+					color: token.colorTextSecondary,
 					letterSpacing: 0.6,
 					display: 'block',
 					marginBottom: 10,
@@ -86,7 +87,7 @@ export default function DocRightToc({ blocks }: DocRightTocProps) {
 							href={`#${h.anchorId}`}
 							style={{
 								fontSize: 12,
-								color: isActive ? '#1677ff' : '#595959',
+								color: isActive ? token.colorPrimary : token.colorTextSecondary,
 								fontWeight: isActive ? 600 : 400,
 								textDecoration: 'none',
 								paddingLeft: h.level === 3 ? 12 : 0,

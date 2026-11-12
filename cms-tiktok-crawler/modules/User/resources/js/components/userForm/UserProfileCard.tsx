@@ -1,16 +1,18 @@
 import React from 'react';
-import { Card, Row, Col, Form, Input, Select } from 'antd';
+import { Card, Row, Col, Form, Input, Select, theme } from 'antd';
 import { UserOutlined, MailOutlined, PhoneOutlined, LinkOutlined } from '@ant-design/icons';
 import { USER_FORM_STATUS_OPTIONS } from '../../configs/userConstants';
 
 export default function UserProfileCard() {
+    const { token } = theme.useToken();
+
     return (
         <Card
             title="1. Basic Profile Information"
             bordered={false}
             style={{
                 borderRadius: 12,
-                border: '1px solid #edf0f5',
+                border: `1px solid ${token.colorBorderSecondary}`,
                 marginBottom: 20,
                 boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
             }}

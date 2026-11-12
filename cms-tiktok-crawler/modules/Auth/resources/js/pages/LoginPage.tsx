@@ -234,7 +234,6 @@ export default function LoginPage() {
 					overflow: 'hidden',
 					border: '1px solid rgba(255, 255, 255, 0.08)',
 					boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.7)',
-					background: '#ffffff',
 				}}
 				styles={{ body: { padding: 0 } }}
 			>

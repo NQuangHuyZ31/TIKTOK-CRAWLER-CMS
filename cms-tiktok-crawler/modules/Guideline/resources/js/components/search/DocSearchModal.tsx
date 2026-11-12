@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Empty, Input, Modal, Tag, Typography } from 'antd';
+import { Empty, Input, Modal, Tag, Typography, theme } from 'antd';
 import { BookOutlined, CheckCircleOutlined, SearchOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { searchDocumentation } from '../../navigation/docTree';
@@ -14,6 +14,7 @@ interface DocSearchModalProps {
 }
 
 export default function DocSearchModal({ isOpen, onClose }: DocSearchModalProps) {
+	const { token } = theme.useToken();
 	const [query, setQuery] = useState('');
 	const navigate = useNavigate();
 	const { language, t } = useDocLanguage();
@@ -60,7 +61,7 @@ export default function DocSearchModal({ isOpen, onClose }: DocSearchModalProps)
 					'Search documentation by title, topic, or content...',
 					'Tìm kiếm tài liệu theo tiêu đề, chủ đề hoặc nội dung...'
 				)}
-				prefix={<SearchOutlined style={{ color: '#1677ff' }} />}
+				prefix={<SearchOutlined style={{ color: token.colorPrimary }} />}
 				value={query}
 				onChange={(e) => setQuery(e.target.value)}
 				size="large"
@@ -94,7 +95,7 @@ export default function DocSearchModal({ isOpen, onClose }: DocSearchModalProps)
 				{learnResults.length > 0 && (
 					<div style={{ marginBottom: 14 }}>
 						<div style={{ padding: '4px 8px', fontSize: 11, fontWeight: 700, color: '#8c8c8c', letterSpacing: 0.5 }}>
-							<BookOutlined style={{ color: '#1677ff', marginRight: 6 }} />
+							<BookOutlined style={{ color: token.colorPrimary, marginRight: 6 }} />
 							{t('search.section.learn', 'LEARN (KNOWLEDGE & ARCHITECTURE)', 'TÌM HIỂU (KIẾN THỨC & KIẾN TRÚC)')}
 						</div>
 						{learnResults.map((art) => (
@@ -108,12 +109,12 @@ export default function DocSearchModal({ isOpen, onClose }: DocSearchModalProps)
 									display: 'flex',
 									justifyContent: 'space-between',
 									alignItems: 'center',
-									backgroundColor: '#fafafa',
+									backgroundColor: token.colorFillAlter,
 									marginBottom: 4,
 								}}
 							>
 								<div>
-									<Text strong style={{ fontSize: 13, color: '#141414' }}>
+									<Text strong style={{ fontSize: 13, color: token.colorText }}>
 										{art.title}
 									</Text>
 									<Text type="secondary" ellipsis style={{ fontSize: 11, display: 'block' }}>
@@ -145,12 +146,12 @@ export default function DocSearchModal({ isOpen, onClose }: DocSearchModalProps)
 									display: 'flex',
 									justifyContent: 'space-between',
 									alignItems: 'center',
-									backgroundColor: '#fafafa',
+									backgroundColor: token.colorFillAlter,
 									marginBottom: 4,
 								}}
 							>
 								<div>
-									<Text strong style={{ fontSize: 13, color: '#141414' }}>
+									<Text strong style={{ fontSize: 13, color: token.colorText }}>
 										{art.title}
 									</Text>
 									<Text type="secondary" ellipsis style={{ fontSize: 11, display: 'block' }}>

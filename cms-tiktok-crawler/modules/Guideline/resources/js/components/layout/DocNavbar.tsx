@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button, Input, Segmented, Space, Typography } from 'antd';
+import { Button, Input, Segmented, Space, Typography, theme } from 'antd';
 import { DashboardOutlined, MenuOutlined, RocketOutlined, SearchOutlined } from '@ant-design/icons';
 import { Link } from 'react-router-dom';
 import { useDocLanguage } from '../../context/DocLanguageContext';
@@ -12,6 +12,7 @@ interface DocNavbarProps {
 }
 
 export default function DocNavbar({ onOpenSearch, onToggleMobileMenu }: DocNavbarProps) {
+	const { token } = theme.useToken();
 	const { language, setLanguage, t } = useDocLanguage();
 
 	return (
@@ -20,8 +21,8 @@ export default function DocNavbar({ onOpenSearch, onToggleMobileMenu }: DocNavba
 				position: 'sticky',
 				top: 0,
 				zIndex: 90,
-				backgroundColor: '#ffffff',
-				borderBottom: '1px solid #e8e8e8',
+				backgroundColor: token.colorBgContainer,
+				borderBottom: `1px solid ${token.colorBorderSecondary}`,
 				height: 56,
 				padding: '0 20px',
 				display: 'flex',
@@ -38,7 +39,7 @@ export default function DocNavbar({ onOpenSearch, onToggleMobileMenu }: DocNavba
 							width: 30,
 							height: 30,
 							borderRadius: 6,
-							backgroundColor: '#1677ff',
+							background: 'linear-gradient(135deg, #EC008C 0%, #6B217F 100%)',
 							display: 'flex',
 							alignItems: 'center',
 							justifyContent: 'center',
@@ -49,7 +50,7 @@ export default function DocNavbar({ onOpenSearch, onToggleMobileMenu }: DocNavba
 						<RocketOutlined />
 					</div>
 					<div>
-						<Title level={5} style={{ margin: 0, fontSize: 14, color: '#141414', lineHeight: 1.2 }}>
+						<Title level={5} style={{ margin: 0, fontSize: 14, color: token.colorText, lineHeight: 1.2 }}>
 							{t('nav_brand', 'TikTok Crawler Docs', 'Tài liệu TikTok Crawler')}
 						</Title>
 					</div>
@@ -68,9 +69,9 @@ export default function DocNavbar({ onOpenSearch, onToggleMobileMenu }: DocNavba
 				<Input
 					readOnly
 					placeholder={t('nav_search', 'Search documentation... (Ctrl + K)', 'Tìm kiếm tài liệu... (Ctrl + K)')}
-					prefix={<SearchOutlined style={{ color: '#8c8c8c' }} />}
+					prefix={<SearchOutlined style={{ color: token.colorTextSecondary }} />}
 					size="middle"
-					style={{ borderRadius: 6, cursor: 'pointer', backgroundColor: '#f5f5f5', border: '1px solid #e8e8e8' }}
+					style={{ borderRadius: 6, cursor: 'pointer', backgroundColor: token.colorFillAlter, border: `1px solid ${token.colorBorderSecondary}` }}
 				/>
 			</div>
 

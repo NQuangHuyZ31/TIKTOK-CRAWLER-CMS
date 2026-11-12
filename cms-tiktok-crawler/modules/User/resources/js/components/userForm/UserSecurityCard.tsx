@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card, Row, Col, Form, Input, Radio, Alert } from 'antd';
+import { Card, Row, Col, Form, Input, Radio, Alert, theme } from 'antd';
 import { LockOutlined, GoogleOutlined, MailOutlined } from '@ant-design/icons';
 
 export interface UserSecurityCardProps {
@@ -7,6 +7,7 @@ export interface UserSecurityCardProps {
 }
 
 export default function UserSecurityCard({ isEdit }: UserSecurityCardProps) {
+	const { token } = theme.useToken();
 	const form = Form.useFormInstance();
 	const authType = Form.useWatch('auth_type', form) || 'password';
 
@@ -16,7 +17,7 @@ export default function UserSecurityCard({ isEdit }: UserSecurityCardProps) {
 			bordered={false}
 			style={{
 				borderRadius: 12,
-				border: '1px solid #edf0f5',
+				border: `1px solid ${token.colorBorderSecondary}`,
 				marginBottom: 20,
 				boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
 			}}

@@ -150,7 +150,7 @@ export default function ResetPasswordForm({ initialEmail = '', initialToken = ''
 								height: 44,
 								fontWeight: 600,
 								borderRadius: 8,
-								background: 'linear-gradient(135deg, #1677ff 0%, #0958d9 100%)',
+								background: 'linear-gradient(135deg, #EC008C 0%, #6B217F 100%)',
 							}}
 						>
 							Send Reset Instructions

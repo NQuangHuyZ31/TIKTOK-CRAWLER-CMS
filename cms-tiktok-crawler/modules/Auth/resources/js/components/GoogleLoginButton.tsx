@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button } from 'antd';
+import { Button, theme } from 'antd';
 
 export interface GoogleLoginButtonProps {
 	loading?: boolean;
@@ -8,6 +8,8 @@ export interface GoogleLoginButtonProps {
 }
 
 export default function GoogleLoginButton({ loading, disabled, onClick }: GoogleLoginButtonProps) {
+	const { token } = theme.useToken();
+
 	return (
 		<Button
 			block
@@ -24,9 +26,9 @@ export default function GoogleLoginButton({ loading, disabled, onClick }: Google
 				borderRadius: 10,
 				fontWeight: 500,
 				fontSize: 14,
-				color: '#1e293b',
-				backgroundColor: '#ffffff',
-				borderColor: '#e2e8f0',
+				color: token.colorText,
+				backgroundColor: token.colorBgContainer,
+				borderColor: token.colorBorder,
 				boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)',
 				transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
 			}}

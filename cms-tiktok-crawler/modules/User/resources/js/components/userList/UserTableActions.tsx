@@ -23,7 +23,7 @@ export default function UserTableActions({ record, currentUserId, onDelete, onRe
 			<PermissionGate module="user" action="view">
 				<Tooltip title="View Details">
 					<Link to={`/user/${record.id}`}>
-						<Button size="small" type="text" icon={<EyeOutlined style={{ color: '#1677ff' }} />} />
+						<Button size="small" type="text" icon={<EyeOutlined style={{ color: '#EC008C' }} />} />
 					</Link>
 				</Tooltip>
 			</PermissionGate>

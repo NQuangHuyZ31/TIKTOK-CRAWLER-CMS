@@ -63,7 +63,7 @@ export default function CreatePermissionModal({ open, modulesList, onClose, onSu
 		<Modal
 			title={
 				<Space>
-					<KeyOutlined style={{ color: '#1677ff' }} />
+					<KeyOutlined style={{ color: '#EC008C' }} />
 					<Text strong style={{ fontSize: 16 }}>Create Individual Permission</Text>
 				</Space>
 			}

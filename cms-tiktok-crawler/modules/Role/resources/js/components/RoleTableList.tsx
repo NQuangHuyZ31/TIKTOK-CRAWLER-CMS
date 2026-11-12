@@ -20,7 +20,7 @@ export default function RoleTableList({ data, loading = false, pagination, onPag
 	const renderColumns = {
 		name: (val: string, record: RoleItem) => (
 			<Space>
-				{record.slug === 'admin' ? <CrownOutlined style={{ color: '#faad14', fontSize: 16 }} /> : <SafetyCertificateOutlined style={{ color: '#1677ff', fontSize: 14 }} />}
+				{record.slug === 'admin' ? <CrownOutlined style={{ color: '#faad14', fontSize: 16 }} /> : <SafetyCertificateOutlined style={{ color: '#EC008C', fontSize: 14 }} />}
 				<Text strong>{val}</Text>
 			</Space>
 		),

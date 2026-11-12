@@ -138,7 +138,7 @@ export default function StatusDropdown({
 			>
 				<StatusTag status={status} />
 				{isLoading ? (
-					<LoadingOutlined style={{ fontSize: 11, marginLeft: 4, color: '#1677ff' }} />
+					<LoadingOutlined style={{ fontSize: 11, marginLeft: 4, color: '#EC008C' }} />
 				) : showArrow ? (
 					<DownOutlined style={{ fontSize: 9, marginLeft: 4, color: '#8c8c8c' }} />
 				) : null}

@@ -1,9 +1,10 @@
 import React from 'react';
-import { Card, Progress, Row, Col, Flex, Space, Tag, Typography } from 'antd';
+import { Card, Progress, Row, Col, Flex, Space, Tag, Typography, theme } from 'antd';
 import { DatabaseOutlined, ArrowRightOutlined, UsergroupAddOutlined, HeartFilled, UserAddOutlined, UserOutlined } from '@ant-design/icons';
 import { Link } from 'react-router-dom';
 import CardKPI from '../../components/CardKPI';
 import formatCurrency from '../../utils/formatCurrency';
+import { useTheme } from '../../contexts/ThemeContext';
 import { TiktokStatistics } from './types';
 
 const { Text } = Typography;
@@ -17,6 +18,9 @@ export interface TiktokEcosystemOverviewProps {
  * Right panel showing TikTok Social Ecosystem, reusing CardKPI for consistent metric cards.
  */
 export default function TiktokEcosystemOverview({ tiktokStats, activeRate }: TiktokEcosystemOverviewProps) {
+	const { token } = theme.useToken();
+	const { isDark } = useTheme();
+
 	return (
 		<Card
 			title={
@@ -35,8 +39,8 @@ export default function TiktokEcosystemOverview({ tiktokStats, activeRate }: Tik
 			}
 			style={{
 				borderRadius: 14,
-				border: '1px solid #edf0f5',
-				boxShadow: '0 4px 16px rgba(23, 32, 51, 0.04)',
+				border: `1px solid ${token.colorBorderSecondary}`,
+				boxShadow: '0 4px 16px rgba(0, 0, 0, 0.04)',
 				height: '100%',
 			}}
 			styles={{ body: { padding: '20px 24px' } }}
@@ -70,7 +74,7 @@ export default function TiktokEcosystemOverview({ tiktokStats, activeRate }: Tik
 						value={formatCurrency(tiktokStats?.total_followers ?? 0)}
 						icon={<UsergroupAddOutlined />}
 						color="#722ed1"
-						style={{ borderRadius: 10, background: '#f9f0ff', borderColor: '#d3adf7' }}
+						style={{ borderRadius: 10, ...(isDark ? {} : { background: '#f9f0ff', borderColor: '#d3adf7' }) }}
 					/>
 				</Col>
 
@@ -80,7 +84,7 @@ export default function TiktokEcosystemOverview({ tiktokStats, activeRate }: Tik
 						value={formatCurrency(tiktokStats?.total_likes ?? 0)}
 						icon={<HeartFilled />}
 						color="#eb2f96"
-						style={{ borderRadius: 10, background: '#fff0f6', borderColor: '#ffadd2' }}
+						style={{ borderRadius: 10, ...(isDark ? {} : { background: '#fff0f6', borderColor: '#ffadd2' }) }}
 					/>
 				</Col>
 
@@ -90,7 +94,7 @@ export default function TiktokEcosystemOverview({ tiktokStats, activeRate }: Tik
 						value={formatCurrency(tiktokStats?.total_following ?? 0)}
 						icon={<UserAddOutlined />}
 						color="#7cb305"
-						style={{ borderRadius: 10, background: '#fcffe6', borderColor: '#eaff8f' }}
+						style={{ borderRadius: 10, ...(isDark ? {} : { background: '#fcffe6', borderColor: '#eaff8f' }) }}
 					/>
 				</Col>
 
@@ -99,13 +103,13 @@ export default function TiktokEcosystemOverview({ tiktokStats, activeRate }: Tik
 						title="Active Profiles"
 						value={formatCurrency(tiktokStats?.total_active_accounts ?? 0)}
 						icon={<UserOutlined />}
-						color="#1677ff"
-						style={{ borderRadius: 10, background: '#e6f7ff', borderColor: '#91caff' }}
+						color="#EC008C"
+						style={{ borderRadius: 10, ...(isDark ? {} : { background: '#e6f7ff', borderColor: '#91caff' }) }}
 					/>
 				</Col>
 			</Row>
 
-			<div style={{ marginTop: 18, paddingTop: 14, borderTop: '1px solid #f0f0f0' }}>
+			<div style={{ marginTop: 18, paddingTop: 14, borderTop: `1px solid ${token.colorBorderSecondary}` }}>
 				<Flex justify="space-between" align="center">
 					<Text type="secondary" style={{ fontSize: 12 }}>
 						Inactive / Paused Accounts:

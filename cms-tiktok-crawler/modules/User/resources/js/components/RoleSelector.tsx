@@ -1,5 +1,6 @@
-import { Radio, Space, Typography, Tag, Card } from 'antd';
+import { Radio, Space, Typography, Tag, Card, theme } from 'antd';
 import { CrownOutlined, SafetyCertificateOutlined, ToolOutlined, EyeOutlined } from '@ant-design/icons';
+import { useTheme } from '@core/contexts/ThemeContext';
 import { ROLE_CONFIGS } from '../configs/userConstants';
 import type { UserRole } from '../Action/user';
 
@@ -13,6 +14,8 @@ interface RoleSelectorProps {
 }
 
 export default function RoleSelector({ value, onChange, availableRoles = [], disabled = false }: RoleSelectorProps) {
+	const { token } = theme.useToken();
+	const { isDark } = useTheme();
 	const selectedSlug = Array.isArray(value) ? value[0] || 'editor' : value || 'editor';
 
 	const getRoleIcon = (slug: string) => {
@@ -46,8 +49,8 @@ export default function RoleSelector({ value, onChange, availableRoles = [], dis
 							style={{
 								cursor: disabled ? 'not-allowed' : 'pointer',
 								borderRadius: 8,
-								border: isSelected ? `2px solid ${cfg.color}` : '1px solid #d9d9d9',
-								background: isSelected ? cfg.bg : '#ffffff',
+								border: isSelected ? `2px solid ${cfg.color}` : `1px solid ${token.colorBorder}`,
+								background: isSelected ? (isDark ? `${cfg.color}18` : cfg.bg) : token.colorBgContainer,
 								transition: 'all 0.2s',
 							}}
 						>

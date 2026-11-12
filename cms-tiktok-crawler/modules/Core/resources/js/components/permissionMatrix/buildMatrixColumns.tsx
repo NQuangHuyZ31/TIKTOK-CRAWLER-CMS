@@ -28,7 +28,7 @@ export function buildMatrixColumns({
 			width: 240,
 			render: (_: any, record: ModuleRow) => (
 				<Space size={8}>
-					<span style={{ color: '#1677ff', fontSize: 16 }}>{record.icon}</span>
+					<span style={{ color: '#EC008C', fontSize: 16 }}>{record.icon}</span>
 					<Text strong style={{ fontSize: 13 }}>
 						{record.label}
 					</Text>

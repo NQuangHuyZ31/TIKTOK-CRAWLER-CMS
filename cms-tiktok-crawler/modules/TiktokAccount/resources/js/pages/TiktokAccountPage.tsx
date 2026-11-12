@@ -84,7 +84,7 @@ export default function TiktokAccountPage() {
 			pagination={pagination}
 			onPageChange={(page, per_page) => dispatch(setParams({ page, per_page }))}
 			renderColumns={{
-				id: (id: any) => <span style={{ fontWeight: 500, color: '#1677ff' }}>#{id}</span>,
+				id: (id: any) => <span style={{ fontWeight: 500, color: '#EC008C' }}>#{id}</span>,
 				username: (_: any, record: TiktokAccountItem) => <AccountColumn username={record.username} nickname={record.nickname} imgPath={record.avatar_path} />,
 				status: (status: string, record: TiktokAccountItem) => (
 					<StatusDropdown status={status} module="tiktok_account" onChange={(newStatus) => handleStatusChange(record.id, newStatus)} options={TIKTOK_ACCOUNT_STATUS_CHANGE_OPTIONS} />

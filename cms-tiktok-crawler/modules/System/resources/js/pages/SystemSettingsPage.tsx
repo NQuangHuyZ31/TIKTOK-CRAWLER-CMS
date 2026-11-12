@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Card, Form, Tabs, message } from 'antd';
+import { Card, Form, Tabs, message, theme } from 'antd';
 import { HistoryOutlined, SettingOutlined } from '@ant-design/icons';
 import ListLayout from '@core/components/ListLayout';
 import { useAction } from '@core/hooks/useAction';
@@ -11,6 +11,7 @@ import WorkerSettingsForm, { CRON_PRESET_OPTIONS } from '../components/systemSet
 import CleanupHistoryTable from '../components/systemSettings/CleanupHistoryTable';
 
 export default function SystemSettingsPage() {
+	const { token } = theme.useToken();
 	const dispatch = useDispatch();
 	const { workerSettings, settingsLoading, settingsSaving, cleanupHistory } = useSelector((state) => state.system);
 
@@ -97,7 +98,7 @@ export default function SystemSettingsPage() {
 		>
 			<SystemSettingsKpis workerSettings={workerSettings} loading={settingsLoading} />
 
-			<Card styles={{ body: { padding: '16px 24px' } }} style={{ border: '1px solid #edf0f5', borderRadius: 8 }}>
+			<Card styles={{ body: { padding: '16px 24px' } }} style={{ border: `1px solid ${token.colorBorderSecondary}`, borderRadius: 8 }}>
 				<Tabs
 					activeKey={activeTab}
 					onChange={setActiveTab}

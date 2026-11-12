@@ -1,9 +1,10 @@
 import React from 'react';
 import type { MenuProps } from 'antd';
-import { Avatar, Button, Dropdown, Flex, Layout, Space, Typography } from 'antd';
-import { BookOutlined, DownOutlined, LogoutOutlined, MenuFoldOutlined, MenuOutlined, MenuUnfoldOutlined } from '@ant-design/icons';
+import { Avatar, Button, Dropdown, Flex, Layout, Space, Tooltip, Typography, theme } from 'antd';
+import { BookOutlined, DownOutlined, LogoutOutlined, MenuFoldOutlined, MenuUnfoldOutlined, MoonOutlined, SunOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { useLayout } from '../contexts/LayoutContext';
+import { useTheme } from '../contexts/ThemeContext';
 import { useCurrentRoute } from '../routes/registry';
 import useCurrentUser from '../hooks/useCurrentUser';
 
@@ -12,8 +13,10 @@ const { Text } = Typography;
 
 export default function Header() {
 	const navigate = useNavigate();
+	const { token } = theme.useToken();
+	const { isDark, toggleTheme } = useTheme();
 	const { user, initials, roleLabel, logout } = useCurrentUser();
-	const { collapsed, toggleCollapsed, toggleMobileDrawer, isMobile } = useLayout();
+	const { collapsed, toggleCollapsed, isMobile } = useLayout();
 	const currentRoute = useCurrentRoute();
 
 	const accountMenuItems: MenuProps['items'] = [{ key: 'logout', icon: <LogoutOutlined />, label: 'Sign out', danger: true }];
@@ -29,12 +32,12 @@ export default function Header() {
 	return (
 		<AntHeader
 			style={{
-				background: '#ffffff',
+				background: token.colorBgContainer,
 				padding: isMobile ? '0 14px' : '0 24px',
 				height: 70,
 				flexShrink: 0,
 				lineHeight: 'normal',
-				borderBottom: '1px solid #edf0f5',
+				borderBottom: `1px solid ${token.colorBorderSecondary}`,
 				display: 'flex',
 				alignItems: 'center',
 				justifyContent: 'space-between',
@@ -45,20 +48,38 @@ export default function Header() {
 				<Button
 					type="text"
 					shape="circle"
-					icon={collapsed ? <MenuUnfoldOutlined style={{ fontSize: 17, color: '#344054' }} /> : <MenuFoldOutlined style={{ fontSize: 17, color: '#344054' }} />}
+					icon={collapsed ? <MenuUnfoldOutlined style={{ fontSize: 17, color: token.colorText }} /> : <MenuFoldOutlined style={{ fontSize: 17, color: token.colorText }} />}
 					onClick={toggleCollapsed}
 					aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
 					style={{ width: 38, height: 38 }}
 				/>
 
-				<span style={{ fontWeight: 600, fontSize: 15, color: '#172033' }}>{headerTitle}</span>
+				<span style={{ fontWeight: 600, fontSize: 15, color: token.colorText }}>{headerTitle}</span>
 			</Flex>
 
-			{/* Right section: User profile & Logout dropdown */}
-			<Flex align="center" gap={isMobile ? 10 : 16}>
+			{/* Right section: Theme toggle, Guidelines & User profile */}
+			<Flex align="center" gap={isMobile ? 10 : 12}>
+				<Tooltip title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}>
+					<Button
+						type="default"
+						shape="circle"
+						icon={isDark ? <SunOutlined /> : <MoonOutlined />}
+						onClick={toggleTheme}
+						aria-label={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+						style={{
+							width: 38,
+							height: 38,
+							display: 'inline-flex',
+							alignItems: 'center',
+							justifyContent: 'center',
+							borderColor: token.colorBorder,
+						}}
+					/>
+				</Tooltip>
+
 				<Button
 					type="default"
-					icon={<BookOutlined style={{ color: '#1677ff' }} />}
+					icon={<BookOutlined style={{ color: token.colorPrimary }} />}
 					onClick={() => navigate('/guideline')}
 					style={{
 						height: 38,
@@ -66,7 +87,7 @@ export default function Header() {
 						fontSize: 13,
 						display: 'inline-flex',
 						alignItems: 'center',
-						borderColor: '#e2e8f0',
+						borderColor: token.colorBorder,
 					}}
 				>
 					{!isMobile && 'Guidelines & Docs'}
@@ -85,7 +106,7 @@ export default function Header() {
 							<Avatar
 								size={34}
 								style={{
-									background: 'linear-gradient(135deg, #1677ff 0%, #69b1ff 100%)',
+									background: 'linear-gradient(135deg, #EC008C 0%, #ff4da6 100%)',
 									color: '#ffffff',
 									fontWeight: 600,
 									fontSize: 13,
@@ -95,7 +116,7 @@ export default function Header() {
 							</Avatar>
 							{!isMobile && (
 								<span style={{ textAlign: 'left', lineHeight: 1.2 }}>
-									<Text strong style={{ display: 'block', color: '#172033', fontSize: 13 }}>
+									<Text strong style={{ display: 'block', color: token.colorText, fontSize: 13 }}>
 										{user?.name || 'Administrator'}
 									</Text>
 									<Text type="secondary" style={{ display: 'block', fontSize: 11 }}>
@@ -103,7 +124,7 @@ export default function Header() {
 									</Text>
 								</span>
 							)}
-							<DownOutlined style={{ fontSize: 10, color: '#98a2b3' }} />
+							<DownOutlined style={{ fontSize: 10, color: token.colorTextSecondary }} />
 						</Space>
 					</Button>
 				</Dropdown>

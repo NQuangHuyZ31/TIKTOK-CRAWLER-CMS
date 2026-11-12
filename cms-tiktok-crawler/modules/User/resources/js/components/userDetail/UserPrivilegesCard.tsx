@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card, Table, Tag, Typography, Space } from 'antd';
+import { Card, Table, Tag, Typography, Space, theme } from 'antd';
 import { CrownOutlined, SafetyCertificateOutlined, CheckCircleFilled, CloseCircleFilled } from '@ant-design/icons';
 import type { UserItem } from '../../Action/user';
 import type { RoleBadgeConfig } from '../../configs/userConstants';
@@ -12,6 +12,7 @@ export interface UserPrivilegesCardProps {
 }
 
 export default function UserPrivilegesCard({ user, roleCfg }: UserPrivilegesCardProps) {
+    const { token } = theme.useToken();
     const matrix = user.permissions_matrix || {};
 
     const matrixDataSource = Object.entries(matrix).map(([moduleKey, perm]: [string, any]) => ({
@@ -69,7 +70,7 @@ export default function UserPrivilegesCard({ user, roleCfg }: UserPrivilegesCard
             bordered={false}
             style={{
                 borderRadius: 12,
-                border: '1px solid #edf0f5',
+                border: `1px solid ${token.colorBorderSecondary}`,
                 height: '100%',
                 boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
             }}

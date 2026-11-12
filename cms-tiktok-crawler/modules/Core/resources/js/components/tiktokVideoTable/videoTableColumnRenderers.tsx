@@ -81,7 +81,7 @@ export function buildVideoColumnRenderers({ showDeltas, showAccount, showMusic }
 				</a>
 			),
 
-		play_count: (val: number, record: any) => renderStatWithDelta(val, showDeltas ? record.play_count_delta : undefined, <EyeOutlined style={{ color: '#1890ff' }} />),
+		play_count: (val: number, record: any) => renderStatWithDelta(val, showDeltas ? record.play_count_delta : undefined, <EyeOutlined style={{ color: '#EC008C' }} />),
 
 		digg_count: (val: number, record: any) => renderStatWithDelta(val, showDeltas ? record.digg_count_delta : undefined, <HeartOutlined style={{ color: '#ff4d4f' }} />),
 

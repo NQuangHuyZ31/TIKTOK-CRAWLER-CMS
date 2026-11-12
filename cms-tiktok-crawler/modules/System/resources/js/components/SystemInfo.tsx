@@ -35,7 +35,7 @@ export default function SystemInfo({ info, loading = false, onRefresh }: SystemI
 				</Col>
 
 				<Col span={24} sm={12} lg={6}>
-					<CardKPI title="Memory In Use" value={`${info?.memory_usage_mb ?? 0} MB`} icon={<DashboardOutlined />} color="#1677ff" subtext={`Limit: ${info?.memory_limit ?? 'N/A'}`} loading={loading} />
+					<CardKPI title="Memory In Use" value={`${info?.memory_usage_mb ?? 0} MB`} icon={<DashboardOutlined />} color="#EC008C" subtext={`Limit: ${info?.memory_limit ?? 'N/A'}`} loading={loading} />
 				</Col>
 			</Row>
 
@@ -43,7 +43,7 @@ export default function SystemInfo({ info, loading = false, onRefresh }: SystemI
 				title={
 					<Space style={{ width: '100%', justifyContent: 'space-between' }}>
 						<Space>
-							<CloudServerOutlined style={{ color: '#1677ff' }} />
+							<CloudServerOutlined style={{ color: '#EC008C' }} />
 							<Text strong>Environment & System Runtime Details</Text>
 						</Space>
 						<Button icon={<ReloadOutlined />} onClick={onRefresh} loading={loading} size="small">

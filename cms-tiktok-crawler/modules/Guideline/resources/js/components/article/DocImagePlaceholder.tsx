@@ -1,5 +1,5 @@
 import React from 'react';
-import { Image, Tag, Typography } from 'antd';
+import { Image, Tag, Typography, theme } from 'antd';
 import { CameraOutlined } from '@ant-design/icons';
 import type { DocScreenshot } from '../../types/docSchema';
 
@@ -10,6 +10,8 @@ interface DocImagePlaceholderProps {
 }
 
 export default function DocImagePlaceholder({ screenshot }: DocImagePlaceholderProps) {
+	const { token } = theme.useToken();
+
 	if (screenshot.src) {
 		return (
 			<div style={{ margin: '18px 0 24px', textAlign: 'center' }}>
@@ -37,15 +39,15 @@ export default function DocImagePlaceholder({ screenshot }: DocImagePlaceholderP
 			style={{
 				margin: '18px 0 24px',
 				padding: '16px 20px',
-				backgroundColor: '#fafafa',
-				border: '1px dashed #d9d9d9',
+				backgroundColor: token.colorFillAlter,
+				border: `1px dashed ${token.colorBorder}`,
 				borderRadius: 8,
 			}}
 		>
 			<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
 				<div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-					<CameraOutlined style={{ color: '#1677ff', fontSize: 16 }} />
-					<Text strong style={{ fontSize: 13, color: '#262626' }}>
+					<CameraOutlined style={{ color: token.colorPrimary, fontSize: 16 }} />
+					<Text strong style={{ fontSize: 13, color: token.colorText }}>
 						SCREENSHOT PLACEHOLDER
 					</Text>
 				</div>

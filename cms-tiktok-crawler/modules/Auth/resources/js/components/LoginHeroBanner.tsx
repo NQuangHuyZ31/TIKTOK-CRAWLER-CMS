@@ -41,12 +41,12 @@ export default function LoginHeroBanner() {
 							width: 44,
 							height: 44,
 							borderRadius: 12,
-							background: 'linear-gradient(135deg, #1677ff 0%, #06b6d4 100%)',
+							background: 'linear-gradient(135deg, #EC008C 0%, #6B217F 100%)',
 							display: 'flex',
 							alignItems: 'center',
 							justifyContent: 'center',
 							fontSize: 22,
-							boxShadow: '0 4px 14px rgba(22, 119, 255, 0.4)',
+							boxShadow: '0 4px 14px rgba(236, 0, 140, 0.4)',
 						}}
 					>
 						<RobotOutlined style={{ color: '#ffffff' }} />

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Alert, Button, Table, Typography, message } from 'antd';
+import { Alert, Button, Table, Typography, message, theme } from 'antd';
 import { CheckOutlined, CopyOutlined, ExportOutlined } from '@ant-design/icons';
 import type { DocBlock } from '../../types/docSchema';
 import DocImagePlaceholder from './DocImagePlaceholder';
@@ -11,6 +11,7 @@ interface DocBlockRendererProps {
 }
 
 export default function DocBlockRenderer({ blocks }: DocBlockRendererProps) {
+	const { token } = theme.useToken();
 	const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
 
 	const handleCopy = (code: string, idx: number) => {
@@ -27,7 +28,7 @@ export default function DocBlockRenderer({ blocks }: DocBlockRendererProps) {
 					case 'heading':
 						return (
 							<div key={idx} id={block.anchorId} style={{ scrollMarginTop: 80, marginTop: idx > 0 ? 12 : 0 }}>
-								<Title level={block.level} style={{ margin: 0, color: '#141414', fontWeight: 600 }}>
+								<Title level={block.level} style={{ margin: 0, color: token.colorText, fontWeight: 600 }}>
 									{block.text}
 								</Title>
 							</div>
@@ -35,7 +36,7 @@ export default function DocBlockRenderer({ blocks }: DocBlockRendererProps) {
 
 					case 'paragraph':
 						return (
-							<Paragraph key={idx} style={{ fontSize: 14, lineHeight: 1.8, color: '#333333', margin: 0 }}>
+							<Paragraph key={idx} style={{ fontSize: 14, lineHeight: 1.8, color: token.colorText, margin: 0 }}>
 								{block.text}
 							</Paragraph>
 						);
@@ -74,10 +75,10 @@ export default function DocBlockRenderer({ blocks }: DocBlockRendererProps) {
 									<div
 										key={step.stepNumber}
 										style={{
-											border: '1px solid #f0f0f0',
+											border: `1px solid ${token.colorBorderSecondary}`,
 											borderRadius: 8,
 											padding: '16px 20px',
-											backgroundColor: '#ffffff',
+											backgroundColor: token.colorBgContainer,
 										}}
 									>
 										<div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
@@ -86,7 +87,7 @@ export default function DocBlockRenderer({ blocks }: DocBlockRendererProps) {
 													width: 24,
 													height: 24,
 													borderRadius: '50%',
-													backgroundColor: '#1677ff',
+													backgroundColor: token.colorPrimary,
 													color: '#ffffff',
 													display: 'flex',
 													alignItems: 'center',
@@ -98,12 +99,12 @@ export default function DocBlockRenderer({ blocks }: DocBlockRendererProps) {
 											>
 												{step.stepNumber}
 											</div>
-											<Text strong style={{ fontSize: 14, color: '#141414' }}>
+											<Text strong style={{ fontSize: 14, color: token.colorText }}>
 												{step.title}
 											</Text>
 										</div>
 
-										<Paragraph style={{ margin: '0 0 10px 34px', fontSize: 13, color: '#434343', lineHeight: 1.7 }}>
+										<Paragraph style={{ margin: '0 0 10px 34px', fontSize: 13, color: token.colorTextSecondary, lineHeight: 1.7 }}>
 											{step.instruction}
 										</Paragraph>
 
@@ -202,13 +203,13 @@ export default function DocBlockRenderer({ blocks }: DocBlockRendererProps) {
 
 					case 'list':
 						return block.ordered ? (
-							<ol key={idx} style={{ paddingLeft: 22, margin: '4px 0', fontSize: 14, lineHeight: 1.8, color: '#333333' }}>
+							<ol key={idx} style={{ paddingLeft: 22, margin: '4px 0', fontSize: 14, lineHeight: 1.8, color: token.colorText }}>
 								{block.items.map((item, iIdx) => (
 									<li key={iIdx}>{item}</li>
 								))}
 							</ol>
 						) : (
-							<ul key={idx} style={{ paddingLeft: 22, margin: '4px 0', fontSize: 14, lineHeight: 1.8, color: '#333333' }}>
+							<ul key={idx} style={{ paddingLeft: 22, margin: '4px 0', fontSize: 14, lineHeight: 1.8, color: token.colorText }}>
 								{block.items.map((item, iIdx) => (
 									<li key={iIdx}>{item}</li>
 								))}

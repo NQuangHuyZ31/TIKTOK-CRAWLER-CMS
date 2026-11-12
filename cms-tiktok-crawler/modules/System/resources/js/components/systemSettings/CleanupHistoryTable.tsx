@@ -43,7 +43,7 @@ const historyColumns: TableColumn<CleanupHistoryItem>[] = [
 		dataIndex: 'purged_count',
 		key: 'purged_count',
 		width: 130,
-		render: (val: number) => <Text style={{ color: '#1677ff', fontWeight: 600 }}>{val?.toLocaleString() ?? 0} rows</Text>,
+		render: (val: number) => <Text style={{ color: '#EC008C', fontWeight: 600 }}>{val?.toLocaleString() ?? 0} rows</Text>,
 	},
 	{
 		title: 'Activity Logs',
