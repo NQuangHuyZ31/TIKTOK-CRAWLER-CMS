@@ -14,7 +14,7 @@ use Laravel\Sanctum\HasApiTokens;
 use Modules\Core\Traits\HasRolesAndPermissions;
 use Modules\System\Traits\LogsActivity;
 
-#[Fillable(['name', 'email', 'password', 'phone', 'avatar', 'status', 'is_admin', 'permission_type', 'google_id', 'google2fa_secret', 'google2fa_enabled'])]
+#[Fillable(['name', 'email', 'auth_type', 'password', 'phone', 'avatar', 'status', 'is_admin', 'permission_type', 'google_id', 'google2fa_secret', 'google2fa_enabled'])]
 #[Hidden(['password', 'remember_token', 'google2fa_secret'])]
 class User extends Authenticatable
 {
@@ -40,6 +40,7 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
+            'auth_type' => 'string',
             'password' => 'hashed',
             'is_admin' => 'boolean',
             'permission_type' => 'string',
@@ -107,6 +108,14 @@ class User extends Authenticatable
     public function syncRoles(array $roleIds): array
     {
         return $this->auditSync('roles', $roleIds, 'name', action: 'ROLE_CHANGE');
+    }
+
+    /**
+     * Determine whether this account authenticates via Google OAuth.
+     */
+    public function isGoogleAccount(): bool
+    {
+        return $this->auth_type === 'google' || !empty($this->google_id) || (bool) $this->google2fa_enabled;
     }
 
     /**

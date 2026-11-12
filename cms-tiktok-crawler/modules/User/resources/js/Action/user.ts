@@ -27,6 +27,8 @@ export interface UserItem {
     avatar?: string;
     avatar_url?: string;
     status: 'active' | 'inactive' | 'blocked';
+    auth_type?: 'password' | 'google';
+    google_id?: string | null;
     email_verified_at?: string;
     google2fa_enabled: boolean;
     is_admin: boolean;

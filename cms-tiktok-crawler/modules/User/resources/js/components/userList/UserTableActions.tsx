@@ -15,6 +15,8 @@ export interface UserTableActionsProps {
 
 export default function UserTableActions({ record, currentUserId, onDelete, onResetPassword, onResetAuthencation2FA }: UserTableActionsProps) {
 	const isSelf = currentUserId === record.id;
+	const isGoogleAccount = record.auth_type === 'google' || Boolean(record.google_id) || Boolean(record.google2fa_enabled);
+	const resetPasswordDisabled = isSelf || isGoogleAccount;
 
 	return (
 		<Space size={4}>
@@ -50,9 +52,10 @@ export default function UserTableActions({ record, currentUserId, onDelete, onRe
 					okText="Reset"
 					cancelText="Cancel"
 					okButtonProps={{ danger: true }}
+					disabled={resetPasswordDisabled}
 				>
-					<Tooltip title="Reset Password">
-						<Button type="text" size="small" icon={<KeyOutlined />} disabled={isSelf || !record.google2fa_enabled} />
+					<Tooltip title={isGoogleAccount ? 'Reset Password (Not available for Google login accounts)' : 'Reset Password'}>
+						<Button type="text" size="small" icon={<KeyOutlined />} disabled={resetPasswordDisabled} />
 					</Tooltip>
 				</Popconfirm>
 			</PermissionGate>

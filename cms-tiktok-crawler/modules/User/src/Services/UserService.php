@@ -37,10 +37,18 @@ class UserService
                 }
             }
 
+            $authType = $data['auth_type'] ?? (!empty($data['password']) ? 'password' : 'google');
+            if ($authType === 'password' && empty($data['password'])) {
+                $authType = 'google';
+            }
+
             $userData = [
                 'name' => $data['name'],
                 'email' => $data['email'],
-                'password' => !empty($data['password']) ? Hash::make($data['password']) : Hash::make(Str::random(10)),
+                'auth_type' => $authType,
+                'password' => ($authType === 'password' && !empty($data['password']))
+                    ? Hash::make($data['password'])
+                    : Hash::make(Str::random(16)),
                 'phone' => $data['phone'] ?? null,
                 'avatar' => $data['avatar'] ?? null,
                 'status' => $data['status'] ?? 'active',
@@ -91,11 +99,12 @@ class UserService
         $this->assertNotDemotingLastAdmin($targetUser, $data);
 
         return DB::transaction(function () use ($targetUser, $data) {
-            $allowed = ['name', 'email', 'phone', 'avatar', 'status', 'is_admin', 'permission_type'];
+            $allowed = ['name', 'email', 'auth_type', 'phone', 'avatar', 'status', 'is_admin', 'permission_type'];
             $updateData = array_intersect_key($data, array_flip($allowed));
 
             if (!empty($data['password'])) {
                 $updateData['password'] = Hash::make($data['password']);
+                $updateData['auth_type'] ??= 'password';
             }
             if (array_key_exists('is_admin', $updateData)) {
                 $updateData['is_admin'] = (bool) $updateData['is_admin'];
@@ -375,6 +384,10 @@ class UserService
         $user = $this->userRepository->findById($id, []);
         if (!$user) {
             throw new InvalidArgumentException('User account not found.');
+        }
+
+        if ($user->isGoogleAccount()) {
+            throw new InvalidArgumentException('Password reset is not available for Google login accounts.');
         }
 
         $this->authService->sendPasswordResetLink($user, auth()->user()?->email ?? 'admin');

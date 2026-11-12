@@ -5,6 +5,7 @@ namespace Modules\User\Http\Requests;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
+use Illuminate\Validation\Rule;
 
 class StoreUserRequest extends FormRequest
 {
@@ -25,8 +26,15 @@ class StoreUserRequest extends FormRequest
     {
         return [
             'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users,email',
-            'password' => 'string|min:6',
+            'email' => [
+                'required',
+                'string',
+                'email',
+                'max:255',
+                Rule::unique('users', 'email')->whereNull('deleted_at'),
+            ],
+            'auth_type' => 'nullable|string|in:password,google',
+            'password' => 'nullable|string|min:6',
             'phone' => 'nullable|string|max:20',
             'avatar' => 'nullable|string|max:255',
             'status' => 'nullable|string|in:active,inactive,blocked',
