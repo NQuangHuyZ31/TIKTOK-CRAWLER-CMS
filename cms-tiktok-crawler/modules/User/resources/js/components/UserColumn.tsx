@@ -1,5 +1,5 @@
 import React from 'react';
-import { Avatar, Space, Typography } from 'antd';
+import { Avatar, Space, theme, Typography } from 'antd';
 import { UserOutlined } from '@ant-design/icons';
 import { Link } from 'react-router-dom';
 
@@ -13,6 +13,7 @@ interface UserColumnProps {
 }
 
 export default function UserColumn({ id, name, email, avatarUrl }: UserColumnProps) {
+	const { token } = theme.useToken();
 	const getInitials = (str: string) => {
 		const parts = str.trim().split(' ');
 		if (parts.length >= 2) {
@@ -43,7 +44,7 @@ export default function UserColumn({ id, name, email, avatarUrl }: UserColumnPro
 						to={`/user/${id}`}
 						style={{
 							fontWeight: 600,
-							color: '#1f2937',
+							color: token.colorPrimary,
 							fontSize: 14,
 						}}
 					>

@@ -23,3 +23,21 @@ Detailed Workflow: [`docs/development/git-workflow.md`](file:///E:/Urekamedia/TI
 - Merging to `main` ONLY creates a **Draft Release** (`auto-draft-release.yml`, `draft: true`).
 - Production deploy to Render (`deploy.yml`) triggers ONLY when a human reviews and clicks **"Publish release"** on GitHub.
 - Agents MUST NEVER publish releases or trigger production deployments.
+
+
+## 5. Auto-Evaluate, Branch Switch & Commit Protocol
+
+| Task Intent | Target Branch | Commit Prefix |
+|---|---|---|
+| New feature / module / API / UI | `feature` | `feat(scope): ...` |
+| Bug / build / Docker / UI / API fix | `fix` | `fix(scope): ...` |
+| Urgent production fix | `hotfix` | `fix(scope): ...` |
+| Code restructure (no behavior change) | `refactor` | `refactor(scope): ...` |
+| Tests only | `test` | `test(scope): ...` |
+| Config / deps / docs / CI / tooling | `chore` | `chore\|docs\|ci(scope): ...` |
+
+1. **Inspect & Guard**: Run `git status --short` and `git branch --show-current`. If unrelated uncommitted changes exist, **STOP and ask**.
+2. **Declare in Plan**: State the evaluated target branch in the Plan (per `AGENTS.md` approval gate).
+3. **Switch**: After approval, if not on target branch: `git fetch origin` -> `git checkout <branch>` (or `git checkout -b <branch> origin/main` if missing; never `git checkout -B`).
+4. **Code & Verify**: Implement approved scope only; run applicable quality gates (`check-types`, `artisan test` / `pytest`, `verify-workflow.ps1`).
+5. **Commit & Push**: Stage explicit files only (no `git add .`, no manifests/`.env`), commit in English, and `git push -u origin <branch>` (never `main`).
