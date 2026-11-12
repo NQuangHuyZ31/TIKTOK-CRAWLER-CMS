@@ -29,6 +29,8 @@ class UserResource extends JsonResource
             'avatar' => $this->avatar,
             'avatar_url' => $avatarUrl,
             'status' => $this->status ?? 'active',
+            'auth_type' => $this->isGoogleAccount() ? 'google' : ($this->auth_type ?? 'password'),
+            'google_id' => $this->google_id,
             'email_verified_at' => $this->email_verified_at?->toIso8601String(),
             'google2fa_enabled' => $this->google2fa_enabled ?? false,
             'is_admin' => (bool) ($this->is_admin ?? false) || $this->hasRole('admin'),

@@ -285,4 +285,109 @@ class UserModuleTest extends TestCase
             ],
         ]);
     }
+
+    /**
+     * Test API: Creating a Google OAuth user marks auth_type as google and blocks password reset.
+     */
+    public function test_google_user_blocks_reset_password_and_password_login(): void
+    {
+        $createResponse = $this->actingAs($this->adminUser)->postJson($this->apiUri(), [
+            'name' => 'Google User',
+            'email' => 'google_only@test.com',
+            'auth_type' => 'google',
+            'status' => 'active',
+            'roles' => ['editor'],
+        ]);
+
+        $createResponse->assertStatus(201);
+        $createResponse->assertJsonPath('data.auth_type', 'google');
+        $googleUserId = $createResponse->json('data.id');
+
+        $resetResponse = $this->actingAs($this->adminUser)->postJson(
+            $this->apiUri("{$googleUserId}/reset-password")
+        );
+        $resetResponse->assertStatus(422);
+        $resetResponse->assertJsonPath('status', 'error');
+
+        $adminPath = trim((string) config('admin.admin_path', 'admin'), '/') ?: 'admin';
+        $loginResponse = $this->postJson("/{$adminPath}/api/auth/login", [
+            'email' => 'google_only@test.com',
+            'password' => 'anything123',
+        ]);
+        $loginResponse->assertStatus(401);
+        $loginResponse->assertJsonPath('status', 'error');
+    }
+
+    /**
+     * Test API: Password-based user can trigger reset password email.
+     */
+    public function test_password_user_allows_reset_password(): void
+    {
+        \Illuminate\Support\Facades\Queue::fake();
+
+        $createResponse = $this->actingAs($this->adminUser)->postJson($this->apiUri(), [
+            'name' => 'Password User',
+            'email' => 'password_user@test.com',
+            'auth_type' => 'password',
+            'password' => 'secret123',
+            'status' => 'active',
+            'roles' => ['editor'],
+        ]);
+
+        $createResponse->assertStatus(201);
+        $createResponse->assertJsonPath('data.auth_type', 'password');
+        $passwordUserId = $createResponse->json('data.id');
+
+        $resetResponse = $this->actingAs($this->adminUser)->postJson(
+            $this->apiUri("{$passwordUserId}/reset-password")
+        );
+        $resetResponse->assertStatus(200);
+        $resetResponse->assertJsonPath('status', 'success');
+    }
+
+    /**
+     * Test API: Soft-deleted user's email can be reused, while active user's email stays unique.
+     */
+    public function test_deleted_user_email_can_be_reused_while_active_email_remains_unique(): void
+    {
+        $email = 'reusable@test.com';
+
+        // 1. Create initial user
+        $firstRes = $this->actingAs($this->adminUser)->postJson($this->apiUri(), [
+            'name' => 'First User',
+            'email' => $email,
+            'auth_type' => 'google',
+            'status' => 'active',
+            'roles' => ['editor'],
+        ]);
+        $firstRes->assertStatus(201);
+        $firstId = $firstRes->json('data.id');
+
+        // 2. Duplicate while active is rejected (422)
+        $dupRes = $this->actingAs($this->adminUser)->postJson($this->apiUri(), [
+            'name' => 'Duplicate Active',
+            'email' => $email,
+            'auth_type' => 'google',
+            'status' => 'active',
+            'roles' => ['editor'],
+        ]);
+        $dupRes->assertStatus(422);
+
+        // 3. Soft-delete first user
+        $delRes = $this->actingAs($this->adminUser)->deleteJson($this->apiUri((string) $firstId));
+        $delRes->assertStatus(200);
+        $this->assertSoftDeleted('users', ['id' => $firstId]);
+
+        // 4. Recreate with the exact same email succeeds (201)
+        $recreateRes = $this->actingAs($this->adminUser)->postJson($this->apiUri(), [
+            'name' => 'Recreated User',
+            'email' => $email,
+            'auth_type' => 'google',
+            'status' => 'active',
+            'roles' => ['editor'],
+        ]);
+        $recreateRes->assertStatus(201);
+        $recreateRes->assertJsonPath('data.email', $email);
+        $this->assertNotEquals($firstId, $recreateRes->json('data.id'));
+    }
 }

@@ -32,6 +32,10 @@ class AuthService
         $user = $this->userRepository->findByEmail($data['email']);
         $logData = $this->buildLogData($user, $data['email'], $ipAddress, $userAgent);
 
+        if ($user && $user->isGoogleAccount()) {
+            $this->logAndFail($logData, 'google_account_only', ['email' => ['This account uses Google Sign-In. Please sign in with Google.']]);
+        }
+
         $dummyHash = '$2y$10$abcdefghijklmnopqrstuuABCDEFGHIJKLMNOPQRSTUVWXYZ012';
         if (!$user || !Hash::check($data['password'], $user->password ?? $dummyHash)) {
             $this->logAndFail($logData, 'invalid_credentials', ['email' => ['The provided credentials do not match our records.']]);
@@ -165,6 +169,10 @@ class AuthService
         $user = $this->userRepository->findByEmail($email);
         if (!$user) {
             throw new InvalidArgumentException('User account not found.');
+        }
+
+        if ($user->isGoogleAccount()) {
+            throw new InvalidArgumentException('Password reset is not available for Google login accounts. Please sign in with Google.');
         }
 
         $this->sendPasswordResetLink($user, 'user');
@@ -311,6 +319,7 @@ class AuthService
             'avatar' => $user->avatar,
             'status' => $user->status,
             'is_admin' => $user->isAdmin(),
+            'auth_type' => $user->isGoogleAccount() ? 'google' : ($user->auth_type ?? 'password'),
             'google_id' => $user->google_id,
             'google2fa_enabled' => (bool) $user->google2fa_enabled,
             'roles' => $user->getRolesSlugs(),

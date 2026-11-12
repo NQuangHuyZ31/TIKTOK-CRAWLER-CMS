@@ -80,8 +80,13 @@ class JobRunner:
         )
 
         done_accounts = await self.store.get_done_accounts(job_id)
-        parsed_targets = [parse_target_entry(t) for t in job.targets]
-        parsed_targets = [(u, url) for u, url in parsed_targets if u]
+        seen_targets: set[str] = set()
+        parsed_targets: list[tuple[str, str]] = []
+        for t in job.targets:
+            u, url = parse_target_entry(t)
+            if u and u.lower() not in seen_targets:
+                seen_targets.add(u.lower())
+                parsed_targets.append((u, url))
 
         total_accounts = len(parsed_targets)
         success_count = len(done_accounts)
@@ -105,7 +110,51 @@ class JobRunner:
         current_batch_end = 0
 
         try:
-            while target_idx < len(parsed_targets):
+            while True:
+                if target_idx >= len(parsed_targets):
+                    processed_count = success_count + failed_count
+                    if stop_event.is_set() and processed_count < requested_goal:
+                        logger.info(
+                            "[Job #%d] [Worker %s] Graceful stop requested during top-up (%d/%d).",
+                            job_id,
+                            worker_id,
+                            processed_count,
+                            requested_goal,
+                        )
+                        return "interrupted"
+
+                    if not self.candidate_repo or processed_count >= requested_goal:
+                        break
+
+                    added = await self._try_top_up(
+                        job_id=job_id,
+                        worker_id=worker_id,
+                        parsed_targets=parsed_targets,
+                        done_accounts=done_accounts,
+                        needed=requested_goal - processed_count,
+                        requested_goal=requested_goal,
+                        processed_count=processed_count,
+                    )
+                    if added > 0:
+                        refill_attempts = 0
+                        total_accounts = max(total_accounts, len(parsed_targets))
+                        continue
+
+                    if refill_attempts < 3 and not stop_event.is_set():
+                        refill_attempts += 1
+                        logger.info(
+                            "[Job #%d] [Worker %s] Waiting for Discovery Worker refill (attempt %d/3, current: %d/%d)...",
+                            job_id,
+                            worker_id,
+                            refill_attempts,
+                            processed_count,
+                            requested_goal,
+                        )
+                        await asyncio.sleep(5.0)
+                        continue
+
+                    break
+
                 # Dynamically lease/lock fresh candidates in chunks of 20 to avoid database locking overhead
                 # and prevent starvation for other concurrent jobs
                 if self.candidate_repo and target_idx >= current_batch_end:
@@ -120,7 +169,7 @@ class JobRunner:
                 username, profile_url = parsed_targets[target_idx]
                 target_idx += 1
                 index = target_idx
-    
+
                 if stop_event.is_set():
                     logger.info(
                         "[Job #%d] [Worker %s] Graceful stop requested; pausing before @%s",
@@ -129,7 +178,7 @@ class JobRunner:
                         username,
                     )
                     return "interrupted"
-    
+
                 current_record = await self.store.get_job(job_id)
                 if current_record is None or current_record.status == "cancelled":
                     logger.info(
@@ -138,10 +187,10 @@ class JobRunner:
                         worker_id,
                     )
                     return "cancelled"
-    
+
                 if username.lower() in done_accounts:
                     continue
-    
+
                 logger.info(
                     "[Job #%d] [Worker %s] [%d/%d] Crawling @%s (%s)...",
                     job_id,
@@ -151,7 +200,7 @@ class JobRunner:
                     username,
                     profile_url,
                 )
-    
+
                 outcome = await self._crawl_with_timeout(
                     job_id=job_id,
                     worker_id=worker_id,
@@ -161,7 +210,7 @@ class JobRunner:
                     date_from=getattr(job, "date_from", None),
                     date_to=getattr(job, "date_to", None),
                 )
-    
+
                 if outcome.status == "success" and outcome.account is not None:
                     acc = outcome.account
                     avatar_info = "yes" if outcome.avatar and outcome.avatar.content_base64 else "no"
@@ -190,9 +239,9 @@ class JobRunner:
                         outcome.error_code or "UNKNOWN",
                         outcome.error_message or "Unknown error",
                     )
-    
+
                 await self._deliver_account_outcome(job, outcome)
-    
+
                 await self.store.mark_account_done(job_id, username)
                 done_accounts.add(username.lower())
                 if self.candidate_repo:
@@ -200,7 +249,7 @@ class JobRunner:
                         self.candidate_repo.mark_candidate_crawled_and_released(username, job_id=job.job_id)
                     except Exception as e:
                         logger.debug(f"Failed to update candidate_pool crawl status for @{username}: {e}")
-    
+
                 if outcome.status == "success":
                     success_count += 1
                     if self.frontier_repo:
@@ -232,48 +281,9 @@ class JobRunner:
                             logger.debug(f"Error harvesting discovery mentions from @{username}: {fe}")
                 else:
                     failed_count += 1
-    
-                # Dynamic Continuous Top-up check (Solution 1)
-                # If we reached the end of currently parsed targets but haven't reached requested_goal:
-                if target_idx >= len(parsed_targets) and self.candidate_repo and len(parsed_targets) < requested_goal:
-                    needed = requested_goal - len(parsed_targets)
-                    already_known = {u.lower() for u, _ in parsed_targets}.union(done_accounts)
-                    new_batch = self.candidate_repo.sample_targets_balanced(
-                        count=needed,
-                        exclude=list(already_known),
-                        allow_fallback=True,
-                        job_id=job.job_id,
-                    )
-                    if new_batch:
-                        refill_attempts = 0
-                        logger.info(
-                            "[Job #%d] [Worker %s] Dynamic Top-up: Discovered +%d new targets to reach goal %d (%d/%d)",
-                            job_id,
-                            worker_id,
-                            len(new_batch),
-                            requested_goal,
-                            len(parsed_targets) + len(new_batch),
-                            requested_goal,
-                        )
-                        await self.store.append_job_targets(job_id, new_batch)
-                        for nb in new_batch:
-                            parsed_entry = parse_target_entry(nb)
-                            if parsed_entry[0]:
-                                parsed_targets.append(parsed_entry)
-                        total_accounts = len(parsed_targets)
-                    elif refill_attempts < 3 and not stop_event.is_set():
-                        refill_attempts += 1
-                        logger.info(
-                            "[Job #%d] [Worker %s] Waiting for Discovery Worker refill (attempt %d/3, current: %d/%d)...",
-                            job_id,
-                            worker_id,
-                            refill_attempts,
-                            len(parsed_targets),
-                            requested_goal,
-                        )
-                        await asyncio.sleep(5.0)
-    
-            final_total = max(len(parsed_targets), requested_goal)
+
+            processed_count = success_count + failed_count
+            final_total = max(processed_count, len(parsed_targets)) if processed_count >= requested_goal else processed_count
             await self.laravel_client.send_completed(
                 job_id=job_id,
                 status="completed",
@@ -284,7 +294,7 @@ class JobRunner:
                 callback_token=job.callback_token,
             )
             await self.store.mark_finished(job_id, status="completed")
-    
+
             logger.info(
                 "[Job #%d] [Worker %s] Completed (total=%d, success=%d, failed=%d)",
                 job_id,
@@ -300,6 +310,53 @@ class JobRunner:
                     self.candidate_repo.release_unfinished_assignments(job.job_id)
                 except Exception as re:
                     logger.debug(f"Error releasing unfinished assignments for job {job_id}: {re}")
+
+    async def _try_top_up(
+        self,
+        job_id: int,
+        worker_id: str,
+        parsed_targets: list[tuple[str, str]],
+        done_accounts: set[str],
+        needed: int,
+        requested_goal: int,
+        processed_count: int,
+    ) -> int:
+        """Fetch, validate, deduplicate, and append up to `needed` fresh targets."""
+        if not self.candidate_repo or needed <= 0:
+            return 0
+
+        already_known = {u.lower() for u, _ in parsed_targets}.union(done_accounts)
+        new_batch = self.candidate_repo.sample_targets_balanced(
+            count=needed,
+            exclude=list(already_known),
+            allow_fallback=True,
+            job_id=job_id,
+        )
+        valid_entries: list[tuple[str, str]] = []
+        raw_to_append: list[str] = []
+        for nb in new_batch or []:
+            parsed_entry = parse_target_entry(nb)
+            uname = parsed_entry[0]
+            if uname and uname.lower() not in already_known:
+                already_known.add(uname.lower())
+                valid_entries.append(parsed_entry)
+                raw_to_append.append(nb)
+
+        if not valid_entries:
+            return 0
+
+        logger.info(
+            "[Job #%d] [Worker %s] Dynamic Top-up: Discovered +%d new targets to reach goal %d (%d/%d)",
+            job_id,
+            worker_id,
+            len(valid_entries),
+            requested_goal,
+            processed_count + len(valid_entries),
+            requested_goal,
+        )
+        await self.store.append_job_targets(job_id, raw_to_append)
+        parsed_targets.extend(valid_entries)
+        return len(valid_entries)
 
     async def _crawl_with_timeout(
         self,

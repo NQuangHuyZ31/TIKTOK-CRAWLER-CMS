@@ -540,9 +540,9 @@ class CandidateRepository(BaseRepository):
                 (now,),
             )
             hist_candidates = [
-                row[0]
+                norm
                 for row in cursor.fetchall()
-                if row[0] not in exclude_set and bool(re.match(r"^[a-zA-Z0-9_.]{2,24}$", row[0]))
+                if (norm := normalize_username(row[0]).lower()) and norm not in exclude_set and bool(re.match(r"^[a-zA-Z0-9_.]{2,24}$", norm))
             ]
 
             # 2. Fetch eligible fresh discovery candidates (excluding candidates actively locked by any job)
@@ -565,8 +565,8 @@ class CandidateRepository(BaseRepository):
             fresh_candidates: List[str] = []
             fresh_candidate_ids: Dict[str, str] = {}
             for row in fresh_rows:
-                u, cid = row[0], row[1]
-                if u not in exclude_set and bool(re.match(r"^[a-zA-Z0-9_.]{2,24}$", u)):
+                u, cid = normalize_username(row[0]).lower(), row[1]
+                if u and u not in exclude_set and bool(re.match(r"^[a-zA-Z0-9_.]{2,24}$", u)):
                     if u not in fresh_candidate_ids:
                         fresh_candidate_ids[u] = cid
                         fresh_candidates.append(u)
@@ -605,14 +605,14 @@ class CandidateRepository(BaseRepository):
                     ORDER BY priority DESC, created_at_ms ASC;
                     """
                 )
-                bootstrap = [row[0] for row in cursor.fetchall() if row[0] not in exclude_set]
+                bootstrap = [b_norm for row in cursor.fetchall() if (b_norm := normalize_username(row[0]).lower()) and b_norm not in exclude_set and bool(re.match(r"^[a-zA-Z0-9_.]{2,24}$", b_norm))]
                 total_selected = bootstrap[:count]
 
             seen: set[str] = set()
             result: list[str] = []
             for u in total_selected:
-                if u not in seen:
-                    seen.add(u)
+                if (u_key := u.lower()) not in seen:
+                    seen.add(u_key)
                     result.append(u)
                     if len(result) >= count:
                         break

@@ -35,6 +35,7 @@ export default function UserFormPage() {
 			form.resetFields();
 			form.setFieldsValue({
 				status: 'active',
+				auth_type: 'password',
 				permission_type: 'role',
 				roles: ['editor'],
 				permissions: [],
@@ -73,7 +74,11 @@ export default function UserFormPage() {
 			permissions: !isRoleMode ? values.permissions || [] : [],
 		};
 
-		if (values.password) {
+		if (!isEdit) {
+			payload.auth_type = values.auth_type || 'password';
+		}
+
+		if (values.auth_type !== 'google' && values.password) {
 			payload.password = values.password;
 		}
 
@@ -124,6 +129,7 @@ export default function UserFormPage() {
 				onFinish={handleSubmit}
 				initialValues={{
 					status: 'active',
+					auth_type: 'password',
 					permission_type: 'role',
 					roles: ['editor'],
 				}}

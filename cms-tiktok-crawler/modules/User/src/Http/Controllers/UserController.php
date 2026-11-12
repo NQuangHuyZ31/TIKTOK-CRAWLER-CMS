@@ -144,6 +144,8 @@ class UserController extends BaseController
         try {
             $this->userService->sendMailResetPassword($id);
             return $this->respondSuccess(null, 'Reset password email sent successfully.');
+        } catch (InvalidArgumentException $e) {
+            return $this->respondError($e->getMessage(), 422);
         } catch (\Throwable $e) {
             return $this->respondError($e->getMessage(), 400);
         }
