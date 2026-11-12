@@ -1,5 +1,14 @@
 <?php
     $module = $module ?? 'Core';
+    $hiddenModules = [];
+    try {
+        $rawHidden = app(\Modules\System\Services\SystemSettingService::class)->getSetting('hidden_modules', []);
+        if (is_array($rawHidden)) {
+            $hiddenModules = array_values(array_filter($rawHidden, fn ($m) => is_string($m) && !in_array($m, ['core', 'auth', 'system'], true)));
+        }
+    } catch (\Throwable) {
+        $hiddenModules = [];
+    }
 ?>
 
 <!DOCTYPE html>
@@ -9,6 +18,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <script>
+        window.__CMS_HIDDEN_MODULES__ = @json($hiddenModules);
+    </script>
     <title>{{ config('app.name', 'CMS TikTok Crawler') }}{{ $module !== 'Core' ? ' - ' . $module : '' }}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

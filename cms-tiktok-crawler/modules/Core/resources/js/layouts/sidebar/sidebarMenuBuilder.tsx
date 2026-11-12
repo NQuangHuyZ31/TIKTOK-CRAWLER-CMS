@@ -39,6 +39,7 @@ export function buildSidebarMenuItems({
 	routes,
 	isAdmin,
 	can,
+	hiddenModules = [],
 	pathname,
 	collapsed,
 	navigate,
@@ -47,12 +48,14 @@ export function buildSidebarMenuItems({
 	routes: RouteDef[];
 	isAdmin: boolean;
 	can: (params: any) => boolean;
+	hiddenModules?: readonly string[];
 	pathname: string;
 	collapsed: boolean;
 	navigate: NavigateFunction;
 	setOpenKeys: React.Dispatch<React.SetStateAction<string[]>>;
 }): any[] {
 	const isAccessible = (route: RouteDef): boolean => {
+		if (route.module && hiddenModules.includes(route.module.toLowerCase())) return false;
 		if (isAdmin) return true;
 		return can({ role: route.roles, slug: route.slug, module: route.module, action: route.action || 'view' });
 	};
