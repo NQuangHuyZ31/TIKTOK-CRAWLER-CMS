@@ -37,11 +37,17 @@ class PermissionService
     /**
      * Retrieve unique module names.
      *
+     * @param bool $ignore If true, filter out modules in config('modules.ignore_group')
      * @return array<string>
      */
-    public function getModules(): array
+    public function getModules(bool $ignore = false): array
     {
-        return $this->permissionRepository->getDistinctModules();
+        $all = array_values(array_unique(array_merge(
+            $this->permissionRepository->getDistinctModules(),
+            config('modules.modules', [])
+        )));
+
+        return $ignore ? array_values(array_diff($all, config('modules.ignore_group', []))) : $all;
     }
 
     /**

@@ -1,20 +1,19 @@
 import React, { useEffect, useMemo } from 'react';
-import { Button, Space } from 'antd';
-import { AppstoreAddOutlined, PlusOutlined } from '@ant-design/icons';
+import { Button } from 'antd';
+import { PlusOutlined } from '@ant-design/icons';
 import ListLayout, { type DynamicFilterField } from '@core/components/ListLayout';
 import useAction from '@core/hooks/useAction';
 import { useDispatch, useSelector } from '@core/store';
 import { deletePermission, type PermissionItem } from '../Action/permission';
-import { setParams, resetParams, setCreateModuleModalOpen, setCreatePermissionModalOpen } from '../store/permission/permissionSlice';
+import { setParams, resetParams, setCreatePermissionModalOpen } from '../store/permission/permissionSlice';
 import { fetchPermissions, fetchDistinctModules } from '../store/permission/permissionThunks';
-import CreateModuleModal from '../components/CreateModuleModal';
 import CreatePermissionModal from '../components/CreatePermissionModal';
 import PermissionTableList from '../components/PermissionTableList';
 import { COMMON_PERMISSION_ACTIONS } from '../configs/permissionOptions';
 
 export default function PermissionsPage() {
 	const dispatch = useDispatch();
-	const { data: permissions, modulesList, loading, pagination, params, createPermissionModalOpen, createModuleModalOpen } = useSelector((state) => state.permission);
+	const { data: permissions, modulesList, loading, pagination, params, createPermissionModalOpen } = useSelector((state) => state.permission);
 
 	const { execute: handleDelete } = useAction((permission: PermissionItem) => deletePermission(permission.id), {
 		successMessage: (_res, permission) => `Permission '${permission.slug || permission.name}' deleted successfully.`,
@@ -72,14 +71,9 @@ export default function PermissionsPage() {
 	}, [modulesList, params.module, params.action, dispatch]);
 
 	const headerActions = (
-		<Space>
-			<Button icon={<AppstoreAddOutlined />} onClick={() => dispatch(setCreateModuleModalOpen(true))}>
-				Create Module
-			</Button>
-			<Button type="primary" icon={<PlusOutlined />} onClick={() => dispatch(setCreatePermissionModalOpen(true))}>
-				Create Permission
-			</Button>
-		</Space>
+		<Button type="primary" icon={<PlusOutlined />} onClick={() => dispatch(setCreatePermissionModalOpen(true))}>
+			Create Permission
+		</Button>
 	);
 
 	return (
@@ -104,15 +98,6 @@ export default function PermissionsPage() {
 			>
 				<PermissionTableList data={permissions} loading={loading} pagination={pagination} onPageChange={handlePageChange} onDelete={handleDelete} />
 			</ListLayout>
-
-			<CreateModuleModal
-				open={createModuleModalOpen}
-				onClose={() => dispatch(setCreateModuleModalOpen(false))}
-				onSuccess={() => {
-					dispatch(fetchPermissions(params));
-					dispatch(fetchDistinctModules());
-				}}
-			/>
 
 			<CreatePermissionModal
 				open={createPermissionModalOpen}

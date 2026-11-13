@@ -46,10 +46,10 @@ export const getGroupedPermissions = () =>
 /**
  * Fetch unique module names.
  * API: GET /permission/permission/distinct-modules
- * Example: getDistinctModules()
+ * Example: getDistinctModules({ ignore: true })
  */
-export const getDistinctModules = () =>
-    api<{ status: string; data: string[] }>(`${baseURL}/distinct-modules`);
+export const getDistinctModules = (params?: { ignore?: boolean }) =>
+    api<{ status: string; data: string[] }>(`${baseURL}/distinct-modules`, { params });
 
 /**
  * Create a single permission.
