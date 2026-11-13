@@ -31,7 +31,9 @@ class CrawlJobService
     {
         $sourceType = $data['source_type'] ?? 'usernames';
         $crawlMode = $data['crawl_mode'] ?? 'account_with_videos';
-        $maxVideosPerAccount = isset($data['max_videos_per_account']) ? (int) $data['max_videos_per_account'] : 20;
+        $maxVideosPerAccount = ($crawlMode === 'account_only')
+            ? 0
+            : (isset($data['max_videos_per_account']) ? (int) $data['max_videos_per_account'] : 20);
         $dataCrawl = $data['data_crawl'] ?? [];
 
         if (is_string($dataCrawl)) {
@@ -45,13 +47,29 @@ class CrawlJobService
             default => count($dataCrawl),
         };
 
+        $dateFrom = $data['date_from'] ?? null;
+        $dateTo = $data['date_to'] ?? null;
+        $targetDate = $data['target_date'] ?? null;
+
+        if ($targetDate && empty($dateFrom) && empty($dateTo)) {
+            $tz = 'Asia/Ho_Chi_Minh';
+            $td = strtolower(trim((string) $targetDate));
+            if ($td === 'today') {
+                $dateFrom = now($tz)->startOfDay()->utc()->toISOString();
+                $dateTo = now($tz)->endOfDay()->utc()->toISOString();
+            } elseif ($td === 'yesterday') {
+                $dateFrom = now($tz)->subDay()->startOfDay()->utc()->toISOString();
+                $dateTo = now($tz)->subDay()->endOfDay()->utc()->toISOString();
+            }
+        }
+
         return $this->crawlJobRepository->create([
             'source_type' => $sourceType,
             'crawl_mode' => $crawlMode,
             'max_videos_per_account' => $maxVideosPerAccount,
-            'target_date' => $data['target_date'] ?? null,
-            'date_from' => $data['date_from'] ?? null,
-            'date_to' => $data['date_to'] ?? null,
+            'target_date' => $targetDate,
+            'date_from' => $dateFrom,
+            'date_to' => $dateTo,
             'data_crawls' => json_encode($dataCrawl),
             'total_accounts' => $totalAccounts,
             'status' => 'pending',
@@ -90,12 +108,27 @@ class CrawlJobService
             $updateData['crawl_mode'] = $data['crawl_mode'];
         }
 
-        if (isset($data['max_videos_per_account'])) {
+        $effectiveCrawlMode = $updateData['crawl_mode'] ?? $job->crawl_mode;
+        if ($effectiveCrawlMode === 'account_only') {
+            $updateData['max_videos_per_account'] = 0;
+        } elseif (isset($data['max_videos_per_account'])) {
             $updateData['max_videos_per_account'] = max(0, min(100, (int) $data['max_videos_per_account']));
         }
 
         if (array_key_exists('target_date', $data)) {
             $updateData['target_date'] = $data['target_date'];
+            $targetDate = $data['target_date'];
+            if ($targetDate && empty($data['date_from']) && empty($data['date_to'])) {
+                $tz = 'Asia/Ho_Chi_Minh';
+                $td = strtolower(trim((string) $targetDate));
+                if ($td === 'today') {
+                    $updateData['date_from'] = now($tz)->startOfDay()->utc()->toISOString();
+                    $updateData['date_to'] = now($tz)->endOfDay()->utc()->toISOString();
+                } elseif ($td === 'yesterday') {
+                    $updateData['date_from'] = now($tz)->subDay()->startOfDay()->utc()->toISOString();
+                    $updateData['date_to'] = now($tz)->subDay()->endOfDay()->utc()->toISOString();
+                }
+            }
         }
 
         if (array_key_exists('date_from', $data)) {
@@ -540,7 +573,7 @@ class CrawlJobService
         }
 
         $crawlMode = $crawlJob->crawl_mode ?? 'account_with_videos';
-        $maxVideos = (int) ($crawlJob->max_videos_per_account ?? 20);
+        $maxVideos = ($crawlMode === 'account_only') ? 0 : (int) ($crawlJob->max_videos_per_account ?? 20);
 
         if ($crawlJob->source_type === 'database') {
             $usernames = $this->tiktokAccountRepository->getUsernamesByIds($data);
@@ -592,11 +625,26 @@ class CrawlJobService
         if (!empty($crawlJob->target_date)) {
             $payload['target_date'] = (string) $crawlJob->target_date;
         }
-        if (!empty($crawlJob->date_from)) {
-            $payload['date_from'] = is_string($crawlJob->date_from) ? $crawlJob->date_from : $crawlJob->date_from->toISOString();
+
+        $effectiveDateFrom = $crawlJob->date_from;
+        $effectiveDateTo = $crawlJob->date_to;
+        if (empty($effectiveDateFrom) && empty($effectiveDateTo) && !empty($crawlJob->target_date)) {
+            $tz = 'Asia/Ho_Chi_Minh';
+            $td = strtolower(trim((string) $crawlJob->target_date));
+            if ($td === 'today') {
+                $effectiveDateFrom = now($tz)->startOfDay()->utc()->toISOString();
+                $effectiveDateTo = now($tz)->endOfDay()->utc()->toISOString();
+            } elseif ($td === 'yesterday') {
+                $effectiveDateFrom = now($tz)->subDay()->startOfDay()->utc()->toISOString();
+                $effectiveDateTo = now($tz)->subDay()->endOfDay()->utc()->toISOString();
+            }
         }
-        if (!empty($crawlJob->date_to)) {
-            $payload['date_to'] = is_string($crawlJob->date_to) ? $crawlJob->date_to : $crawlJob->date_to->toISOString();
+
+        if (!empty($effectiveDateFrom)) {
+            $payload['date_from'] = is_string($effectiveDateFrom) ? $effectiveDateFrom : $effectiveDateFrom->toISOString();
+        }
+        if (!empty($effectiveDateTo)) {
+            $payload['date_to'] = is_string($effectiveDateTo) ? $effectiveDateTo : $effectiveDateTo->toISOString();
         }
 
         return $payload;

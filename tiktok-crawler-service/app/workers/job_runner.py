@@ -206,7 +206,7 @@ class JobRunner:
                     worker_id=worker_id,
                     username=username,
                     profile_url=profile_url,
-                    max_videos=job.max_videos_per_account,
+                    max_videos=0 if getattr(job, "crawl_mode", None) == "account_only" else job.max_videos_per_account,
                     date_from=getattr(job, "date_from", None),
                     date_to=getattr(job, "date_to", None),
                 )
