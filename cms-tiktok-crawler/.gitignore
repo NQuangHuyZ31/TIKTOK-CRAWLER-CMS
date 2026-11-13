@@ -40,4 +40,5 @@ public/mix-manifest.json
 public/tiktok-accounts/avatars/*
 !public/tiktok-accounts/avatars/khaby.lame.jpg
 note.txt
+tests/Feature/ModuleEntrypointDomTest.php
 
