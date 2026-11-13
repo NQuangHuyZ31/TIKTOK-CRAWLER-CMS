@@ -1,0 +1,24 @@
+{
+	"name": "cms-tiktok-crawler/module-module-manager",
+	"description": "Module management and scaffolding for CMS TikTok Crawler",
+	"version": "1.0.0",
+	"type": "library",
+	"require": {
+		"php": "^8.3",
+		"laravel/framework": "^13.17",
+		"cms-tiktok-crawler/module-core": "1.0.0"
+	},
+	"autoload": {
+		"psr-4": {
+			"Modules\\ModuleManager\\": "src/"
+		}
+	},
+	"extra": {
+		"laravel": {
+			"providers": [
+				"Modules\\ModuleManager\\Providers\\ModuleManagerServiceProvider"
+			]
+		}
+	},
+	"minimum-stability": "stable"
+}

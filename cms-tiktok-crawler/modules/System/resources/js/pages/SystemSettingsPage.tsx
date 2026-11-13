@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Card, Form, Tabs, message, theme } from 'antd';
-import { AppstoreOutlined, HistoryOutlined, SettingOutlined } from '@ant-design/icons';
+import { HistoryOutlined, SettingOutlined } from '@ant-design/icons';
 import ListLayout from '@core/components/ListLayout';
 import { useAction } from '@core/hooks/useAction';
 import { useDispatch, useSelector } from '@core/store';
@@ -9,7 +9,6 @@ import { runLogCleanup } from '../Action/systemSetting';
 import SystemSettingsKpis from '../components/systemSettings/SystemSettingsKpis';
 import WorkerSettingsForm, { CRON_PRESET_OPTIONS } from '../components/systemSettings/WorkerSettingsForm';
 import CleanupHistoryTable from '../components/systemSettings/CleanupHistoryTable';
-import ModuleVisibilitySettings from '../components/systemSettings/ModuleVisibilitySettings';
 
 export default function SystemSettingsPage() {
 	const { token } = theme.useToken();
@@ -132,15 +131,6 @@ export default function SystemSettingsPage() {
 								</span>
 							),
 							children: <CleanupHistoryTable cleanupHistory={cleanupHistory} loading={settingsLoading} onRefresh={() => dispatch(fetchWorkerSettings('worker'))} />,
-						},
-						{
-							key: 'modules',
-							label: (
-								<span>
-									<AppstoreOutlined /> Module Visibility
-								</span>
-							),
-							children: <ModuleVisibilitySettings />,
 						},
 					]}
 				/>

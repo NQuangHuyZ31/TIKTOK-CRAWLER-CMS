@@ -34,10 +34,6 @@ export interface CleanupResult {
 	duration_sec: number;
 }
 
-export interface ModuleVisibilitySettingsData {
-	hidden_modules?: string[];
-}
-
 export const getSystemSettings = <T = WorkerSettings>(group: string = 'worker') =>
 	api<{ status: string; data: { group: string; settings: T } }>(
 		'/system/system-setting',
