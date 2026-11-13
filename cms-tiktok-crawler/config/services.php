@@ -39,7 +39,6 @@ return [
         'url' => env('CRAWLER_SERVICE_URL', 'http://127.0.0.1:8001'),
         'token' => env('CRAWLER_TOKEN', env('CRAWLER_SERVICE_TOKEN')),
         'secret' => env('CRAWLER_HMAC_SECRET'),
-        'timezone' => env('CRAWLER_TIMEZONE', 'Asia/Ho_Chi_Minh'),
     ],
 
     'google' => [

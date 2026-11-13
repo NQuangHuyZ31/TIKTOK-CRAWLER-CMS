@@ -605,15 +605,14 @@ class CrawlJobService
         $toStr = !empty($dateTo) ? (is_string($dateTo) ? $dateTo : $dateTo->toISOString()) : null;
 
         if ($targetDate && empty($fromStr) && empty($toStr)) {
-            $tz = config('services.crawler.timezone', 'Asia/Ho_Chi_Minh');
             $td = strtolower(trim($targetDate));
 
             if ($td === 'today') {
-                $fromStr = now($tz)->startOfDay()->utc()->toISOString();
-                $toStr = now($tz)->endOfDay()->utc()->toISOString();
+                $fromStr = now()->startOfDay()->utc()->toISOString();
+                $toStr = now()->endOfDay()->utc()->toISOString();
             } elseif ($td === 'yesterday') {
-                $fromStr = now($tz)->subDay()->startOfDay()->utc()->toISOString();
-                $toStr = now($tz)->subDay()->endOfDay()->utc()->toISOString();
+                $fromStr = now()->subDay()->startOfDay()->utc()->toISOString();
+                $toStr = now()->subDay()->endOfDay()->utc()->toISOString();
             }
         }
 
