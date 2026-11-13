@@ -34,6 +34,7 @@ export default function CrawlJobFormFields({ form, isEdit, record }: ResourceFor
 		if (isReadOnly) return;
 		form.setFieldsValue({
 			crawl_mode: mode,
+			max_videos_per_account: mode === 'account_only' ? 0 : (Number(form.getFieldValue('max_videos_per_account')) || 20),
 			...(mode === 'video_only' ? { source_type: 'urls' } : {}),
 		});
 	};

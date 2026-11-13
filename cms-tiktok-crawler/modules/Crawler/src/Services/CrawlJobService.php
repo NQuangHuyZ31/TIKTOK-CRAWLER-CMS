@@ -31,27 +31,21 @@ class CrawlJobService
     {
         $sourceType = $data['source_type'] ?? 'usernames';
         $crawlMode = $data['crawl_mode'] ?? 'account_with_videos';
-        $maxVideosPerAccount = isset($data['max_videos_per_account']) ? (int) $data['max_videos_per_account'] : 20;
-        $dataCrawl = $data['data_crawl'] ?? [];
+        $maxVideosPerAccount = ($crawlMode === 'account_only')
+            ? 0
+            : (isset($data['max_videos_per_account']) ? (int) $data['max_videos_per_account'] : 20);
 
-        if (is_string($dataCrawl)) {
-            $decoded = json_decode($dataCrawl, true);
-            $dataCrawl = is_array($decoded) ? $decoded : [$dataCrawl];
-        }
-
-        $totalAccounts = match ($sourceType) {
-            'usernames', 'urls', 'database' => count($dataCrawl),
-            'count' => (int) ($dataCrawl[0] ?? $data['total_accounts'] ?? 0),
-            default => count($dataCrawl),
-        };
+        $dataCrawl = $this->parseDataCrawls($data['data_crawl'] ?? []);
+        $totalAccounts = $this->calculateTotalAccounts($sourceType, $dataCrawl, (int) ($data['total_accounts'] ?? 0));
+        [$dateFrom, $dateTo] = $this->resolveDateRange($data['target_date'] ?? null, $data['date_from'] ?? null, $data['date_to'] ?? null);
 
         return $this->crawlJobRepository->create([
             'source_type' => $sourceType,
             'crawl_mode' => $crawlMode,
             'max_videos_per_account' => $maxVideosPerAccount,
             'target_date' => $data['target_date'] ?? null,
-            'date_from' => $data['date_from'] ?? null,
-            'date_to' => $data['date_to'] ?? null,
+            'date_from' => $dateFrom,
+            'date_to' => $dateTo,
             'data_crawls' => json_encode($dataCrawl),
             'total_accounts' => $totalAccounts,
             'status' => 'pending',
@@ -90,38 +84,34 @@ class CrawlJobService
             $updateData['crawl_mode'] = $data['crawl_mode'];
         }
 
-        if (isset($data['max_videos_per_account'])) {
+        $effectiveCrawlMode = $updateData['crawl_mode'] ?? $job->crawl_mode;
+        if ($effectiveCrawlMode === 'account_only') {
+            $updateData['max_videos_per_account'] = 0;
+        } elseif (isset($data['max_videos_per_account'])) {
             $updateData['max_videos_per_account'] = max(0, min(100, (int) $data['max_videos_per_account']));
         }
 
         if (array_key_exists('target_date', $data)) {
             $updateData['target_date'] = $data['target_date'];
         }
-
         if (array_key_exists('date_from', $data)) {
             $updateData['date_from'] = $data['date_from'];
         }
-
         if (array_key_exists('date_to', $data)) {
             $updateData['date_to'] = $data['date_to'];
         }
 
-        if (isset($data['data_crawl'])) {
-            $dataCrawl = $data['data_crawl'];
-            if (is_string($dataCrawl)) {
-                $decoded = json_decode($dataCrawl, true);
-                $dataCrawl = is_array($decoded) ? $decoded : [$dataCrawl];
-            }
+        if (array_key_exists('target_date', $data) && empty($data['date_from']) && empty($data['date_to'])) {
+            [$updateData['date_from'], $updateData['date_to']] = $this->resolveDateRange($updateData['target_date']);
+        }
 
+        if (isset($data['data_crawl'])) {
+            $dataCrawl = $this->parseDataCrawls($data['data_crawl']);
             $sourceType = $data['source_type'] ?? $job->source_type;
             $this->validateDataCrawlForSourceType($sourceType, $dataCrawl);
 
             $updateData['data_crawls'] = json_encode($dataCrawl);
-            $updateData['total_accounts'] = match ($sourceType) {
-                'usernames', 'urls', 'database' => count($dataCrawl),
-                'count' => (int) ($dataCrawl[0] ?? $job->total_accounts),
-                default => count($dataCrawl),
-            };
+            $updateData['total_accounts'] = $this->calculateTotalAccounts($sourceType, $dataCrawl, (int) $job->total_accounts);
         }
 
         if (!empty($updateData)) {
@@ -493,11 +483,7 @@ class CrawlJobService
         $items = [];
 
         foreach ($jobs as $job) {
-            $raw = $job->data_crawls;
-            $targets = is_array($raw) ? $raw : json_decode((string) $raw, true);
-            if (!is_array($targets)) {
-                $targets = [];
-            }
+            $targets = $this->parseDataCrawls($job->data_crawls);
 
             if ($job->source_type === 'database' && !empty($targets)) {
                 $targets = $this->tiktokAccountRepository->getUsernamesByIds($targets);
@@ -532,15 +518,14 @@ class CrawlJobService
      */
     protected function buildCrawlerPayload(int $jobId, CrawlJob $crawlJob): array
     {
-        $raw = $crawlJob->data_crawls;
-        $data = is_array($raw) ? $raw : json_decode((string) $raw, true);
+        $data = $this->parseDataCrawls($crawlJob->data_crawls);
 
-        if (!is_array($data) || empty($data)) {
+        if (empty($data)) {
             throw new \InvalidArgumentException('Crawl job data is empty or invalid.');
         }
 
         $crawlMode = $crawlJob->crawl_mode ?? 'account_with_videos';
-        $maxVideos = (int) ($crawlJob->max_videos_per_account ?? 20);
+        $maxVideos = ($crawlMode === 'account_only') ? 0 : (int) ($crawlJob->max_videos_per_account ?? 20);
 
         if ($crawlJob->source_type === 'database') {
             $usernames = $this->tiktokAccountRepository->getUsernamesByIds($data);
@@ -592,14 +577,71 @@ class CrawlJobService
         if (!empty($crawlJob->target_date)) {
             $payload['target_date'] = (string) $crawlJob->target_date;
         }
-        if (!empty($crawlJob->date_from)) {
-            $payload['date_from'] = is_string($crawlJob->date_from) ? $crawlJob->date_from : $crawlJob->date_from->toISOString();
+
+        [$dateFrom, $dateTo] = $this->resolveDateRange(
+            $crawlJob->target_date,
+            $crawlJob->date_from,
+            $crawlJob->date_to
+        );
+
+        if ($dateFrom) {
+            $payload['date_from'] = $dateFrom;
         }
-        if (!empty($crawlJob->date_to)) {
-            $payload['date_to'] = is_string($crawlJob->date_to) ? $crawlJob->date_to : $crawlJob->date_to->toISOString();
+        if ($dateTo) {
+            $payload['date_to'] = $dateTo;
         }
 
         return $payload;
+    }
+
+    /**
+     * Resolve effective [date_from, date_to] ISO strings from target_date if dates are omitted.
+     *
+     * @return array{0: ?string, 1: ?string}
+     */
+    protected function resolveDateRange(?string $targetDate, mixed $dateFrom = null, mixed $dateTo = null): array
+    {
+        $fromStr = !empty($dateFrom) ? (is_string($dateFrom) ? $dateFrom : $dateFrom->toISOString()) : null;
+        $toStr = !empty($dateTo) ? (is_string($dateTo) ? $dateTo : $dateTo->toISOString()) : null;
+
+        if ($targetDate && empty($fromStr) && empty($toStr)) {
+            $td = strtolower(trim($targetDate));
+
+            if ($td === 'today') {
+                $fromStr = now()->startOfDay()->utc()->toISOString();
+                $toStr = now()->endOfDay()->utc()->toISOString();
+            } elseif ($td === 'yesterday') {
+                $fromStr = now()->subDay()->startOfDay()->utc()->toISOString();
+                $toStr = now()->subDay()->endOfDay()->utc()->toISOString();
+            }
+        }
+
+        return [$fromStr, $toStr];
+    }
+
+    /**
+     * Safely parse data_crawls value from array, JSON string, or scalar into an array.
+     */
+    protected function parseDataCrawls(mixed $data): array
+    {
+        if (is_array($data)) {
+            return $data;
+        }
+        if (is_string($data)) {
+            $decoded = json_decode($data, true);
+            return is_array($decoded) ? $decoded : [$data];
+        }
+        return [];
+    }
+
+    /**
+     * Calculate total accounts based on source type and parsed data crawls.
+     */
+    protected function calculateTotalAccounts(string $sourceType, array $dataCrawl, int $fallback = 0): int
+    {
+        return $sourceType === 'count'
+            ? (int) ($dataCrawl[0] ?? $fallback)
+            : count($dataCrawl);
     }
 
     /**

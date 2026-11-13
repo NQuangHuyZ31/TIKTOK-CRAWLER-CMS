@@ -151,13 +151,16 @@ async def fetch_creator_videos_paginated(
                     continue
 
                 is_in_range = True
-                if vid.published_at:
-                    if dt_to and vid.published_at > dt_to:
+                if dt_from or dt_to:
+                    if not vid.published_at:
                         is_in_range = False
-                    if dt_from and vid.published_at < dt_from:
-                        is_in_range = False
-                        if not vid.is_pinned:
-                            early_stop = True
+                    else:
+                        if dt_to and vid.published_at > dt_to:
+                            is_in_range = False
+                        if dt_from and vid.published_at < dt_from:
+                            is_in_range = False
+                            if not vid.is_pinned:
+                                early_stop = True
 
                 if is_in_range and vid.video_id not in videos:
                     videos[vid.video_id] = vid

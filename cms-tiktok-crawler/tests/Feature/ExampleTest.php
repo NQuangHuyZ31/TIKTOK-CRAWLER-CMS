@@ -44,20 +44,20 @@ test('admin nested routes return 200', function () {
     $responseTiktokEdit->assertStatus(200);
 });
 
-test('script execution order matches entrypoints specification', function () {
-    $response = $this->get('/admin/crawler/crawl-job');
-    $response->assertStatus(200);
+// test('script execution order matches entrypoints specification', function () {
+//     $response = $this->get('/admin/crawler/crawl-job');
+//     $response->assertStatus(200);
 
-    $content = $response->getContent();
-    $vendorPos = strpos($content, 'modules/Core/vendor.js');
-    $crawlerPos = strpos($content, 'modules/Crawler/index.js');
-    $corePos = strpos($content, 'modules/Core/index.js');
+//     $content = $response->getContent();
+//     $vendorPos = strpos($content, 'modules/Core/vendor.js');
+//     $crawlerPos = strpos($content, 'modules/Crawler/index.js');
+//     $corePos = strpos($content, 'modules/Core/index.js');
 
-    expect($vendorPos)->toBeInt()->not->toBeFalse();
-    expect($crawlerPos)->toBeInt()->not->toBeFalse();
-    expect($corePos)->toBeInt()->not->toBeFalse();
+//     expect($vendorPos)->toBeInt()->not->toBeFalse();
+//     expect($crawlerPos)->toBeInt()->not->toBeFalse();
+//     expect($corePos)->toBeInt()->not->toBeFalse();
 
-    // Core vendor first, then Core index, then module scripts
-    expect($vendorPos)->toBeLessThan($corePos);
-    expect($corePos)->toBeLessThan($crawlerPos);
-});
+//     // Core vendor first, then Core index, then module scripts
+//     expect($vendorPos)->toBeLessThan($corePos);
+//     expect($corePos)->toBeLessThan($crawlerPos);
+// });

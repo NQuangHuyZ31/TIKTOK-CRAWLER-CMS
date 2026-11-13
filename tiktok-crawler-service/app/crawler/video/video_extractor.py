@@ -89,6 +89,8 @@ async def fetch_account_videos(
     if not clean_username:
         return []
 
+    has_date_filter = bool(date_from or date_to)
+
     # Tier 1: Primary Cursor-Paginated Creator API (supports 20, 50, 100+ videos with full stats)
     if sec_uid:
         try:
@@ -102,7 +104,7 @@ async def fetch_account_videos(
                 date_from=date_from,
                 date_to=date_to,
             )
-            if api_videos:
+            if has_date_filter or api_videos:
                 return api_videos[:max_videos]
         except Exception as exc:
             logger.debug("Tier 1 API pagination skipped for @%s: %s", clean_username, exc)

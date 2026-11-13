@@ -69,6 +69,8 @@ class CrawlRequest(BaseModel):
             )
 
         self.source_type = selected[0]
+        if self.crawl_mode == "account_only":
+            self.max_videos_per_account = 0
         self.callback_url = normalize_callback_url(self.callback_url)
         self.callback_token = self.callback_token or CRAWLER_TOKEN
         return self

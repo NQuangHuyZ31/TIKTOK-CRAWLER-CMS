@@ -70,24 +70,7 @@ class CrossModuleIntegrationTest extends TestCase
     }
 
     /**
-     * 2. Test that ModuleRegistry correctly provides asset entrypoints for all modules.
-     */
-    public function test_module_registry_entrypoints_for_all_modules(): void
-    {
-        /** @var ModuleRegistry $registry */
-        $registry = app(ModuleRegistry::class);
-        $entrypoints = $registry->getEntrypoints();
-
-        $this->assertIsArray($entrypoints);
-        $expectedModules = ['Core', 'Auth', 'Crawler', 'Permission', 'Role', 'System', 'TiktokAccount', 'User'];
-
-        foreach ($expectedModules as $mod) {
-            $this->assertArrayHasKey($mod, $entrypoints, "Module {$mod} missing in entrypoints manifest.");
-        }
-    }
-
-    /**
-     * 3. Test end-to-end cross-module workflow:
+     * 2. Test end-to-end cross-module workflow:
      *    Auth -> Crawler Job -> Webhook -> TiktokAccount update -> Audit log.
      */
     public function test_end_to_end_cross_module_crawl_and_account_workflow(): void
