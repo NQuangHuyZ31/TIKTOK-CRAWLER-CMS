@@ -1,7 +1,7 @@
-import { useMemo, useSyncExternalStore } from 'react';
-import { useRoutes, type RouteDef } from './registry';
-
-export const PROTECTED_MODULES = ['core', 'auth', 'system', 'guideline'] as const;
+import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
+import { useRoutes } from './registry';
+import { toHeadlineCase } from '../utils/formatString';
+import { getDistinctModules } from '@modules/Permission/resources/js/Action/permission';
 
 export interface ToggleableModuleInfo {
 	key: string;
@@ -10,6 +10,7 @@ export interface ToggleableModuleInfo {
 	routeCount: number;
 	description?: string;
 	order: number;
+	isProtected: boolean;
 }
 
 type VisibilityState = {
@@ -17,13 +18,24 @@ type VisibilityState = {
 	listeners: Set<() => void>;
 };
 
+export const getProtectedModules = (): string[] => {
+	const w = window as unknown as { __CMS_CONFIG__?: { protectedModules?: string[] } };
+	return w.__CMS_CONFIG__?.protectedModules ?? ['core', 'auth', 'system', 'module_manager'];
+};
+
+export function isProtectedModule(moduleName?: string): boolean {
+	if (!moduleName) return false;
+	const clean = moduleName.trim().toLowerCase();
+	return getProtectedModules().map((m) => m.toLowerCase()).includes(clean);
+}
+
 const normalizeList = (list: unknown): string[] => {
 	if (!Array.isArray(list)) return [];
 	const set = new Set<string>();
 	for (const item of list) {
 		if (typeof item === 'string') {
 			const clean = item.trim().toLowerCase();
-			if (clean && !(PROTECTED_MODULES as readonly string[]).includes(clean)) {
+			if (clean && !isProtectedModule(clean)) {
 				set.add(clean);
 			}
 		}
@@ -33,13 +45,15 @@ const normalizeList = (list: unknown): string[] => {
 
 const getState = (): VisibilityState => {
 	const w = window as unknown as {
+		__CMS_CONFIG__?: { hiddenModules?: unknown };
 		__CMS_HIDDEN_MODULES__?: unknown;
 		__CMS_MODULE_VISIBILITY_STATE__?: VisibilityState;
 	};
 
 	if (!w.__CMS_MODULE_VISIBILITY_STATE__) {
+		const initial = w.__CMS_CONFIG__?.hiddenModules ?? w.__CMS_HIDDEN_MODULES__;
 		w.__CMS_MODULE_VISIBILITY_STATE__ = {
-			hiddenModules: normalizeList(w.__CMS_HIDDEN_MODULES__),
+			hiddenModules: normalizeList(initial),
 			listeners: new Set(),
 		};
 	}
@@ -72,7 +86,7 @@ export function setHiddenModules(modules: string[]): void {
 export function isModuleHidden(moduleName?: string, hiddenList: readonly string[] = getHiddenModules()): boolean {
 	if (!moduleName) return false;
 	const clean = moduleName.trim().toLowerCase();
-	if ((PROTECTED_MODULES as readonly string[]).includes(clean)) return false;
+	if (isProtectedModule(clean)) return false;
 	return hiddenList.includes(clean);
 }
 
@@ -80,56 +94,48 @@ export function useHiddenModules(): readonly string[] {
 	return useSyncExternalStore(subscribeModuleVisibility, () => getState().hiddenModules);
 }
 
-const formatModuleKey = (key: string): string =>
-	key
-		.split(/[_-]+/)
-		.filter(Boolean)
-		.map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-		.join(' ');
-
 /**
- * Auto-discovers toggleable modules from the registered route registry.
- * Protected core modules (core, auth, system) are excluded.
+ * Auto-discovers modules from backend distinctModules merged with registered route registry.
+ * Protected core modules configured in backend are marked with `isProtected: true`.
+ * If `ignore: true`, filters out ignored modules defined in config('modules.ignore_group').
  */
-export function useToggleableModules(): ToggleableModuleInfo[] {
+export function useToggleableModules(ignore: boolean = false): ToggleableModuleInfo[] {
 	const routes = useRoutes();
+	const [distinctKeys, setDistinctKeys] = useState<string[]>([]);
+
+	useEffect(() => {
+		let isMounted = true;
+		getDistinctModules({ ignore })
+			.then((res) => {
+				if (isMounted && Array.isArray(res?.data)) {
+					setDistinctKeys(res.data);
+				}
+			})
+			.catch(() => {});
+
+		return () => {
+			isMounted = false;
+		};
+	}, [ignore]);
 
 	return useMemo(() => {
-		const grouped = new Map<string, RouteDef[]>();
+		const routeKeys = Array.from(new Set(routes.map((r) => r.module?.toLowerCase()).filter(Boolean))) as string[];
+		const allKeys = Array.from(new Set([...distinctKeys, ...routeKeys]));
 
-		for (const route of routes) {
-			if (!route.module) continue;
-			const key = route.module.trim().toLowerCase();
-			if (!key || (PROTECTED_MODULES as readonly string[]).includes(key)) continue;
-
-			const list = grouped.get(key) ?? [];
-			list.push(route);
-			grouped.set(key, list);
-		}
-
-		const result: ToggleableModuleInfo[] = [];
-
-		grouped.forEach((modRoutes, key) => {
-			const sorted = [...modRoutes].sort((a, b) => {
-				const aHasLabel = a.label ? 0 : 1;
-				const bHasLabel = b.label ? 0 : 1;
-				if (aHasLabel !== bHasLabel) return aHasLabel - bHasLabel;
-				return (a.order ?? 100) - (b.order ?? 100);
-			});
-
-			const primary = sorted[0];
-			const metaDesc = typeof primary.meta?.description === 'string' ? primary.meta.description : undefined;
-
-			result.push({
-				key,
-				name: primary.label || primary.title || formatModuleKey(key),
-				path: primary.path,
-				routeCount: modRoutes.length,
-				description: metaDesc,
-				order: primary.order ?? 100,
-			});
-		});
-
-		return result.sort((a, b) => a.order - b.order || a.name.localeCompare(b.name));
-	}, [routes]);
+		return allKeys
+			.map((key) => {
+				const modRoutes = routes.filter((r) => r.module?.toLowerCase() === key.toLowerCase());
+				const primary = modRoutes[0];
+				return {
+					key,
+					name: primary?.label || primary?.title || toHeadlineCase(key),
+					path: primary?.path || '#',
+					routeCount: modRoutes.length,
+					description: primary?.meta?.description as string | undefined,
+					order: primary?.order ?? 100,
+					isProtected: isProtectedModule(key),
+				};
+			})
+			.sort((a, b) => a.order - b.order || a.name.localeCompare(b.name));
+	}, [routes, distinctKeys]);
 }

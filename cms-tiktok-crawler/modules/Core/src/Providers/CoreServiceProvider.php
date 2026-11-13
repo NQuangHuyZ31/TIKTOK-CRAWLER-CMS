@@ -23,8 +23,38 @@ class CoreServiceProvider extends ServiceProvider
             return new ModuleRegistry(config('modules.path'), config('modules.disabled', []));
         });
 
+        // Ensure newly scaffolded modules can be autoloaded without composer dump-autoload
+        $this->registerModuleAutoloader();
+
         // Auto-register any custom module providers if they exist
         $this->registerModuleProviders();
+    }
+
+    /**
+     * Register a lightweight PSR-4 fallback autoloader for Modules\* namespaces.
+     */
+    protected function registerModuleAutoloader(): void
+    {
+        spl_autoload_register(function (string $class): void {
+            if (!str_starts_with($class, 'Modules\\')) {
+                return;
+            }
+
+            $relative = substr($class, strlen('Modules\\'));
+            $parts = explode('\\', $relative, 2);
+            if (count($parts) !== 2) {
+                return;
+            }
+
+            [$moduleName, $subClass] = $parts;
+            $baseDir = base_path(trim((string) config('modules.path', 'modules'), '/'));
+            $file = $baseDir . DIRECTORY_SEPARATOR . $moduleName . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR
+                . str_replace('\\', DIRECTORY_SEPARATOR, $subClass) . '.php';
+
+            if (is_file($file)) {
+                require_once $file;
+            }
+        });
     }
 
     /**

@@ -26,7 +26,6 @@ export interface PermissionState {
         [key: string]: any;
     };
     createPermissionModalOpen: boolean;
-    createModuleModalOpen: boolean;
 }
 
 const initialState: PermissionState = {
@@ -46,7 +45,6 @@ const initialState: PermissionState = {
         search: '',
     },
     createPermissionModalOpen: false,
-    createModuleModalOpen: false,
 };
 
 const permissionSlice = createSlice({
@@ -62,9 +60,6 @@ const permissionSlice = createSlice({
         },
         setCreatePermissionModalOpen: (state, action: PayloadAction<boolean>) => {
             state.createPermissionModalOpen = action.payload;
-        },
-        setCreateModuleModalOpen: (state, action: PayloadAction<boolean>) => {
-            state.createModuleModalOpen = action.payload;
         },
     },
 
@@ -106,7 +101,6 @@ export const {
     setParams,
     resetParams,
     setCreatePermissionModalOpen,
-    setCreateModuleModalOpen,
 } = permissionSlice.actions;
 
 export default permissionSlice.reducer;

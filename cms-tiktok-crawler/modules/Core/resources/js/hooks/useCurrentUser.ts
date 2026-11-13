@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from '../store';
 import { logoutThunk } from '@modules/Auth/resources/js/store/auth/authThunks';
 import { AUTH_ROUTES } from '@modules/Auth/resources/js/configs/authConfig';
+import { toHeadlineCase } from '../utils/formatString';
 
 export interface CurrentUserHookResult {
 	user: any;
@@ -29,7 +30,7 @@ export function useCurrentUser(): CurrentUserHookResult {
 	const roleLabel = useMemo(() => {
 		const firstRole = user?.roles?.[0];
 		if (!firstRole) return 'Administrator';
-		return firstRole.charAt(0).toUpperCase() + firstRole.slice(1);
+		return toHeadlineCase(firstRole);
 	}, [user?.roles]);
 
 	const logout = useCallback(async () => {

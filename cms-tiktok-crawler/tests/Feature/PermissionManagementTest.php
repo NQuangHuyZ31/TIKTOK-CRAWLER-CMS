@@ -48,6 +48,34 @@ class PermissionManagementTest extends TestCase
     }
 
     /**
+     * Test distinct modules endpoint filters out ignored modules when ignore=true.
+     */
+    public function test_distinct_modules_endpoint_supports_ignore_flag(): void
+    {
+        // With ignore=true: modules in config('modules.ignore_group') like 'auth', 'guideline' should be filtered out
+        $response = $this->actingAs($this->adminUser)
+            ->getJson($this->adminApiUri('user/permission/distinct-modules?ignore=1'));
+
+        $response->assertOk()
+            ->assertJsonPath('status', 'success');
+
+        $modules = $response->json('data');
+        $this->assertIsArray($modules);
+        $this->assertNotContains('auth', $modules);
+        $this->assertNotContains('guideline', $modules);
+        $this->assertContains('user', $modules);
+
+        // With ignore=false: includes all modules
+        $responseAll = $this->actingAs($this->adminUser)
+            ->getJson($this->adminApiUri('user/permission/distinct-modules?ignore=0'));
+
+        $responseAll->assertOk();
+        $modulesAll = $responseAll->json('data');
+        $this->assertContains('user', $modulesAll);
+        $this->assertContains('auth', $modulesAll);
+    }
+
+    /**
      * Test single permission creation via API.
      */
     public function test_admin_can_create_single_permission(): void

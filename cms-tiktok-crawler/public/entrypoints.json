@@ -3,28 +3,28 @@
     "name": "Core",
     "route_prefix": "admin",
     "js": [
-      "/modules/Core/vendor.js",
-      "/modules/Core/index.js"
+      "/modules/Core/vendor.js?id=3b7da9697f78d6e13daf34c0a3a4412f",
+      "/modules/Core/index.js?id=f266a515915e36df8b57f64560886735"
     ],
     "css": [
-      "/modules/Core/app.css"
+      "/modules/Core/app.css?id=fc21c44c2dfa2d7ca3be51beaa661bc1"
     ]
   },
   "Auth": {
     "name": "Auth",
     "route_prefix": "admin/auth",
     "js": [
-      "/modules/Auth/index.js"
+      "/modules/Auth/index.js?id=fa9b1ae100b205410e870857edf5615b"
     ],
     "css": [
-      "/modules/Core/app.css"
+      "/modules/Core/app.css?id=fc21c44c2dfa2d7ca3be51beaa661bc1"
     ]
   },
   "Crawler": {
     "name": "Crawler",
     "route_prefix": "admin/crawler",
     "js": [
-      "/modules/Crawler/index.js"
+      "/modules/Crawler/index.js?id=1042adf3fa7bf58d67c7f6d1df4623ce"
     ],
     "css": []
   },
@@ -32,7 +32,7 @@
     "name": "Permission",
     "route_prefix": "admin/permission",
     "js": [
-      "/modules/Permission/index.js"
+      "/modules/Permission/index.js?id=10348ed097078f8b34e2f65c5ef2ef9e"
     ],
     "css": []
   },
@@ -40,7 +40,7 @@
     "name": "Role",
     "route_prefix": "admin/role",
     "js": [
-      "/modules/Role/index.js"
+      "/modules/Role/index.js?id=ff63478614e8e5462b1deb9859899422"
     ],
     "css": []
   },
@@ -48,7 +48,7 @@
     "name": "System",
     "route_prefix": "admin/system",
     "js": [
-      "/modules/System/index.js"
+      "/modules/System/index.js?id=f2d3e78aee11933c2b2b60d8bf6d94ee"
     ],
     "css": []
   },
@@ -56,7 +56,7 @@
     "name": "TiktokAccount",
     "route_prefix": "admin/tiktok-account",
     "js": [
-      "/modules/TiktokAccount/index.js"
+      "/modules/TiktokAccount/index.js?id=613930ea2145a2636ccbb1a2b7b8d1aa"
     ],
     "css": []
   },
@@ -64,7 +64,7 @@
     "name": "User",
     "route_prefix": "admin/user",
     "js": [
-      "/modules/User/index.js"
+      "/modules/User/index.js?id=28b1264db7629c5a89f759012085bbdb"
     ],
     "css": []
   },
@@ -72,7 +72,15 @@
     "name": "Guideline",
     "route_prefix": "admin/guideline",
     "js": [
-      "/modules/Guideline/index.js"
+      "/modules/Guideline/index.js?id=28ecd2c4b3e2470ed33511da49af69c3"
+    ],
+    "css": []
+  },
+  "ModuleManager": {
+    "name": "ModuleManager",
+    "route_prefix": "admin/modulemanager",
+    "js": [
+      "/modules/ModuleManager/index.js?id=04de35cad44416ae79d14b84ade9d84b"
     ],
     "css": []
   }

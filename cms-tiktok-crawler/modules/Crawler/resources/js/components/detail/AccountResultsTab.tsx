@@ -5,13 +5,9 @@ import dayjs from 'dayjs';
 import TableComponent from '@core/components/Table';
 import NumericRangeFilter from '@core/components/NumericRangeFilter';
 import { formatNumber } from '@core/utils/formatNumber';
+import { FOLLOWER_PRESETS, FOLLOWING_PRESETS, LIKE_PRESETS } from '@core/configs/metricPresets';
 import { crawlResultColumnConfig } from '../../configs/tableConfig';
-import {
-	CRAWL_RESULT_STATUS_FILTER_OPTIONS,
-	FOLLOWER_PRESETS,
-	FOLLOWING_PRESETS,
-	LIKE_PRESETS,
-} from '../../configs/crawlerOptions';
+import { CRAWL_RESULT_STATUS_FILTER_OPTIONS } from '../../configs/crawlerOptions';
 import { createAccountColumnRenderers } from './JobResultRenderers';
 
 interface AccountResultsTabProps {

@@ -1,6 +1,6 @@
 import dayjs from 'dayjs';
 import { TIKTOK_ACCOUNT_STATUS_FILTER_OPTIONS } from './accountOptions';
-import { FOLLOWER_PRESETS, FOLLOWING_PRESETS, LIKE_PRESETS } from './filterPresets';
+import { FOLLOWER_PRESETS, FOLLOWING_PRESETS, LIKE_PRESETS } from '@core/configs/metricPresets';
 
 export function buildAccountFilters(
 	params: Record<string, any>,

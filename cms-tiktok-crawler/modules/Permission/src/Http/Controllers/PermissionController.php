@@ -95,9 +95,10 @@ class PermissionController extends BaseController
     /**
      * Get list of unique module names.
      */
-    public function distinctModules(): JsonResponse
+    public function distinctModules(Request $request): JsonResponse
     {
-        $modules = $this->permissionService->getModules();
+        $ignore = $request->boolean('ignore', false);
+        $modules = $this->permissionService->getModules($ignore);
         return $this->respondSuccess($modules, 'Distinct modules retrieved successfully.');
     }
 }
