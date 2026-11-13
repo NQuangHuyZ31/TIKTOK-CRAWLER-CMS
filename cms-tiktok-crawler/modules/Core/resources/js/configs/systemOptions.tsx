@@ -9,6 +9,13 @@ import {
 	KeyOutlined,
 	LockOutlined,
 	ApiOutlined,
+	BarChartOutlined,
+	DatabaseOutlined,
+	FileTextOutlined,
+	FolderOutlined,
+	GlobalOutlined,
+	TagOutlined,
+	TeamOutlined,
 } from '@ant-design/icons';
 
 /**
@@ -29,6 +36,28 @@ export interface ModuleConfigItem {
 	color: string;
 }
 
+export interface SidebarIconOption {
+	value: string;
+	label: string;
+	icon: React.ReactNode;
+}
+
+export const SIDEBAR_ICON_OPTIONS: SidebarIconOption[] = [
+	{ value: 'AppstoreOutlined', label: 'Appstore', icon: <AppstoreOutlined /> },
+	{ value: 'FileTextOutlined', label: 'Document / Report', icon: <FileTextOutlined /> },
+	{ value: 'BarChartOutlined', label: 'Analytics / Chart', icon: <BarChartOutlined /> },
+	{ value: 'FolderOutlined', label: 'Folder', icon: <FolderOutlined /> },
+	{ value: 'DatabaseOutlined', label: 'Database', icon: <DatabaseOutlined /> },
+	{ value: 'TeamOutlined', label: 'Users / Team', icon: <TeamOutlined /> },
+	{ value: 'GlobalOutlined', label: 'Global / Web', icon: <GlobalOutlined /> },
+	{ value: 'TagOutlined', label: 'Tag / Category', icon: <TagOutlined /> },
+	{ value: 'SettingOutlined', label: 'Settings', icon: <SettingOutlined /> },
+	{ value: 'RobotOutlined', label: 'Robot / Crawler', icon: <RobotOutlined /> },
+	{ value: 'VideoCameraOutlined', label: 'Video / Media', icon: <VideoCameraOutlined /> },
+	{ value: 'SafetyCertificateOutlined', label: 'Security / Role', icon: <SafetyCertificateOutlined /> },
+	{ value: 'KeyOutlined', label: 'Key / Permission', icon: <KeyOutlined /> },
+];
+
 // -----------------------------------------------------------------------------
 // 1. GLOBAL SYSTEM MODULE REGISTRY
 // Centralized registry of all system modules, their human-readable labels, icons, and colors.
@@ -48,17 +77,15 @@ export const SYSTEM_MODULES: Record<string, ModuleConfigItem> = {
 /**
  * Safely retrieve module metadata by module key.
  */
+import { toHeadlineCase } from '../utils/formatString';
+
 export function getModuleConfig(mod: string): ModuleConfigItem {
 	const key = (mod || '').toLowerCase();
 	if (SYSTEM_MODULES[key]) {
 		return SYSTEM_MODULES[key];
 	}
-	const formattedLabel = mod
-		.split(/[_-]/)
-		.map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-		.join(' ');
 	return {
-		label: formattedLabel,
+		label: toHeadlineCase(mod),
 		icon: <ApiOutlined />,
 		color: 'blue',
 	};

@@ -15,6 +15,8 @@ use Modules\Crawler\Services\CrawlJobService;
 
 class CrawlJobController extends BaseController
 {
+    public string $permissionModule = 'crawler';
+    
     protected string $modelClass = CrawlJob::class;
     protected ?string $resourceClass = CrawlJobResource::class;
     protected array $withRelations = ['creator', 'starter'];

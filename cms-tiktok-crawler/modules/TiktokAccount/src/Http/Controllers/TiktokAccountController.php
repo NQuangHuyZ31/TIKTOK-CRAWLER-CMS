@@ -15,6 +15,8 @@ use Modules\TiktokAccount\Services\TiktokAccountService;
 
 class TiktokAccountController extends BaseController
 {
+    public string $permissionModule = 'tiktok-account';
+    
     protected string $modelClass = TiktokAccount::class;
     protected ?string $resourceClass = TiktokAccountResource::class;
     protected array $searchableColumns = ['username', 'nickname', 'bio'];
