@@ -44,6 +44,22 @@ class CrawlJob extends Model
     public string $activityIdentifierField = 'id';
 
     /**
+     * The attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'date_from' => 'datetime',
+            'date_to' => 'datetime',
+            'queued_at' => 'datetime',
+            'started_at' => 'datetime',
+            'finished_at' => 'datetime',
+        ];
+    }
+
+    /**
      * Relationship to CrawlResults.
      */
     public function results(): HasMany

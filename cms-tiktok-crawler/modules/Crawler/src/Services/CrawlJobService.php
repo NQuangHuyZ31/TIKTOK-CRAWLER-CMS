@@ -3,6 +3,7 @@
 namespace Modules\Crawler\Services;
 
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Modules\Crawler\Models\CrawlJob;
@@ -294,7 +295,8 @@ class CrawlJobService
             } catch (\Throwable $restoreError) {
                 try {
                     Log::error("Failed to restore claim after cleanup error for job #{$id}: " . $restoreError->getMessage());
-                } catch (\Throwable) {}
+                } catch (\Throwable) {
+                }
             }
 
             try {
@@ -313,7 +315,8 @@ class CrawlJobService
             } catch (\Throwable $auditError) {
                 try {
                     Log::error("Failed to record failure audit for job #{$id}: " . $auditError->getMessage());
-                } catch (\Throwable) {}
+                } catch (\Throwable) {
+                }
             }
 
             throw $cleanupError;
@@ -328,7 +331,8 @@ class CrawlJobService
             } catch (\Throwable $restoreError) {
                 try {
                     Log::error("Failed to restore claim after dispatch error for job #{$id}: " . $restoreError->getMessage());
-                } catch (\Throwable) {}
+                } catch (\Throwable) {
+                }
             }
 
             try {
@@ -347,7 +351,8 @@ class CrawlJobService
             } catch (\Throwable $auditError) {
                 try {
                     Log::error("Failed to record failure audit for job #{$id}: " . $auditError->getMessage());
-                } catch (\Throwable) {}
+                } catch (\Throwable) {
+                }
             }
 
             throw $dispatchError;
@@ -360,7 +365,8 @@ class CrawlJobService
             } catch (\Throwable $syncError) {
                 try {
                     Log::critical("Failed to synchronize dynamic targets for job #{$id}: " . $syncError->getMessage());
-                } catch (\Throwable) {}
+                } catch (\Throwable) {
+                }
             }
         }
 
@@ -381,7 +387,8 @@ class CrawlJobService
         } catch (\Throwable $auditError) {
             try {
                 Log::warning("Failed to record RETRY_CRAWL audit for job #{$id}: " . $auditError->getMessage());
-            } catch (\Throwable) {}
+            } catch (\Throwable) {
+            }
         }
 
         return $this->crawlJobRepository->findById($id);
@@ -585,34 +592,34 @@ class CrawlJobService
         );
 
         if ($dateFrom) {
-            $payload['date_from'] = $dateFrom;
+            $payload['date_from'] = Carbon::parse($dateFrom)->utc()->toISOString();
         }
         if ($dateTo) {
-            $payload['date_to'] = $dateTo;
+            $payload['date_to'] = Carbon::parse($dateTo)->utc()->toISOString();
         }
 
         return $payload;
     }
 
     /**
-     * Resolve effective [date_from, date_to] ISO strings from target_date if dates are omitted.
+     * Resolve effective [date_from, date_to] strings in application local time from target_date if dates are omitted.
      *
      * @return array{0: ?string, 1: ?string}
      */
     protected function resolveDateRange(?string $targetDate, mixed $dateFrom = null, mixed $dateTo = null): array
     {
-        $fromStr = !empty($dateFrom) ? (is_string($dateFrom) ? $dateFrom : $dateFrom->toISOString()) : null;
-        $toStr = !empty($dateTo) ? (is_string($dateTo) ? $dateTo : $dateTo->toISOString()) : null;
+        $fromStr = !empty($dateFrom) ? (is_string($dateFrom) ? $dateFrom : $dateFrom->toDateTimeString()) : null;
+        $toStr = !empty($dateTo) ? (is_string($dateTo) ? $dateTo : $dateTo->toDateTimeString()) : null;
 
         if ($targetDate && empty($fromStr) && empty($toStr)) {
             $td = strtolower(trim($targetDate));
 
             if ($td === 'today') {
-                $fromStr = now()->startOfDay()->utc()->toISOString();
-                $toStr = now()->endOfDay()->utc()->toISOString();
+                $fromStr = now()->startOfDay()->toDateTimeString();
+                $toStr = now()->endOfDay()->toDateTimeString();
             } elseif ($td === 'yesterday') {
-                $fromStr = now()->subDay()->startOfDay()->utc()->toISOString();
-                $toStr = now()->subDay()->endOfDay()->utc()->toISOString();
+                $fromStr = now()->subDay()->startOfDay()->toDateTimeString();
+                $toStr = now()->subDay()->endOfDay()->toDateTimeString();
             }
         }
 
