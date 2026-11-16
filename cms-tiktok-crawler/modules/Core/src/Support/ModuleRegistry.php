@@ -42,7 +42,10 @@ class ModuleRegistry
             return $this->modules;
         }
 
-        $basePath = $this->basePath ?? $this->resolveBasePath();
+        $base = $this->basePath ?? $this->resolveBasePath();
+        $basePath = (str_starts_with($base, '/') || preg_match('/^[a-zA-Z]:/', $base))
+            ? $base
+            : base_path($base);
         $modules = [];
 
         foreach (glob($basePath . '/*', GLOB_ONLYDIR) ?: [] as $dir) {

@@ -32,7 +32,13 @@ export default function TwoFactorVerifyStep({ challenge, loading, error, onVerif
 								boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
 							}}
 						>
-							<QRCode value={challenge.qr_code_url} size={150} bordered={false} />
+							<QRCode
+								value={challenge.qr_code_url}
+								size={150}
+								bordered={false}
+								color="#000000"
+								bgColor="#ffffff"
+							/>
 						</div>
 					</Flex>
 					{challenge.secret_key && (

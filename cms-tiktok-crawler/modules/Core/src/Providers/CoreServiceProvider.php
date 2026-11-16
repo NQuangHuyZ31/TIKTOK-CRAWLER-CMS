@@ -23,7 +23,12 @@ class CoreServiceProvider extends ServiceProvider
         });
 
         $this->app->scoped(ModuleRegistry::class, function () {
-            return new ModuleRegistry(config('modules.path'), config('modules.disabled', []));
+            $configuredPath = trim((string) config('modules.path', 'modules'), '/');
+            $basePath = (str_starts_with($configuredPath, '/') || preg_match('/^[a-zA-Z]:/', $configuredPath))
+                ? $configuredPath
+                : base_path($configuredPath);
+
+            return new ModuleRegistry($basePath, config('modules.disabled', []));
         });
 
         // Ensure newly scaffolded modules can be autoloaded without composer dump-autoload
