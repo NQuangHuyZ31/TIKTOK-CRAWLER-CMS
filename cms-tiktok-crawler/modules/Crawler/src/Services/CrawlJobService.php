@@ -3,7 +3,6 @@
 namespace Modules\Crawler\Services;
 
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Modules\Crawler\Models\CrawlJob;
@@ -592,34 +591,34 @@ class CrawlJobService
         );
 
         if ($dateFrom) {
-            $payload['date_from'] = Carbon::parse($dateFrom)->utc()->toISOString();
+            $payload['date_from'] = $dateFrom;
         }
         if ($dateTo) {
-            $payload['date_to'] = Carbon::parse($dateTo)->utc()->toISOString();
+            $payload['date_to'] = $dateTo;
         }
 
         return $payload;
     }
 
     /**
-     * Resolve effective [date_from, date_to] strings in application local time from target_date if dates are omitted.
+     * Resolve effective [date_from, date_to] ISO strings from target_date if dates are omitted.
      *
      * @return array{0: ?string, 1: ?string}
      */
     protected function resolveDateRange(?string $targetDate, mixed $dateFrom = null, mixed $dateTo = null): array
     {
-        $fromStr = !empty($dateFrom) ? (is_string($dateFrom) ? $dateFrom : $dateFrom->toDateTimeString()) : null;
-        $toStr = !empty($dateTo) ? (is_string($dateTo) ? $dateTo : $dateTo->toDateTimeString()) : null;
+        $fromStr = !empty($dateFrom) ? (is_string($dateFrom) ? $dateFrom : $dateFrom->toISOString()) : null;
+        $toStr = !empty($dateTo) ? (is_string($dateTo) ? $dateTo : $dateTo->toISOString()) : null;
 
         if ($targetDate && empty($fromStr) && empty($toStr)) {
-            $td = strtolower(trim($targetDate));
+            $td = strtolower(trim($targetDate));    
 
             if ($td === 'today') {
-                $fromStr = now()->startOfDay()->toDateTimeString();
-                $toStr = now()->endOfDay()->toDateTimeString();
+                $fromStr = now()->startOfDay()->toISOString();
+                $toStr = now()->endOfDay()->toISOString();
             } elseif ($td === 'yesterday') {
-                $fromStr = now()->subDay()->startOfDay()->toDateTimeString();
-                $toStr = now()->subDay()->endOfDay()->toDateTimeString();
+                $fromStr = now()->subDay()->startOfDay()->toISOString();
+                $toStr = now()->subDay()->endOfDay()->toISOString();
             }
         }
 
