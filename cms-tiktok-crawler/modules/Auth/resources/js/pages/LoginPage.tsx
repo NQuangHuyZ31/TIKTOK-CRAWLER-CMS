@@ -257,7 +257,7 @@ export default function LoginPage() {
 							>
 								{headerConfig.icon}
 							</div>
-							<Title level={3} style={{ margin: 0, fontWeight: 700, color: '#0f172a' }}>
+							<Title level={3} style={{ margin: 0, fontWeight: 700, color: antdTheme.colorPrimary }}>
 								{headerConfig.title}
 							</Title>
 							<Text type="secondary" style={{ fontSize: 13 }}>
