@@ -1,4 +1,5 @@
 import React from 'react';
+import dayjs from 'dayjs';
 import crawlJobAPI from '@modules/Crawler/resources/js/Action/crawlJob';
 import ResourceForm from '@core/components/ResourceForm';
 import { extractCleanUrls, extractCleanUsernames } from '../utils/crawlerHelpers';
@@ -51,9 +52,13 @@ export default function CrawlJobFormPage() {
 			}}
 			transformInitialValues={(jobData) => {
 				const values = Array.isArray(jobData.data_crawl) ? jobData.data_crawl : [];
-				let initialTargetDate = jobData.target_date ?? 'all';
-				if (jobData.date_from && jobData.date_to) {
-					initialTargetDate = `range:${jobData.date_from}:${jobData.date_to}`;
+				let initialTargetDate = 'all';
+				if (jobData.target_date) {
+					initialTargetDate = jobData.target_date;
+				} else if (jobData.date_from && jobData.date_to) {
+					const dFrom = dayjs(jobData.date_from).format('YYYY-MM-DD');
+					const dTo = dayjs(jobData.date_to).format('YYYY-MM-DD');
+					initialTargetDate = `range:${dFrom}:${dTo}`;
 				}
 				return {
 					crawl_mode: jobData.crawl_mode ?? 'account_with_videos',

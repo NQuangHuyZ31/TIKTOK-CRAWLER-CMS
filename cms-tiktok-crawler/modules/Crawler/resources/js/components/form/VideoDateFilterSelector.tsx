@@ -27,15 +27,24 @@ export default function VideoDateFilterSelector({
 	const filterMode = useMemo(() => {
 		if (!value || value === 'all') return 'all';
 		if (value === 'today' || value === 'yesterday') return value;
-		if (value === past7Str || value === '7_days') return '7_days';
-		if (value === past30Str || value === '30_days') return '30_days';
-		if (value === past90Str || value === '90_days') return '90_days';
+		if (value === '7_days' || value === past7Str) return '7_days';
+		if (value === '30_days' || value === past30Str) return '30_days';
+		if (value === '90_days' || value === past90Str) return '90_days';
 		if (typeof value === 'string' && value.startsWith('range:')) return 'range';
 		return 'custom';
 	}, [value, past7Str, past30Str, past90Str]);
 
 	const customSingleDate = useMemo(() => {
-		if (value && value !== 'all' && value !== 'today' && value !== 'yesterday' && !value.startsWith('range:')) {
+		if (
+			value &&
+			value !== 'all' &&
+			value !== 'today' &&
+			value !== 'yesterday' &&
+			value !== '7_days' &&
+			value !== '30_days' &&
+			value !== '90_days' &&
+			!value.startsWith('range:')
+		) {
 			const d = dayjs(value);
 			return d.isValid() ? d : null;
 		}
@@ -45,10 +54,12 @@ export default function VideoDateFilterSelector({
 	const customRangeDates = useMemo<[Dayjs, Dayjs] | null>(() => {
 		if (typeof value === 'string' && value.startsWith('range:')) {
 			const parts = value.split(':');
-			const dFrom = dayjs(parts[1]);
-			const dTo = dayjs(parts[2]);
-			if (dFrom.isValid() && dTo.isValid()) {
-				return [dFrom, dTo];
+			if (parts.length >= 3) {
+				const dFrom = dayjs(parts[1]);
+				const dTo = dayjs(parts[2]);
+				if (dFrom.isValid() && dTo.isValid()) {
+					return [dFrom, dTo];
+				}
 			}
 		}
 		return null;
@@ -66,13 +77,13 @@ export default function VideoDateFilterSelector({
 				onChange?.('yesterday');
 				break;
 			case '7_days':
-				onChange?.(past7Str);
+				onChange?.('7_days');
 				break;
 			case '30_days':
-				onChange?.(past30Str);
+				onChange?.('30_days');
 				break;
 			case '90_days':
-				onChange?.(past90Str);
+				onChange?.('90_days');
 				break;
 			case 'range': {
 				const fallbackRange = `range:${dayjs().subtract(14, 'day').format('YYYY-MM-DD')}:${todayStr}`;

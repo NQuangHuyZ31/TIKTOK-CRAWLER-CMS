@@ -3,8 +3,10 @@
 namespace Modules\Crawler\Services;
 
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Modules\Core\Utils\DateRangeHelper;
 use Modules\Crawler\Models\CrawlJob;
 use Modules\Crawler\Repositories\Interfaces\CrawlJobRepositoryInterface;
 use Modules\Crawler\Repositories\Interfaces\CrawlResultRepositoryInterface;
@@ -581,7 +583,10 @@ class CrawlJobService
         };
 
         if (!empty($crawlJob->target_date)) {
-            $payload['target_date'] = (string) $crawlJob->target_date;
+            $td = strtolower(trim((string) $crawlJob->target_date));
+            if (in_array($td, ['today', 'yesterday']) || preg_match('/^\d{4}-\d{2}-\d{2}$/', $td)) {
+                $payload['target_date'] = $td;
+            }
         }
 
         [$dateFrom, $dateTo] = $this->resolveDateRange(
@@ -591,38 +596,23 @@ class CrawlJobService
         );
 
         if ($dateFrom) {
-            $payload['date_from'] = $dateFrom;
+            $payload['date_from'] = DateRangeHelper::toUtcIso($dateFrom);
         }
         if ($dateTo) {
-            $payload['date_to'] = $dateTo;
+            $payload['date_to'] = DateRangeHelper::toUtcIso($dateTo);
         }
 
         return $payload;
     }
 
     /**
-     * Resolve effective [date_from, date_to] ISO strings from target_date if dates are omitted.
+     * Resolve effective [date_from, date_to] local datetime strings from target_date or custom bounds.
      *
      * @return array{0: ?string, 1: ?string}
      */
     protected function resolveDateRange(?string $targetDate, mixed $dateFrom = null, mixed $dateTo = null): array
     {
-        $fromStr = !empty($dateFrom) ? (is_string($dateFrom) ? $dateFrom : $dateFrom->toISOString()) : null;
-        $toStr = !empty($dateTo) ? (is_string($dateTo) ? $dateTo : $dateTo->toISOString()) : null;
-
-        if ($targetDate && empty($fromStr) && empty($toStr)) {
-            $td = strtolower(trim($targetDate));    
-
-            if ($td === 'today') {
-                $fromStr = now()->startOfDay()->toISOString();
-                $toStr = now()->endOfDay()->toISOString();
-            } elseif ($td === 'yesterday') {
-                $fromStr = now()->subDay()->startOfDay()->toISOString();
-                $toStr = now()->subDay()->endOfDay()->toISOString();
-            }
-        }
-
-        return [$fromStr, $toStr];
+        return DateRangeHelper::resolve($targetDate, $dateFrom, $dateTo);
     }
 
     /**

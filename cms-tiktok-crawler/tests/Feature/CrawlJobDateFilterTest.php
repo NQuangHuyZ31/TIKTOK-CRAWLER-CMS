@@ -47,10 +47,14 @@ class CrawlJobDateFilterTest extends TestCase
 
         $this->assertNotNull($job->id);
         $this->assertEquals('today', $job->target_date);
+        $this->assertEquals(now()->startOfDay()->toDateTimeString(), $job->date_from->toDateTimeString());
+        $this->assertEquals(now()->endOfDay()->toDateTimeString(), $job->date_to->toDateTimeString());
 
         // Fetch fresh from database
         $fresh = CrawlJob::find($job->id);
         $this->assertEquals('today', $fresh->target_date);
+        $this->assertEquals(now()->startOfDay()->toDateTimeString(), $fresh->date_from->toDateTimeString());
+        $this->assertEquals(now()->endOfDay()->toDateTimeString(), $fresh->date_to->toDateTimeString());
     }
 
     public function test_service_persists_custom_date_bounds(): void
@@ -93,6 +97,8 @@ class CrawlJobDateFilterTest extends TestCase
         $data = $response->json('data');
         $this->assertNotNull($data);
         $this->assertEquals('today', $data['target_date'] ?? null);
+        $this->assertEquals(now()->startOfDay()->toDateTimeString(), $data['date_from'] ?? null);
+        $this->assertEquals(now()->endOfDay()->toDateTimeString(), $data['date_to'] ?? null);
 
         $jobId = $data['id'];
         $job = CrawlJob::find($jobId);
@@ -126,6 +132,8 @@ class CrawlJobDateFilterTest extends TestCase
             $data = $request->data();
             return isset($data['target_date'])
                 && $data['target_date'] === 'today'
+                && isset($data['date_from'])
+                && isset($data['date_to'])
                 && $data['max_videos_per_account'] === 15;
         });
     }
