@@ -27,8 +27,8 @@ class CrawlJobResource extends JsonResource
             'crawl_mode' => $this->crawl_mode ?? 'account_with_videos',
             'max_videos_per_account' => (int) ($this->max_videos_per_account ?? 20),
             'target_date' => $this->target_date,
-            'date_from' => $this->date_from,
-            'date_to' => $this->date_to,
+            'date_from' => $this->date_from ? Carbon::parse($this->date_from)->toDateTimeString() : null,
+            'date_to' => $this->date_to ? Carbon::parse($this->date_to)->toDateTimeString() : null,
             'data_crawl' => $this->data_crawls
                 ? json_decode($this->data_crawls, true)
                 : [],

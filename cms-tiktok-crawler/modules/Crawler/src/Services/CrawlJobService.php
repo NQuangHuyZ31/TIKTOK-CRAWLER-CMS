@@ -3,6 +3,7 @@
 namespace Modules\Crawler\Services;
 
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Modules\Crawler\Models\CrawlJob;
@@ -581,7 +582,10 @@ class CrawlJobService
         };
 
         if (!empty($crawlJob->target_date)) {
-            $payload['target_date'] = (string) $crawlJob->target_date;
+            $td = strtolower(trim((string) $crawlJob->target_date));
+            if (in_array($td, ['today', 'yesterday']) || preg_match('/^\d{4}-\d{2}-\d{2}$/', $td)) {
+                $payload['target_date'] = $td;
+            }
         }
 
         [$dateFrom, $dateTo] = $this->resolveDateRange(
@@ -591,34 +595,54 @@ class CrawlJobService
         );
 
         if ($dateFrom) {
-            $payload['date_from'] = $dateFrom;
+            $payload['date_from'] = Carbon::parse($dateFrom)->toISOString();
         }
         if ($dateTo) {
-            $payload['date_to'] = $dateTo;
+            $payload['date_to'] = Carbon::parse($dateTo)->toISOString();
         }
 
         return $payload;
     }
 
     /**
-     * Resolve effective [date_from, date_to] ISO strings from target_date if dates are omitted.
+     * Resolve effective [date_from, date_to] local datetime strings from target_date or custom bounds.
      *
      * @return array{0: ?string, 1: ?string}
      */
     protected function resolveDateRange(?string $targetDate, mixed $dateFrom = null, mixed $dateTo = null): array
     {
-        $fromStr = !empty($dateFrom) ? (is_string($dateFrom) ? $dateFrom : $dateFrom->toISOString()) : null;
-        $toStr = !empty($dateTo) ? (is_string($dateTo) ? $dateTo : $dateTo->toISOString()) : null;
+        $fromStr = !empty($dateFrom) ? (is_string($dateFrom) ? $dateFrom : $dateFrom->toDateTimeString()) : null;
+        $toStr = !empty($dateTo) ? (is_string($dateTo) ? $dateTo : $dateTo->toDateTimeString()) : null;
 
         if ($targetDate && empty($fromStr) && empty($toStr)) {
-            $td = strtolower(trim($targetDate));    
+            $td = strtolower(trim($targetDate));
 
             if ($td === 'today') {
-                $fromStr = now()->startOfDay()->toISOString();
-                $toStr = now()->endOfDay()->toISOString();
+                $fromStr = now()->startOfDay()->toDateTimeString();
+                $toStr = now()->endOfDay()->toDateTimeString();
             } elseif ($td === 'yesterday') {
-                $fromStr = now()->subDay()->startOfDay()->toISOString();
-                $toStr = now()->subDay()->endOfDay()->toISOString();
+                $fromStr = now()->subDay()->startOfDay()->toDateTimeString();
+                $toStr = now()->subDay()->endOfDay()->toDateTimeString();
+            } elseif ($td === '7_days') {
+                $fromStr = now()->subDays(7)->startOfDay()->toDateTimeString();
+                $toStr = now()->endOfDay()->toDateTimeString();
+            } elseif ($td === '30_days') {
+                $fromStr = now()->subDays(30)->startOfDay()->toDateTimeString();
+                $toStr = now()->endOfDay()->toDateTimeString();
+            } elseif ($td === '90_days') {
+                $fromStr = now()->subDays(90)->startOfDay()->toDateTimeString();
+                $toStr = now()->endOfDay()->toDateTimeString();
+            } elseif (preg_match('/^\d{4}-\d{2}-\d{2}$/', $td)) {
+                $parsed = Carbon::parse($td);
+                $fromStr = $parsed->copy()->startOfDay()->toDateTimeString();
+                $toStr = $parsed->copy()->endOfDay()->toDateTimeString();
+            }
+        } elseif (!empty($fromStr) || !empty($toStr)) {
+            if (!empty($fromStr) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $fromStr)) {
+                $fromStr = Carbon::parse($fromStr)->startOfDay()->toDateTimeString();
+            }
+            if (!empty($toStr) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $toStr)) {
+                $toStr = Carbon::parse($toStr)->endOfDay()->toDateTimeString();
             }
         }
 
