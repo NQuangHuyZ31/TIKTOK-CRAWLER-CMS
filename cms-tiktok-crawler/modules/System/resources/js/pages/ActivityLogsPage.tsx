@@ -1,11 +1,13 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Col, Row } from 'antd';
 import { CheckCircleOutlined, CloseCircleOutlined, FieldTimeOutlined, UnorderedListOutlined } from '@ant-design/icons';
 import ListLayout, { DynamicFilterField } from '@core/components/ListLayout';
 import CardKPI from '@core/components/CardKPI';
+import type { SelectOption } from '@core/configs/systemOptions';
+import { useCoreMetadata } from '@core/hooks/useCoreMetadata';
 import { useDispatch, useSelector } from '@core/store';
-import { ACTIVITY_ACTION_OPTIONS, ACTIVITY_MODULE_OPTIONS, ACTIVITY_STATUS_OPTIONS } from '../configs/activityLogConfig';
-import type { ActivityLogItem } from '../Action/activityLog';
+import { ACTIVITY_ACTION_OPTIONS, ACTIVITY_MODULE_OPTIONS, ACTIVITY_STATUS_OPTIONS, getActivityActionConfig } from '../configs/activityLogConfig';
+import { getDistinctActivityModules, getDistinctActivityActions, type ActivityLogItem } from '../Action/activityLog';
 import { setActivityParams, resetActivityParams, setSelectedActivity, setDetailModalOpen } from '../store/system/systemSlice';
 import { fetchActivityLogs, fetchActivityStatistics } from '../store/system/systemThunks';
 import ActivityLogTable from '../components/ActivityLogTable';
@@ -14,6 +16,9 @@ import ActivityLogDetailModal from '../components/ActivityLogDetailModal';
 export default function ActivityLogsPage() {
 	const dispatch = useDispatch();
 	const { activityLogs, activityLoading, activityPagination, activityParams, activityStats, selectedActivity, detailModalOpen } = useSelector((state) => state.system);
+	const { moduleMetadata } = useCoreMetadata();
+	const [moduleOptions, setModuleOptions] = useState<SelectOption[]>(ACTIVITY_MODULE_OPTIONS);
+	const [actionOptions, setActionOptions] = useState<SelectOption[]>(ACTIVITY_ACTION_OPTIONS);
 
 	useEffect(() => {
 		dispatch(fetchActivityLogs(activityParams));
@@ -22,6 +27,45 @@ export default function ActivityLogsPage() {
 	useEffect(() => {
 		dispatch(fetchActivityStatistics());
 	}, [dispatch]);
+
+	useEffect(() => {
+		let isMounted = true;
+		Promise.all([getDistinctActivityModules(), getDistinctActivityActions()])
+			.then(([modulesRes, actionsRes]) => {
+				if (!isMounted) return;
+
+				if (Array.isArray(modulesRes?.data)) {
+					setModuleOptions([
+						{ label: 'All Modules', value: '' },
+						...modulesRes.data.map((mod: string) => {
+							const meta = moduleMetadata?.[mod.toLowerCase()];
+							return {
+								label: meta?.label || mod.replace(/_/g, ' ').toUpperCase(),
+								value: mod,
+							};
+						}),
+					]);
+				}
+
+				if (Array.isArray(actionsRes?.data)) {
+					setActionOptions([
+						{ label: 'All Actions', value: '' },
+						...actionsRes.data.map((act: string) => {
+							const cfg = getActivityActionConfig(act);
+							return {
+								label: cfg.label || act.replace(/_/g, ' ').toUpperCase(),
+								value: act,
+							};
+						}),
+					]);
+				}
+			})
+			.catch(() => {});
+
+		return () => {
+			isMounted = false;
+		};
+	}, []);
 
 	const handleSearch = (val: string) => {
 		dispatch(setActivityParams({ search: val.trim() || undefined, page: 1 }));
@@ -39,7 +83,7 @@ export default function ActivityLogsPage() {
 			type: 'select',
 			value: activityParams.action,
 			width: 170,
-			options: ACTIVITY_ACTION_OPTIONS,
+			options: actionOptions,
 			onChange: (val) => dispatch(setActivityParams({ action: val || undefined, page: 1 })),
 		},
 		{
@@ -48,7 +92,7 @@ export default function ActivityLogsPage() {
 			type: 'select',
 			value: activityParams.module,
 			width: 170,
-			options: ACTIVITY_MODULE_OPTIONS,
+			options: moduleOptions,
 			onChange: (val) => dispatch(setActivityParams({ module: val || undefined, page: 1 })),
 		},
 		{

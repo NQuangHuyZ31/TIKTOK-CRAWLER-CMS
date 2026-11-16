@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { Alert, AutoComplete, Form, Input, Modal, Space, Typography } from 'antd';
 import { KeyOutlined } from '@ant-design/icons';
 import useAction from '@core/hooks/useAction';
+import { useCoreMetadata } from '@core/hooks/useCoreMetadata';
 import { COMMON_PERMISSION_ACTIONS } from '../configs/permissionOptions';
 import { createPermission, CreatePermissionPayload } from '../Action/permission';
 import PermissionSlugPreview from './createPermission/PermissionSlugPreview';
@@ -12,14 +13,14 @@ const { TextArea } = Input;
 
 export interface CreatePermissionModalProps {
 	open: boolean;
-	modulesList: string[];
 	onClose: () => void;
 	onSuccess: () => void;
 }
 
-export default function CreatePermissionModal({ open, modulesList, onClose, onSuccess }: CreatePermissionModalProps) {
+export default function CreatePermissionModal({ open, onClose, onSuccess }: CreatePermissionModalProps) {
 	const [form] = Form.useForm();
 	const { act, loading: submitting } = useAction();
+	const { permissionActions, modules, moduleMetadata } = useCoreMetadata();
 	const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
 	const watchedModule = Form.useWatch('module', form) || '';
@@ -57,7 +58,19 @@ export default function CreatePermissionModal({ open, modulesList, onClose, onSu
 		});
 	};
 
-	const moduleOptions = modulesList.map((mod) => ({ value: mod, label: mod }));
+	const actionOptions = useMemo(() => {
+		return permissionActions.length > 0 ? permissionActions : COMMON_PERMISSION_ACTIONS;
+	}, [permissionActions]);
+
+	const moduleOptions = useMemo(() => {
+		return modules.map((mod) => {
+			const meta = moduleMetadata?.[mod.toLowerCase()];
+			return {
+				value: mod,
+				label: meta?.label ? `${meta.label} (${mod})` : mod,
+			};
+		});
+	}, [modules, moduleMetadata]);
 
 	return (
 		<Modal
@@ -105,7 +118,7 @@ export default function CreatePermissionModal({ open, modulesList, onClose, onSu
 					]}
 				>
 					<AutoComplete
-						options={COMMON_PERMISSION_ACTIONS}
+						options={actionOptions}
 						placeholder="Select or type action (e.g. view, edit, export)"
 						filterOption={(input, option) => String(option?.value ?? '').toUpperCase().includes(input.toUpperCase())}
 					/>

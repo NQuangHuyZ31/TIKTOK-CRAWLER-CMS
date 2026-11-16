@@ -21,7 +21,16 @@ class PermissionService
      */
     public function getGroupedPermissions(): array
     {
-        return $this->permissionRepository->getGroupedByModule();
+        $grouped = $this->permissionRepository->getGroupedByModule();
+
+        if (!config('modules.enable_dev', false)) {
+            $devModules = config('modules.dev_modules', []);
+            foreach ($devModules as $devMod) {
+                unset($grouped[$devMod]);
+            }
+        }
+
+        return $grouped;
     }
 
     /**
@@ -31,7 +40,14 @@ class PermissionService
      */
     public function getAllPermissions(): Collection
     {
-        return $this->permissionRepository->all();
+        $all = $this->permissionRepository->all();
+
+        if (!config('modules.enable_dev', false)) {
+            $devModules = config('modules.dev_modules', ['module_manager']);
+            return $all->reject(fn ($p) => in_array($p->module, $devModules, true))->values();
+        }
+
+        return $all;
     }
 
     /**
@@ -46,6 +62,11 @@ class PermissionService
             $this->permissionRepository->getDistinctModules(),
             config('modules.modules', [])
         )));
+
+        // If dev modules are disabled (e.g. ENABLE_DEV is not true), strip dev-only modules
+        if (!config('modules.enable_dev', false)) {
+            $all = array_values(array_diff($all, config('modules.dev_modules', ['module_manager'])));
+        }
 
         return $ignore ? array_values(array_diff($all, config('modules.ignore_group', []))) : $all;
     }

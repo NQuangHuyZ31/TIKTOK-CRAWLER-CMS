@@ -41,6 +41,40 @@ class ActivityLogRepository extends BaseRepository implements ActivityLogReposit
         ];
     }
 
+    /**
+     * Retrieve distinct module names present in activity logs.
+     *
+     * @return array<string>
+     */
+    public function getDistinctModules(): array
+    {
+        return $this->query()
+            ->whereNotNull('module')
+            ->where('module', '!=', '')
+            ->distinct()
+            ->orderBy('module')
+            ->pluck('module')
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Retrieve distinct action names present in activity logs.
+     *
+     * @return array<string>
+     */
+    public function getDistinctActions(): array
+    {
+        return $this->query()
+            ->whereNotNull('action')
+            ->where('action', '!=', '')
+            ->distinct()
+            ->orderBy('action')
+            ->pluck('action')
+            ->values()
+            ->all();
+    }
+
     public function findLatestByEvent(string $module, string $action, string|int|null $recordId = null): ?ActivityLog
     {
         $query = $this->query()->where('module', $module)->where('action', $action);

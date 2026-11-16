@@ -108,33 +108,50 @@ trait HasRolesAndPermissions
     }
 
     /**
-     * Check if user can access a module action ('view' or 'edit').
-     * Super Administrator ('is_admin' = 1 or 'admin' role) has full unrestricted access.
+     * Check if user can access a module action ('view', 'create', 'edit', 'delete').
+     * Super Administrator ('is_admin' = 1 or 'admin' role) has full unrestricted access,
+     * unless an action is restricted by dev_only_actions when not in dev environment.
      */
     public function canAccessModule(string $module, string $action): bool
     {
+        $moduleLower = strtolower($module);
+        $actionLower = strtolower($action);
+
+        // Environment check: if not in dev mode, block actions defined in dev_only_actions
+        if (!config('modules.enable_dev', false)) {
+            $devOnly = config('modules.dev_only_actions', []);
+            $blockedActions = array_map('strtolower', array_merge(
+                $devOnly['*'] ?? [],
+                $devOnly[$moduleLower] ?? []
+            ));
+
+            if (in_array($actionLower, $blockedActions, true)) {
+                return false;
+            }
+        }
+
         if ($this->isAdmin()) {
             return true;
         }
 
-        $ignoreModule = config('modules.ignore_check_permission', []);
-        if (in_array($module, $ignoreModule)) {
+        $ignoreModule = array_map('strtolower', (array) config('modules.ignore_check_permission', []));
+        if (in_array($moduleLower, $ignoreModule, true)) {
             return true;
         }
 
-        $slug = strtolower($module) . '.' . strtolower($action);
+        $slug = $moduleLower . '.' . $actionLower;
 
         // Direct user permission mode: strictly check direct permissions
         if ($this->isUserBased()) {
             return $this->permissions->contains(fn(Permission $p) =>
-                $p->slug === $slug || ($p->module === $module && $p->action === $action)
+                strtolower($p->slug) === $slug || (strtolower($p->module) === $moduleLower && strtolower($p->action) === $actionLower)
             );
         }
 
         // Role-based permission mode: strictly check assigned roles
         foreach ($this->roles as $role) {
             if ($role->permissions->contains(fn(Permission $p) =>
-                $p->slug === $slug || ($p->module === $module && $p->action === $action)
+                strtolower($p->slug) === $slug || (strtolower($p->module) === $moduleLower && strtolower($p->action) === $actionLower)
             )) {
                 return true;
             }
@@ -145,16 +162,15 @@ trait HasRolesAndPermissions
 
     /**
      * Get module permissions matrix for the user.
-     * When is_admin = 1 or user has 'admin' role, all modules grant full view and edit access.
+     * When is_admin = 1 or user has 'admin' role, all non-restricted actions return true.
      */
     public function getModulePermissionsMatrix(): array
     {
         $modules = config('modules.modules') ?? [];
-        $permissionActions = config('modules.permission_action') ?? [];
+        $permissionActions = config('modules.permission_actions') ?? [];
         $ignoreGroup = config('modules.ignore_group') ?? [];
         
         $matrix = [];
-        $isSuperAdmin = $this->isAdmin();
 
         foreach ($modules as $module) {
             if (in_array($module, $ignoreGroup)) {
@@ -163,7 +179,7 @@ trait HasRolesAndPermissions
 
             $matrix[$module] = [];
             foreach ($permissionActions as $action) {
-                $matrix[$module][$action] = $isSuperAdmin || $this->canAccessModule($module, $action);
+                $matrix[$module][$action['value']] = $this->canAccessModule($module, $action['value']);
             }
         }
 
@@ -175,20 +191,41 @@ trait HasRolesAndPermissions
      */
     public function getAllPermissionsSlugs(): array
     {
-        if ($this->isAdmin()) {
-            return Permission::pluck('slug')->all();
-        }
-
-        if ($this->isUserBased()) {
-            return array_values(array_unique($this->permissions->pluck('slug')->all()));
-        }
-
         $slugs = [];
-        foreach ($this->roles as $role) {
-            $slugs = array_merge($slugs, $role->permissions->pluck('slug')->all());
+
+        if ($this->isAdmin()) {
+            $slugs = Permission::pluck('slug')->all();
+        } elseif ($this->isUserBased()) {
+            $slugs = array_values(array_unique($this->permissions->pluck('slug')->all()));
+        } else {
+            foreach ($this->roles as $role) {
+                $slugs = array_merge($slugs, $role->permissions->pluck('slug')->all());
+            }
+            $slugs = array_values(array_unique($slugs));
         }
 
-        return array_values(array_unique($slugs));
+        // Filter out dev-only actions if not in dev mode
+        if (!config('modules.enable_dev', false)) {
+            $devOnly = config('modules.dev_only_actions', []);
+            $globalBlocked = array_map('strtolower', $devOnly['*'] ?? []);
+
+            $slugs = array_values(array_filter($slugs, function ($slug) use ($devOnly, $globalBlocked) {
+                $parts = explode('.', strtolower($slug));
+                if (count($parts) === 2) {
+                    [$mod, $act] = $parts;
+                    if (in_array($act, $globalBlocked, true)) {
+                        return false;
+                    }
+                    $modBlocked = array_map('strtolower', $devOnly[$mod] ?? []);
+                    if (in_array($act, $modBlocked, true)) {
+                        return false;
+                    }
+                }
+                return true;
+            }));
+        }
+
+        return $slugs;
     }
 
     /**

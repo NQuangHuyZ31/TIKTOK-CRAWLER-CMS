@@ -19,6 +19,20 @@ interface ActivityLogRepositoryInterface extends BaseRepositoryInterface
     public function getStatistics(): array;
 
     /**
+     * Retrieve distinct module names present in activity logs.
+     *
+     * @return array<string>
+     */
+    public function getDistinctModules(): array;
+
+    /**
+     * Retrieve distinct action names present in activity logs.
+     *
+     * @return array<string>
+     */
+    public function getDistinctActions(): array;
+
+    /**
      * Find latest activity log matching event criteria.
      */
     public function findLatestByEvent(string $module, string $action, string|int|null $recordId = null): ?ActivityLog;

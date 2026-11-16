@@ -8,7 +8,7 @@ const moduleManagerRoutes: RouteDef[] = [
 		component: ModuleListPage,
 		layout: 'admin',
 		parentPath: '/system',
-		module: 'system',
+		module: 'module_manager',
 		action: 'view',
 		title: 'Module Management',
 		label: 'Modules',

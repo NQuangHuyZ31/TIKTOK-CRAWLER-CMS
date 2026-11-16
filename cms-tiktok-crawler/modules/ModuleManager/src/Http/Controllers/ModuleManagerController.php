@@ -10,7 +10,7 @@ use Modules\ModuleManager\Services\ModuleManagerService;
 
 class ModuleManagerController extends BaseController
 {
-    public string $permissionModule = 'system';
+    public string $permissionModule = 'module_manager';
 
     public function __construct(
         protected ModuleManagerService $moduleManagerService

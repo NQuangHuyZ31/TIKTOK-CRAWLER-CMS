@@ -166,7 +166,7 @@ class ModuleRegistry
         // Auto-load all module CSS if 'all', or load requested module CSS
         if ($targetModule === 'all') {
             foreach ($endpoints as $modName => $modConfig) {
-                if ($modName === 'Core') {
+                if ($modName === 'Core' || in_array($modName, $this->disabled, true)) {
                     continue;
                 }
                 if (isset($modConfig['css']) && is_array($modConfig['css'])) {
@@ -177,7 +177,7 @@ class ModuleRegistry
                     }
                 }
             }
-        } elseif ($targetModule !== 'Core' && isset($endpoints[$targetModule]['css'])) {
+        } elseif ($targetModule !== 'Core' && !in_array($targetModule, $this->disabled, true) && isset($endpoints[$targetModule]['css'])) {
             foreach ($endpoints[$targetModule]['css'] as $file) {
                 if (!in_array($file, $cssFiles, true)) {
                     $cssFiles[] = $file;
@@ -226,7 +226,7 @@ class ModuleRegistry
         // Auto-load all module JS if 'all', or load requested module JS
         if ($targetModule === 'all') {
             foreach ($endpoints as $modName => $modConfig) {
-                if ($modName === 'Core') {
+                if ($modName === 'Core' || in_array($modName, $this->disabled, true)) {
                     continue;
                 }
                 if (isset($modConfig['js']) && is_array($modConfig['js'])) {
@@ -237,7 +237,7 @@ class ModuleRegistry
                     }
                 }
             }
-        } elseif ($targetModule !== 'Core' && isset($endpoints[$targetModule]['js'])) {
+        } elseif ($targetModule !== 'Core' && !in_array($targetModule, $this->disabled, true) && isset($endpoints[$targetModule]['js'])) {
             foreach ($endpoints[$targetModule]['js'] as $file) {
                 if (!in_array($file, $jsFiles, true)) {
                     $jsFiles[] = $file;
@@ -363,7 +363,7 @@ class ModuleRegistry
 
         $targetModule = $explicitModule ?: 'Core';
 
-        if ($targetModule !== 'Core' && isset($endpoints[$targetModule])) {
+        if ($targetModule !== 'Core' && !in_array($targetModule, $this->disabled, true) && isset($endpoints[$targetModule])) {
             $mod = $endpoints[$targetModule];
             foreach ($mod['css'] ?? [] as $c) {
                 if (!in_array($c, $css, true)) {

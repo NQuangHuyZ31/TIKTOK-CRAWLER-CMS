@@ -14,8 +14,12 @@ class PermissionSeeder extends Seeder
     public function run(): void
     {
         $modules = config('modules.modules') ?? [];
-        $actions = config('modules.permission_action') ?? [];
-        $ignoreModules = ['auth'];
+        $rawActions = config('modules.permission_actions', []);
+        $actions = array_column(
+            array_filter($rawActions, fn($a) => is_array($a) && !empty($a['basic'])),
+            'value'
+        ) ?: ['view', 'create', 'edit', 'delete'];
+        $ignoreModules = config('modules.ignore_group', ['auth']);
 
         foreach ($modules as $module) {
             $modLabel = Str::headline($module);

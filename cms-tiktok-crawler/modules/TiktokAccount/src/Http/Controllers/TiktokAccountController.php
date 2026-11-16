@@ -15,7 +15,7 @@ use Modules\TiktokAccount\Services\TiktokAccountService;
 
 class TiktokAccountController extends BaseController
 {
-    public string $permissionModule = 'tiktok-account';
+    public string $permissionModule = 'tiktok_account';
     
     protected string $modelClass = TiktokAccount::class;
     protected ?string $resourceClass = TiktokAccountResource::class;

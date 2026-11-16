@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
+import { useMemo, useSyncExternalStore } from 'react';
 import { useRoutes } from './registry';
 import { toHeadlineCase } from '../utils/formatString';
-import { getDistinctModules } from '@modules/Permission/resources/js/Action/permission';
+import { useCoreMetadata } from '../hooks/useCoreMetadata';
 
 export interface ToggleableModuleInfo {
 	key: string;
@@ -20,7 +20,7 @@ type VisibilityState = {
 
 export const getProtectedModules = (): string[] => {
 	const w = window as unknown as { __CMS_CONFIG__?: { protectedModules?: string[] } };
-	return w.__CMS_CONFIG__?.protectedModules ?? ['core', 'auth', 'system', 'module_manager'];
+	return w.__CMS_CONFIG__?.protectedModules ?? ['core', 'auth', 'system', 'guideline', 'module_manager'];
 };
 
 export function isProtectedModule(moduleName?: string): boolean {
@@ -95,47 +95,40 @@ export function useHiddenModules(): readonly string[] {
 }
 
 /**
- * Auto-discovers modules from backend distinctModules merged with registered route registry.
+ * Auto-discovers modules from backend Core metadata merged with registered route registry.
  * Protected core modules configured in backend are marked with `isProtected: true`.
  * If `ignore: true`, filters out ignored modules defined in config('modules.ignore_group').
  */
 export function useToggleableModules(ignore: boolean = false): ToggleableModuleInfo[] {
 	const routes = useRoutes();
-	const [distinctKeys, setDistinctKeys] = useState<string[]>([]);
-
-	useEffect(() => {
-		let isMounted = true;
-		getDistinctModules({ ignore })
-			.then((res) => {
-				if (isMounted && Array.isArray(res?.data)) {
-					setDistinctKeys(res.data);
-				}
-			})
-			.catch(() => {});
-
-		return () => {
-			isMounted = false;
-		};
-	}, [ignore]);
+	const { modules: backendModules, protectedModules, ignoreGroup, moduleMetadata } = useCoreMetadata();
 
 	return useMemo(() => {
+		let availableKeys = backendModules;
+		if (ignore && ignoreGroup.length > 0) {
+			const ignoreSet = new Set(ignoreGroup.map((k) => k.toLowerCase()));
+			availableKeys = availableKeys.filter((k) => !ignoreSet.has(k.toLowerCase()));
+		}
+
 		const routeKeys = Array.from(new Set(routes.map((r) => r.module?.toLowerCase()).filter(Boolean))) as string[];
-		const allKeys = Array.from(new Set([...distinctKeys, ...routeKeys]));
+		const allKeys = Array.from(new Set([...availableKeys, ...routeKeys]));
+		const protectedSet = new Set(protectedModules.map((m) => m.toLowerCase()));
 
 		return allKeys
 			.map((key) => {
 				const modRoutes = routes.filter((r) => r.module?.toLowerCase() === key.toLowerCase());
 				const primary = modRoutes[0];
+				const meta = moduleMetadata?.[key.toLowerCase()];
 				return {
 					key,
-					name: primary?.label || primary?.title || toHeadlineCase(key),
+					name: meta?.label || primary?.label || primary?.title || toHeadlineCase(key),
 					path: primary?.path || '#',
 					routeCount: modRoutes.length,
 					description: primary?.meta?.description as string | undefined,
 					order: primary?.order ?? 100,
-					isProtected: isProtectedModule(key),
+					isProtected: protectedSet.has(key.toLowerCase()) || isProtectedModule(key),
 				};
 			})
 			.sort((a, b) => a.order - b.order || a.name.localeCompare(b.name));
-	}, [routes, distinctKeys]);
+	}, [routes, backendModules, protectedModules, ignoreGroup, moduleMetadata, ignore]);
 }

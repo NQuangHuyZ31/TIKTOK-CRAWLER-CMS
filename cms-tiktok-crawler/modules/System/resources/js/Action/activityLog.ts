@@ -46,3 +46,9 @@ export const getActivityLog = (id: number | string) =>
 
 export const getActivityStatistics = () =>
 	api<{ status: string; data: ActivityStatistics }>('/system/activity-log/statistics');
+
+export const getDistinctActivityModules = () =>
+	api<{ status: string; data: string[] }>('/system/activity-log/distinct-modules');
+
+export const getDistinctActivityActions = () =>
+	api<{ status: string; data: string[] }>('/system/activity-log/distinct-actions');
