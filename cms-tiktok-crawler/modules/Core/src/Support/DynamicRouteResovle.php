@@ -350,12 +350,12 @@ class DynamicRouteResovle {
         }
 
         // 2. Check if dev mode is disabled for dev-only modules
-        if (!config('modules.enable_dev', false)) {
-            $devModules = array_map(fn ($m) => strtolower(str_replace('-', '_', (string) $m)), config('modules.dev_modules', []));
-            if (in_array($normalized, $devModules, true)) {
-                return true;
-            }
-        }
+        // if (!config('modules.enable_dev', false)) {
+        //     $devModules = array_map(fn ($m) => strtolower(str_replace('-', '_', (string) $m)), config('modules.dev_modules', []));
+        //     if (in_array($normalized, $devModules, true)) {
+        //         return true;
+        //     }
+        // }
 
         if (in_array($normalized, ['core', 'auth', 'system'], true)) {
             return false;
