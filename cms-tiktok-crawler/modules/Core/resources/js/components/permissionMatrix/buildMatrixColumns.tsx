@@ -43,14 +43,22 @@ export function buildMatrixColumns({
 	displayActions.forEach((actionKey) => {
 		const actionLabel = actionKey.charAt(0).toUpperCase() + actionKey.slice(1);
 		cols.push({
-			title: <div style={{ textAlign: 'center' }}><span>{actionLabel}</span></div>,
+			title: (
+				<div style={{ textAlign: 'center' }}>
+					<span>{actionLabel}</span>
+				</div>
+			),
 			key: actionKey,
 			width: 100,
 			align: 'center',
 			render: (_: any, record: ModuleRow) => {
 				const perm = record.actions[actionKey];
 				if (!perm) {
-					return <Text type="secondary" style={{ opacity: 0.35 }}>—</Text>;
+					return (
+						<Text type="secondary" style={{ opacity: 0.35 }}>
+							—
+						</Text>
+					);
 				}
 				const checked = isSelected(perm);
 				return (
@@ -72,7 +80,11 @@ export function buildMatrixColumns({
 	});
 
 	cols.push({
-		title: <div style={{ textAlign: 'center' }}><span>All</span></div>,
+		title: (
+			<div style={{ textAlign: 'center' }}>
+				<span>All</span>
+			</div>
+		),
 		key: 'toggle_all',
 		width: 80,
 		align: 'center',

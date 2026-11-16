@@ -22,10 +22,10 @@ import {
 	PlusOutlined,
 } from '@ant-design/icons';
 import useAction from '@core/hooks/useAction';
+import { useCoreMetadata } from '@core/hooks/useCoreMetadata';
 import { useMenuRoutes } from '@core/routes/registry';
 import { SIDEBAR_ICON_OPTIONS } from '@core/configs/systemOptions';
 import { toKebabCase, toSnakeCase, toStudlyCase } from '@core/utils/formatString';
-import { BASIC_PERMISSION_ACTIONS } from '@modules/Permission/resources/js/configs/permissionOptions';
 import { scaffoldModule, type ScaffoldModulePayload } from '../Action/moduleManager';
 
 const { Text } = Typography;
@@ -41,12 +41,20 @@ export default function CreateModuleModal({ open, onClose, onSuccess }: CreateMo
 	const [form] = Form.useForm();
 	const { notification } = App.useApp();
 	const { act, loading: submitting } = useAction();
+	const { permissionActions, basicActions } = useCoreMetadata();
 	const [errorMsg, setErrorMsg] = useState<string | null>(null);
 	const menuRoutes = useMenuRoutes();
 
 	const watchedModule = Form.useWatch('module', form) || '';
 	const watchedPlacement = Form.useWatch('menu_placement', form) || 'top';
 	const watchedCreatePerms = Form.useWatch('create_permissions', form) ?? true;
+
+	const permissionOptions = useMemo(() => {
+		return permissionActions.map((action) => ({
+			label: action.label,
+			value: action.value,
+		}));
+	}, [permissionActions]);
 
 	const parentMenuOptions = useMemo(
 		() =>
@@ -69,12 +77,12 @@ export default function CreateModuleModal({ open, onClose, onSuccess }: CreateMo
 				order: 100,
 				menu_placement: 'top',
 				create_permissions: true,
-				permissions: ['view', 'create', 'edit', 'delete'],
+				permissions: basicActions,
 				submenus: [],
 			});
 			setErrorMsg(null);
 		}
-	}, [open, form]);
+	}, [open, form, basicActions]);
 
 	const handleSubmit = async () => {
 		const values = await form.validateFields();
@@ -293,12 +301,7 @@ export default function CreateModuleModal({ open, onClose, onSuccess }: CreateMo
 
 				{watchedCreatePerms && (
 					<Form.Item name="permissions" style={{ marginBottom: 12 }}>
-						<Checkbox.Group
-							options={BASIC_PERMISSION_ACTIONS.map((a) => ({
-								label: a.label,
-								value: a.value,
-							}))}
-						/>
+						<Checkbox.Group options={permissionOptions} />
 					</Form.Item>
 				)}
 

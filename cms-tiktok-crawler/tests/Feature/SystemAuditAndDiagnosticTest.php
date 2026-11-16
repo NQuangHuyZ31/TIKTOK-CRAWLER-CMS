@@ -387,4 +387,52 @@ class SystemAuditAndDiagnosticTest extends TestCase
             ],
         ]);
     }
+
+    /**
+     * Test Activity Log distinct-modules endpoint returns unique sorted module list.
+     */
+    public function test_activity_log_distinct_modules_endpoint_returns_unique_module_list(): void
+    {
+        $admin = User::where('email', 'admin@cms.com')->first();
+        $token = $admin->createToken('admin_token')->plainTextToken;
+
+        ActivityLogger::log(action: 'CREATE', module: 'CUSTOM_TEST_MOD_A', user: $admin);
+        ActivityLogger::log(action: 'UPDATE', module: 'CUSTOM_TEST_MOD_B', user: $admin);
+        ActivityLogger::log(action: 'DELETE', module: 'CUSTOM_TEST_MOD_A', user: $admin);
+
+        $response = $this->withHeader('Authorization', "Bearer {$token}")
+            ->getJson($this->apiUri('system/activity-log/distinct-modules'));
+
+        $response->assertStatus(200);
+        $response->assertJsonPath('status', 'success');
+        $modules = $response->json('data');
+
+        $this->assertIsArray($modules);
+        $this->assertContains('CUSTOM_TEST_MOD_A', $modules);
+        $this->assertContains('CUSTOM_TEST_MOD_B', $modules);
+    }
+
+    /**
+     * Test Activity Log distinct-actions endpoint returns unique sorted action list.
+     */
+    public function test_activity_log_distinct_actions_endpoint_returns_unique_action_list(): void
+    {
+        $admin = User::where('email', 'admin@cms.com')->first();
+        $token = $admin->createToken('admin_token')->plainTextToken;
+
+        ActivityLogger::log(action: 'CUSTOM_TEST_ACTION_X', module: 'TEST', user: $admin);
+        ActivityLogger::log(action: 'CUSTOM_TEST_ACTION_Y', module: 'TEST', user: $admin);
+        ActivityLogger::log(action: 'CUSTOM_TEST_ACTION_X', module: 'TEST', user: $admin);
+
+        $response = $this->withHeader('Authorization', "Bearer {$token}")
+            ->getJson($this->apiUri('system/activity-log/distinct-actions'));
+
+        $response->assertStatus(200);
+        $response->assertJsonPath('status', 'success');
+        $actions = $response->json('data');
+
+        $this->assertIsArray($actions);
+        $this->assertContains('CUSTOM_TEST_ACTION_X', $actions);
+        $this->assertContains('CUSTOM_TEST_ACTION_Y', $actions);
+    }
 }

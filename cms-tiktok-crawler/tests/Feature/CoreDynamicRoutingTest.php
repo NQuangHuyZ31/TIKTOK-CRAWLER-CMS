@@ -394,5 +394,33 @@ class CoreDynamicRoutingTest extends TestCase
         $this->assertArrayHasKey('data_crawl', $showWithRes->getData(true)['data']);
         $this->assertArrayNotHasKey('data_crawls', $showWithRes->getData(true)['data']);
     }
+
+    /**
+     * Test dynamic route resolves Core metadata endpoint.
+     */
+    public function test_dynamic_route_resolves_core_metadata_endpoint(): void
+    {
+        $response = $this->getJson($this->apiUri('core/metadata'));
+
+        $response->assertStatus(200);
+        $response->assertJsonPath('status', 'success');
+        $response->assertJsonStructure([
+            'status',
+            'message',
+            'data' => [
+                'modules',
+                'permission_actions',
+                'protected_modules',
+                'ignore_group',
+                'module_metadata',
+                'dev_only_actions',
+                'enable_dev',
+            ],
+        ]);
+        $actionValues = array_column($response->json('data.permission_actions'), 'value');
+        $this->assertContains('view', $actionValues);
+        $this->assertContains('create', $actionValues);
+        $this->assertArrayHasKey('crawler', $response->json('data.module_metadata'));
+    }
 }
 

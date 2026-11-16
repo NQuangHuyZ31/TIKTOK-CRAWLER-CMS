@@ -1,37 +1,18 @@
 import React, { isValidElement } from 'react';
 import { NavLink, NavigateFunction } from 'react-router-dom';
-import {
-	AppstoreOutlined,
-	DashboardOutlined,
-	KeyOutlined,
-	RobotOutlined,
-	SafetyCertificateOutlined,
-	SettingOutlined,
-	TeamOutlined,
-	UserOutlined,
-	VideoCameraOutlined,
-} from '@ant-design/icons';
+import { AppstoreOutlined } from '@ant-design/icons';
 import type { RouteDef } from '../../routes/registry';
 
 export function resolveMenuIcon(item: RouteDef): React.ReactNode {
 	if (item.icon) {
 		if (isValidElement(item.icon)) return item.icon;
-		const IconComponent = item.icon as any;
+		const IconComponent = item.icon as React.ComponentType;
 		try {
 			return <IconComponent />;
 		} catch {
 			// fallback below
 		}
 	}
-	const path = (item.path || '').toLowerCase();
-	if (path.includes('dashboard')) return <DashboardOutlined />;
-	if (path.includes('crawler') || path.includes('crawl')) return <RobotOutlined />;
-	if (path.includes('tiktok')) return <VideoCameraOutlined />;
-	if (path.includes('permission')) return <KeyOutlined />;
-	if (path.includes('role')) return <SafetyCertificateOutlined />;
-	if (path.includes('user')) return <TeamOutlined />;
-	if (path.includes('system') || path.includes('setting')) return <SettingOutlined />;
-	if (path.includes('profile')) return <UserOutlined />;
 	return <AppstoreOutlined />;
 }
 
@@ -60,6 +41,21 @@ export function buildSidebarMenuItems({
 		return can({ role: route.roles, slug: route.slug, module: route.module, action: route.action || 'view' });
 	};
 
+	const createLeafItem = (route: RouteDef) => ({
+		key: route.path!,
+		title: route.label,
+		icon: resolveMenuIcon(route),
+		label: (
+			<NavLink
+				to={route.path!}
+				style={{ display: 'inline-block', width: '100%', color: 'inherit' }}
+				onClick={(e) => e.stopPropagation()}
+			>
+				{route.label}
+			</NavLink>
+		),
+	});
+
 	const transform = (list: RouteDef[]): any[] => {
 		const items: any[] = [];
 		for (const route of list) {
@@ -68,12 +64,7 @@ export function buildSidebarMenuItems({
 
 			if (collapsed) {
 				if (isAccessible(route) && route.path) {
-					items.push({
-						key: route.path,
-						title: route.label,
-						icon: resolveMenuIcon(route),
-						label: <NavLink to={route.path} style={{ display: 'inline-block', width: '100%', color: 'inherit' }} onClick={(e) => e.stopPropagation()}>{route.label}</NavLink>,
-					});
+					items.push(createLeafItem(route));
 				}
 				if (accessibleChildren.length > 0) items.push(...accessibleChildren);
 				continue;
@@ -116,12 +107,7 @@ export function buildSidebarMenuItems({
 			}
 
 			if (isAccessible(route) && route.path) {
-				items.push({
-					key: route.path,
-					title: route.label,
-					icon: resolveMenuIcon(route),
-					label: <NavLink to={route.path} style={{ display: 'inline-block', width: '100%', color: 'inherit' }} onClick={(e) => e.stopPropagation()}>{route.label}</NavLink>,
-				});
+				items.push(createLeafItem(route));
 			}
 		}
 		return items;

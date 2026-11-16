@@ -3,33 +3,34 @@ import { Button } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import ListLayout, { type DynamicFilterField } from '@core/components/ListLayout';
 import useAction from '@core/hooks/useAction';
+import { useCoreMetadata } from '@core/hooks/useCoreMetadata';
 import { useDispatch, useSelector } from '@core/store';
 import { deletePermission, type PermissionItem } from '../Action/permission';
 import { setParams, resetParams, setCreatePermissionModalOpen } from '../store/permission/permissionSlice';
-import { fetchPermissions, fetchDistinctModules } from '../store/permission/permissionThunks';
+import { fetchPermissions } from '../store/permission/permissionThunks';
 import CreatePermissionModal from '../components/CreatePermissionModal';
 import PermissionTableList from '../components/PermissionTableList';
 import { COMMON_PERMISSION_ACTIONS } from '../configs/permissionOptions';
 
 export default function PermissionsPage() {
 	const dispatch = useDispatch();
-	const { data: permissions, modulesList, loading, pagination, params, createPermissionModalOpen } = useSelector((state) => state.permission);
+	const { data: permissions, loading, pagination, params, createPermissionModalOpen } = useSelector((state) => state.permission);
+	const { permissionActions, modules, moduleMetadata } = useCoreMetadata();
+
+	const actionOptions = useMemo(() => {
+		return permissionActions.length > 0 ? permissionActions : COMMON_PERMISSION_ACTIONS;
+	}, [permissionActions]);
 
 	const { execute: handleDelete } = useAction((permission: PermissionItem) => deletePermission(permission.id), {
 		successMessage: (_res, permission) => `Permission '${permission.slug || permission.name}' deleted successfully.`,
 		onSuccess: () => {
 			dispatch(fetchPermissions(params));
-			dispatch(fetchDistinctModules());
 		},
 	});
 
 	useEffect(() => {
 		dispatch(fetchPermissions(params));
 	}, [dispatch, params]);
-
-	useEffect(() => {
-		dispatch(fetchDistinctModules());
-	}, [dispatch]);
 
 	const handleSearch = (val: string) => {
 		dispatch(setParams({ search: val.trim() || undefined, page: 1 }));
@@ -44,7 +45,16 @@ export default function PermissionsPage() {
 	};
 
 	const filterFields: DynamicFilterField[] = useMemo(() => {
-		const moduleOptions = [{ value: '', label: 'All Modules' }, ...modulesList.map((mod) => ({ value: mod, label: mod.toUpperCase() }))];
+		const moduleOptions = [
+			{ value: '', label: 'All Modules' },
+			...modules.map((mod) => {
+				const meta = moduleMetadata?.[mod.toLowerCase()];
+				return {
+					value: mod,
+					label: meta?.label || mod.toUpperCase(),
+				};
+			}),
+		];
 
 		return [
 			{
@@ -60,7 +70,7 @@ export default function PermissionsPage() {
 			{
 				key: 'action',
 				placeholder: 'Filter by Action',
-				options: COMMON_PERMISSION_ACTIONS,
+				options: actionOptions,
 				showSearch: true,
 				allowClear: true,
 				initialValue: params.action,
@@ -68,7 +78,7 @@ export default function PermissionsPage() {
 				width: 160,
 			},
 		];
-	}, [modulesList, params.module, params.action, dispatch]);
+	}, [modules, moduleMetadata, actionOptions, params.module, params.action, dispatch]);
 
 	const headerActions = (
 		<Button type="primary" icon={<PlusOutlined />} onClick={() => dispatch(setCreatePermissionModalOpen(true))}>
@@ -92,7 +102,6 @@ export default function PermissionsPage() {
 				onResetFilters={handleResetFilters}
 				onRefresh={() => {
 					dispatch(fetchPermissions(params));
-					dispatch(fetchDistinctModules());
 				}}
 				refreshing={loading}
 			>
@@ -101,11 +110,9 @@ export default function PermissionsPage() {
 
 			<CreatePermissionModal
 				open={createPermissionModalOpen}
-				modulesList={modulesList}
 				onClose={() => dispatch(setCreatePermissionModalOpen(false))}
 				onSuccess={() => {
 					dispatch(fetchPermissions(params));
-					dispatch(fetchDistinctModules());
 				}}
 			/>
 		</div>

@@ -15,6 +15,9 @@ class CoreServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        $this->mergeConfigFrom(dirname(__DIR__, 2) . '/configs/admin.php', 'admin');
+        $this->mergeConfigFrom(dirname(__DIR__, 2) . '/configs/modules.php', 'modules');
+
         $this->app->singleton(StorageService::class, function () {
             return new StorageService();
         });
@@ -62,8 +65,6 @@ class CoreServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        $this->mergeConfigFrom(dirname(__DIR__, 2) . '/configs/admin.php', 'admin');
-        $this->mergeConfigFrom(dirname(__DIR__, 2) . '/configs/modules.php', 'modules');
         $this->loadViewsFrom(dirname(__DIR__, 2) . '/resources/views', 'core');
         $this->registerModuleRoutes();
         $this->registerBladeDirectives();

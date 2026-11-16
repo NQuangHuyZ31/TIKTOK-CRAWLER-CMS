@@ -50,4 +50,24 @@ class ActivityLogService
     {
         return $this->activityLogRepository->getStatistics();
     }
+
+    /**
+     * Retrieve distinct module names present in activity logs.
+     *
+     * @return array<string>
+     */
+    public function getDistinctModules(): array
+    {
+        return $this->activityLogRepository->getDistinctModules();
+    }
+
+    /**
+     * Retrieve distinct action names present in activity logs.
+     *
+     * @return array<string>
+     */
+    public function getDistinctActions(): array
+    {
+        return $this->activityLogRepository->getDistinctActions();
+    }
 }

@@ -36,19 +36,23 @@ export default function usePermission() {
 
 	/** Check CRUD for module */
 	const canDoModule = useCallback((module: string, action: PermissionAction = 'view'): boolean => {
-		if (isAdmin) return true;
 		if (IGNORE_MODULES.includes(module)) return true;
 
 		const targetPerms = modulePermissions?.[module];
+		if (targetPerms && targetPerms[action] === false) return false;
 
+		if (isAdmin) return true;
 		if (!targetPerms) return false;
 
-		if (targetPerms[action] === true) return true;
-		return false;
+		return targetPerms[action] === true;
 	}, [isAdmin, modulePermissions]);
 
 	/** Can */
 	const can = useCallback((options: CanCheckOptions): boolean => {
+		if (options.module && !canDoModule(options.module, options.action || 'view')) {
+			return false;
+		}
+
 		if (isAdmin) return true;
 
 		if (options.role && !hasRole(options.role)) {
@@ -56,10 +60,6 @@ export default function usePermission() {
 		}
 
 		if (options.slug && !hasPermission(options.slug)) {
-			return false;
-		}
-
-		if (options.module && !canDoModule(options.module, options.action || 'view')) {
 			return false;
 		}
 

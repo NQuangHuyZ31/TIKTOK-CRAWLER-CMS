@@ -1,15 +1,9 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import type { PermissionItem } from '../../Action/permission';
-import {
-    fetchPermissions,
-    fetchDistinctModules,
-    fetchGroupedPermissions,
-} from './permissionThunks';
+import { fetchPermissions } from './permissionThunks';
 
 export interface PermissionState {
     data: PermissionItem[];
-    modulesList: string[];
-    groupedPermissions: Record<string, PermissionItem[]>;
     loading: boolean;
     error: string | null;
     pagination: {
@@ -30,8 +24,6 @@ export interface PermissionState {
 
 const initialState: PermissionState = {
     data: [],
-    modulesList: [],
-    groupedPermissions: {},
     loading: false,
     error: null,
     pagination: {
@@ -85,14 +77,6 @@ const permissionSlice = createSlice({
             .addCase(fetchPermissions.rejected, (state, action) => {
                 state.loading = false;
                 state.error = (action.payload as string) ?? 'Failed to load permissions';
-            })
-            .addCase(fetchDistinctModules.fulfilled, (state, action) => {
-                const payload = action.payload as any;
-                state.modulesList = payload?.data ?? [];
-            })
-            .addCase(fetchGroupedPermissions.fulfilled, (state, action) => {
-                const payload = action.payload as any;
-                state.groupedPermissions = payload?.data ?? {};
             });
     },
 });

@@ -1,21 +1,18 @@
 import React from 'react';
 import {
 	AppstoreOutlined,
-	RobotOutlined,
-	VideoCameraOutlined,
-	SettingOutlined,
-	UserOutlined,
-	SafetyCertificateOutlined,
-	KeyOutlined,
-	LockOutlined,
-	ApiOutlined,
 	BarChartOutlined,
 	DatabaseOutlined,
 	FileTextOutlined,
 	FolderOutlined,
 	GlobalOutlined,
+	KeyOutlined,
+	RobotOutlined,
+	SafetyCertificateOutlined,
+	SettingOutlined,
 	TagOutlined,
 	TeamOutlined,
+	VideoCameraOutlined,
 } from '@ant-design/icons';
 
 /**
@@ -28,12 +25,6 @@ export interface SelectOption<T = string> {
 	color?: string;
 	danger?: boolean;
 	desc?: string;
-}
-
-export interface ModuleConfigItem {
-	label: string;
-	icon: React.ReactNode;
-	color: string;
 }
 
 export interface SidebarIconOption {
@@ -59,40 +50,7 @@ export const SIDEBAR_ICON_OPTIONS: SidebarIconOption[] = [
 ];
 
 // -----------------------------------------------------------------------------
-// 1. GLOBAL SYSTEM MODULE REGISTRY
-// Centralized registry of all system modules, their human-readable labels, icons, and colors.
-// When adding a new module to the CMS, register its metadata here.
-// -----------------------------------------------------------------------------
-export const SYSTEM_MODULES: Record<string, ModuleConfigItem> = {
-	core: { label: 'Core / Dashboard', icon: <AppstoreOutlined />, color: 'blue' },
-	crawler: { label: 'Crawler Engine', icon: <RobotOutlined />, color: 'purple' },
-	tiktok_account: { label: 'TikTok Accounts', icon: <VideoCameraOutlined />, color: 'green' },
-	system: { label: 'System Settings', icon: <SettingOutlined />, color: 'gold' },
-	user: { label: 'User Management', icon: <UserOutlined />, color: 'cyan' },
-	role: { label: 'Role Management', icon: <SafetyCertificateOutlined />, color: 'geekblue' },
-	permission: { label: 'Permission Management', icon: <KeyOutlined />, color: 'magenta' },
-	auth: { label: 'Authentication', icon: <LockOutlined />, color: 'orange' },
-};
-
-/**
- * Safely retrieve module metadata by module key.
- */
-import { toHeadlineCase } from '../utils/formatString';
-
-export function getModuleConfig(mod: string): ModuleConfigItem {
-	const key = (mod || '').toLowerCase();
-	if (SYSTEM_MODULES[key]) {
-		return SYSTEM_MODULES[key];
-	}
-	return {
-		label: toHeadlineCase(mod),
-		icon: <ApiOutlined />,
-		color: 'blue',
-	};
-}
-
-// -----------------------------------------------------------------------------
-// 2. GLOBAL STATUS TAG COLORS & LABELS
+// GLOBAL STATUS TAG COLORS & LABELS
 // Shared dictionary used by Core StatusTag component for standardizing badge colors.
 // -----------------------------------------------------------------------------
 export const GLOBAL_STATUS_CONFIG: Record<string, { color: string; label?: string }> = {

@@ -1,10 +1,36 @@
-import { getModuleConfig } from '../../configs/systemOptions';
+import React from 'react';
+import { AppstoreOutlined } from '@ant-design/icons';
+import { getRoutes } from '../../routes/registry';
+import { toHeadlineCase } from '../../utils/formatString';
 import type { ModuleRow, PermissionInputType, PermissionItem } from './permissionMatrixTypes';
+
+/**
+ * Resolves module icon from the frontend Route Registry.
+ */
+function resolveModuleIcon(modKey: string): React.ReactNode {
+	const routes = getRoutes();
+	const matched = routes.find((r) => r.module?.toLowerCase() === modKey);
+	if (matched?.icon) {
+		if (React.isValidElement(matched.icon)) {
+			return matched.icon;
+		}
+		const IconComp = matched.icon as React.ComponentType;
+		try {
+			return React.createElement(IconComp);
+		} catch {
+			return React.createElement(AppstoreOutlined);
+		}
+	}
+	return React.createElement(AppstoreOutlined);
+}
 
 /**
  * Normalizes any backend permission catalog into a uniform ModuleRow array.
  */
-export function normalizePermissions(input?: PermissionInputType): ModuleRow[] {
+export function normalizePermissions(
+	input?: PermissionInputType,
+	moduleMetadata?: Record<string, { label?: string; icon?: string; color?: string }>
+): ModuleRow[] {
 	if (!input) return [];
 
 	const grouped: Record<string, PermissionItem[]> = {};
@@ -34,7 +60,10 @@ export function normalizePermissions(input?: PermissionInputType): ModuleRow[] {
 	}
 
 	return Object.entries(grouped).map(([modKey, items]) => {
-		const conf = getModuleConfig(modKey);
+		const meta = moduleMetadata?.[modKey];
+		const label = meta?.label || toHeadlineCase(modKey);
+		const color = meta?.color || 'blue';
+		const icon = resolveModuleIcon(modKey);
 		const actionsMap: Record<string, PermissionItem> = {};
 
 		items.forEach((p) => {
@@ -47,9 +76,9 @@ export function normalizePermissions(input?: PermissionInputType): ModuleRow[] {
 		return {
 			key: modKey,
 			module: modKey,
-			label: conf.label,
-			icon: conf.icon,
-			color: conf.color,
+			label,
+			icon,
+			color,
 			actions: actionsMap,
 			items,
 		};

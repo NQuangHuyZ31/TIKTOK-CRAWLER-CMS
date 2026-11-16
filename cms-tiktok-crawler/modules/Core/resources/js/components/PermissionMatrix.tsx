@@ -4,6 +4,7 @@ import type { PermissionItem, PermissionInputType, ModuleRow } from './permissio
 import { normalizePermissions } from './permissionMatrix/permissionMatrixHelpers';
 import PermissionMatrixToolbar from './permissionMatrix/PermissionMatrixToolbar';
 import { buildMatrixColumns } from './permissionMatrix/buildMatrixColumns';
+import { useCoreMetadata } from '../hooks/useCoreMetadata';
 
 export type { PermissionItem, PermissionInputType };
 
@@ -18,18 +19,10 @@ export interface PermissionMatrixProps {
 	title?: string;
 }
 
-export default function PermissionMatrix({
-	permissions,
-	value,
-	selectedIds,
-	onChange,
-	mode = 'auto',
-	disabled = false,
-	isAdmin = false,
-	title = 'Module Permission Matrix',
-}: PermissionMatrixProps) {
+export default function PermissionMatrix({ permissions, value, selectedIds, onChange, mode = 'auto', disabled = false, isAdmin = false, title = 'Module Permission Matrix' }: PermissionMatrixProps) {
 	const { token } = theme.useToken();
-	const moduleRows = useMemo(() => normalizePermissions(permissions), [permissions]);
+	const { basicActions: standardActions, moduleMetadata } = useCoreMetadata();
+	const moduleRows = useMemo(() => normalizePermissions(permissions, moduleMetadata), [permissions, moduleMetadata]);
 	const allItems = useMemo(() => moduleRows.flatMap((r) => r.items), [moduleRows]);
 
 	const rawSelected = useMemo(() => {
@@ -61,7 +54,6 @@ export default function PermissionMatrix({
 	};
 
 	const displayActions = useMemo(() => {
-		const standardActions = ['view', 'create', 'edit', 'delete'];
 		const allActionsSet = new Set<string>();
 		moduleRows.forEach((row) => Object.keys(row.actions).forEach((act) => allActionsSet.add(act)));
 		const ordered = standardActions.filter((a) => allActionsSet.has(a));
@@ -69,12 +61,12 @@ export default function PermissionMatrix({
 			if (!ordered.includes(a)) ordered.push(a);
 		});
 		return ordered.length > 0 ? ordered : standardActions;
-	}, [moduleRows]);
+	}, [moduleRows, standardActions]);
 
 	const allIdentifiers = useMemo(() => allItems.map((p) => (activeMode === 'slug' ? p.slug : p.id)), [allItems, activeMode]);
 	const selectedCount = useMemo(() => (isAdmin ? allItems.length : allItems.filter((p) => isSelected(p)).length), [allItems, isAdmin, selectedLookup]);
 	const isAllSelected = useMemo(() => (isAdmin ? true : allItems.length > 0 && allItems.every((p) => isSelected(p))), [allItems, isAdmin, selectedLookup]);
-	const isIndeterminate = useMemo(() => (!isAdmin && selectedCount > 0 && selectedCount < allItems.length), [selectedCount, allItems.length, isAdmin]);
+	const isIndeterminate = useMemo(() => !isAdmin && selectedCount > 0 && selectedCount < allItems.length, [selectedCount, allItems.length, isAdmin]);
 
 	const handleSelectAll = (checked: boolean) => {
 		if (disabled || isAdmin) return;
@@ -84,9 +76,7 @@ export default function PermissionMatrix({
 	const handleTogglePermission = (item: PermissionItem, checked: boolean) => {
 		if (disabled || isAdmin) return;
 		const targetId = activeMode === 'slug' ? item.slug : item.id;
-		const next = checked
-			? [...rawSelected, targetId]
-			: rawSelected.filter((val) => val !== item.slug && val !== item.id && String(val) !== String(item.id));
+		const next = checked ? [...rawSelected, targetId] : rawSelected.filter((val) => val !== item.slug && val !== item.id && String(val) !== String(item.id));
 		onChange?.(next);
 	};
 
@@ -108,7 +98,7 @@ export default function PermissionMatrix({
 
 	const columns = useMemo(
 		() => buildMatrixColumns({ displayActions, disabled, isAdmin, isSelected, onTogglePermission: handleTogglePermission, onToggleModule: handleToggleModule }),
-		[displayActions, disabled, isAdmin, selectedLookup]
+		[displayActions, disabled, isAdmin, selectedLookup],
 	);
 
 	return (

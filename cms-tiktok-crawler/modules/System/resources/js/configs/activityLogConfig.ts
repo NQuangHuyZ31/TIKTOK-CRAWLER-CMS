@@ -25,26 +25,14 @@ export function getActivityActionConfig(action: string): { label: string; color:
 
 export const ACTIVITY_ACTION_OPTIONS: SelectOption[] = [
 	{ label: 'All Actions', value: '' },
-	{ label: 'LOGIN', value: 'LOGIN' },
-	{ label: 'LOGOUT', value: 'LOGOUT' },
-	{ label: 'CREATE', value: 'CREATE' },
-	{ label: 'UPDATE', value: 'UPDATE' },
-	{ label: 'DELETE', value: 'DELETE' },
-	{ label: 'CRAWL', value: 'CRAWL' },
-	{ label: 'RETRY CRAWL', value: 'RETRY_CRAWL' },
-	{ label: 'PERMISSION CHANGE', value: 'PERMISSION_CHANGE' },
-	{ label: 'ROLE CHANGE', value: 'ROLE_CHANGE' },
+	...Object.entries(ACTIVITY_ACTION_CONFIG).map(([key, item]) => ({
+		label: item.label,
+		value: key,
+	})),
 ];
 
 export const ACTIVITY_MODULE_OPTIONS: SelectOption[] = [
 	{ label: 'All Modules', value: '' },
-	{ label: 'TIKTOK', value: 'TIKTOK' },
-	{ label: 'CRAWLER', value: 'CRAWLER' },
-	{ label: 'USER MANAGEMENT', value: 'USER_MANAGEMENT' },
-	{ label: 'ROLE', value: 'ROLE' },
-	{ label: 'PERMISSION', value: 'PERMISSION' },
-	{ label: 'SYSTEM', value: 'SYSTEM' },
-	{ label: 'AUTH', value: 'AUTH' },
 ];
 
 export const ACTIVITY_STATUS_OPTIONS: SelectOption[] = [

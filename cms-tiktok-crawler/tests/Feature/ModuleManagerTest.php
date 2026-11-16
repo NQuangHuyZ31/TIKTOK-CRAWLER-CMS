@@ -108,4 +108,36 @@ class ModuleManagerTest extends TestCase
         $this->assertStringContainsString("path: '/test-scaffold-mgr/sub-a'", $routeContent);
         $this->assertStringContainsString('icon: FileTextOutlined', $routeContent);
     }
+
+    public function test_module_manager_is_disabled_and_hidden_in_production_environment(): void
+    {
+        $admin = User::where('email', 'admin@cms.com')->firstOrFail();
+
+        // Simulate environment when ENABLE_DEV is false
+        config(['modules.enable_dev' => false]);
+
+        // 1. ModuleRegistry ignores ModuleManager
+        $registry = new \Modules\Core\Support\ModuleRegistry(config('modules.path'), ['ModuleManager']);
+        $this->assertFalse($registry->has('ModuleManager'));
+        $this->assertStringNotContainsString('ModuleManager', $registry->renderJs('all'));
+        $this->assertStringNotContainsString('ModuleManager', $registry->renderCss('all'));
+
+        // 2. Permission distinct-modules filters out dev-only module_manager
+        $res = $this->actingAs($admin)
+            ->getJson($this->apiUri('user/permission/distinct-modules'));
+
+        $res->assertOk();
+        $modules = $res->json('data');
+        $this->assertNotContains('module_manager', $modules);
+
+        // 3. Permission matrix (getGroupedPermissions) does not contain module_manager
+        $permService = app(\Modules\Permission\Services\PermissionService::class);
+        $grouped = $permService->getGroupedPermissions();
+        $this->assertArrayNotHasKey('module_manager', $grouped);
+
+        // 4. API access to /module-manager/* returns 404 Not Found
+        $apiRes = $this->actingAs($admin, 'sanctum')
+            ->getJson($this->apiUri('module-manager/visibility'));
+        $apiRes->assertStatus(404);
+    }
 }

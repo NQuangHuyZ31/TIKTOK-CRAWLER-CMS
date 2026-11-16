@@ -78,6 +78,10 @@ class DynamicRouteResovle {
             abort(404, 'Module or controller not specified.');
         }
 
+        if ($this->isModuleHidden((string) $module)) {
+            abort(404, "Module [{$module}] is currently disabled.");
+        }
+
         $controllerClass = $this->resovleController($module, $controller);
 
         if (!$controllerClass || !class_exists($controllerClass)) {
@@ -338,6 +342,21 @@ class DynamicRouteResovle {
     private function isModuleHidden(string $module): bool
     {
         $normalized = strtolower(str_replace('-', '_', $module));
+
+        // 1. Check if disabled in module configuration (e.g. disabled list)
+        $disabled = array_map(fn ($m) => strtolower(str_replace('-', '_', (string) $m)), config('modules.disabled', []));
+        if (in_array($normalized, $disabled, true) || in_array(str_replace('_', '', $normalized), $disabled, true)) {
+            return true;
+        }
+
+        // 2. Check if dev mode is disabled for dev-only modules
+        if (!config('modules.enable_dev', false)) {
+            $devModules = array_map(fn ($m) => strtolower(str_replace('-', '_', (string) $m)), config('modules.dev_modules', []));
+            if (in_array($normalized, $devModules, true)) {
+                return true;
+            }
+        }
+
         if (in_array($normalized, ['core', 'auth', 'system'], true)) {
             return false;
         }

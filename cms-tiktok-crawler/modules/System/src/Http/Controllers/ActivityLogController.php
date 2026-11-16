@@ -31,4 +31,28 @@ class ActivityLogController extends BaseController
             'Activity statistics retrieved successfully.'
         );
     }
+
+    /**
+     * Get distinct module names present in activity logs.
+     * api: GET /{admin_path}/api/system/activity-log/distinct-modules
+     */
+    public function distinctModules(): JsonResponse
+    {
+        return $this->respondSuccess(
+            $this->activityLogService->getDistinctModules(),
+            'Distinct activity modules retrieved successfully.'
+        );
+    }
+
+    /**
+     * Get distinct action names present in activity logs.
+     * api: GET /{admin_path}/api/system/activity-log/distinct-actions
+     */
+    public function distinctActions(): JsonResponse
+    {
+        return $this->respondSuccess(
+            $this->activityLogService->getDistinctActions(),
+            'Distinct activity actions retrieved successfully.'
+        );
+    }
 }

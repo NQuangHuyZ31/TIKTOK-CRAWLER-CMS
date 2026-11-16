@@ -1,6 +1,6 @@
 import { api } from '@core/Action/api';
 
-const baseURL = '/tiktok-account/tiktok-account';
+const baseURL = '/tiktok_account/tiktok_account';
 
 export interface TiktokAccountItem {
 	id: number;
