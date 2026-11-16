@@ -24,7 +24,7 @@ return [
     // Dev mode
     'enable_dev' => $isDev,
     'dev_modules' => $devModules,
-    'disabled' => $isDev ? [] : ['ModuleManager'],
+    'disabled' => [],
 
     // Route match modules
     'routes' => env('ROUTE_MAPPING', array_filter([
