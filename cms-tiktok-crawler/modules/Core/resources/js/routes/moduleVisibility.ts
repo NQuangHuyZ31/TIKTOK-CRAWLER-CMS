@@ -20,7 +20,7 @@ type VisibilityState = {
 
 export const getProtectedModules = (): string[] => {
 	const w = window as unknown as { __CMS_CONFIG__?: { protectedModules?: string[] } };
-	return w.__CMS_CONFIG__?.protectedModules ?? ['core', 'auth', 'system', 'guideline', 'module_manager'];
+	return w.__CMS_CONFIG__?.protectedModules ?? [];
 };
 
 export function isProtectedModule(moduleName?: string): boolean {
